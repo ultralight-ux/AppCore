@@ -97,7 +97,7 @@ elseif (PORT MATCHES "UltralightWin")
 
     load_sources(AppCore_SOURCES "src/win")
     
-    add_definitions(-D_UNICODE -DNOMINMAX)
+    add_definitions(-D_UNICODE -DUNICODE -DNOMINMAX)
     link_libraries("Shlwapi.lib" "Usp10.lib" "d3d11.lib" "d3dcompiler.lib")
 endif ()
 

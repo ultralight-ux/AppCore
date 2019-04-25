@@ -71,7 +71,6 @@ pipeline {
                cd build_dbg
                cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=RelWithDebInfo
                ninja
-               cd ..
             '''
           }
           post {
@@ -98,7 +97,6 @@ pipeline {
                cd build
                cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=MinSizeRel
                ninja
-               cd ..
             '''
           }
           post {
@@ -125,7 +123,6 @@ pipeline {
                cd build_dbg
                cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=RelWithDebInfo
                ninja
-               cd ..
             '''
           }
           post {
@@ -152,7 +149,6 @@ pipeline {
                cd build
                cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=MinSizeRel
                ninja
-               cd ..
             '''
           }
           post {
