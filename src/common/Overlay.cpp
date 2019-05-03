@@ -193,6 +193,13 @@ protected:
     window_->overlay_manager()->Add(this);
   }
 
+  OverlayImpl(Ref<Window> window, Ref<View> view, int x, int y) :
+    window_(window), view_(view), width_(view->width()),
+    height_(view->height()), x_(x), y_(y), needs_update_(true),
+    driver_(Platform::instance().gpu_driver()) {
+    window_->overlay_manager()->Add(this);
+  }
+
   ~OverlayImpl() {
     if (App::instance()) {
       window_->overlay_manager()->Remove(this);
@@ -224,6 +231,10 @@ protected:
 Ref<Overlay> Overlay::Create(Ref<Window> window, uint32_t width,
                              uint32_t height, int x, int y) {
   return AdoptRef(*new OverlayImpl(window, width, height, x, y));
+}
+
+Ref<Overlay> Overlay::Create(Ref<Window> window, Ref<View> view, int x, int y) {
+  return AdoptRef(*new OverlayImpl(window, view, x, y));
 }
 
 Overlay::~Overlay() {}

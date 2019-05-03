@@ -45,6 +45,22 @@ public:
                              uint32_t height, int x, int y);
 
   ///
+  /// Create a new Overlay, wrapping an existing View.
+  ///
+  /// @param  window  The window to create the Overlay in. (we currently only
+  ///                 support one window per application)
+  ///
+  /// @param  view    The View to wrap (will use its width and height).
+  ///
+  /// @param  x       The x-position (offset from the left of the Window), in
+  ///                 device coordinates.
+  ///
+  /// @param  y       The y-position (offset from the top of the Window), in
+  ///                 device coordinates.
+  ///
+  static Ref<Overlay> Create(Ref<Window> window, Ref<View> view, int x, int y);
+
+  ///
   /// Get the underlying View.
   ///
   virtual ultralight::Ref<ultralight::View> view() = 0;
