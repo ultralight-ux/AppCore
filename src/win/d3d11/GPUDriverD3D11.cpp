@@ -8,6 +8,9 @@
 #include "../../../shaders/hlsl/fill_path_fxc.h"
 #include "../../../shaders/hlsl/v2f_c4f_t2f_fxc.h"
 #include "../../../shaders/hlsl/v2f_c4f_t2f_t2f_d28f_fxc.h"
+#include <Ultralight/platform/Platform.h>
+#include <Ultralight/platform/FileSystem.h>
+#include <AppCore/App.h>
 
 #define SHADER_PATH L".\\shaders\\hlsl\\"
 
@@ -42,10 +45,10 @@ struct Uniforms {
   DirectX::XMMATRIX Clip[8];
 };
 
-HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint,
+HRESULT CompileShaderFromFile(const char* path, LPCSTR szEntryPoint,
   LPCSTR szShaderModel, ID3DBlob** ppBlobOut) {
   DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG
+#ifdef _DEBUG || 1
   dwShaderFlags |= D3DCOMPILE_DEBUG;
   dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
 #else
@@ -59,10 +62,30 @@ HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint,
 #endif
 
   ComPtr<ID3DBlob> pErrorBlob;
-  std::wstring path = SHADER_PATH;
-  path += szFileName;
-  HRESULT hr = D3DCompileFromFile(path.c_str(), nullptr, nullptr, szEntryPoint,
-    szShaderModel, dwShaderFlags, 0, ppBlobOut, pErrorBlob.GetAddressOf());
+
+  auto fs = ultralight::Platform::instance().file_system();
+
+  if (!fs) {
+    OutputDebugStringA("Could not load shaders, null FileSystem instance.");
+    return -1;
+  }
+
+  ultralight::FileHandle handle = fs->OpenFile(path, false);
+
+  if (handle == ultralight::invalidFileHandle) {
+    OutputDebugStringA("Could not load shaders, file not found.");
+    return -1;
+  }
+
+  int64_t file_size = 0;
+  fs->GetFileSize(handle, file_size);
+
+  std::unique_ptr<char[]> buffer(new char[file_size]);
+  fs->ReadFromFile(handle, buffer.get(), file_size);
+
+  HRESULT hr = D3DCompile2(buffer.get(), file_size, path, nullptr, nullptr,
+    szEntryPoint, szShaderModel, dwShaderFlags, 0, 0, 0, 0, ppBlobOut,
+    pErrorBlob.GetAddressOf());
 
   if (FAILED(hr) && pErrorBlob)
     OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
@@ -184,8 +207,8 @@ void GPUDriverD3D11::BindTexture(uint8_t texture_unit,
   uint32_t texture_id) {
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
-    //MessageBoxW(nullptr,
-    //  L"GPUDriverD3D11::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D11::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
     return;
   }
 
@@ -429,7 +452,7 @@ void GPUDriverD3D11::DrawCommandList() {
   command_list_.clear();
 }
 
-void GPUDriverD3D11::LoadVertexShader(const WCHAR* path, ID3D11VertexShader** ppVertexShader,
+void GPUDriverD3D11::LoadVertexShader(const char* path, ID3D11VertexShader** ppVertexShader,
   const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs, UINT NumElements, ID3D11InputLayout** ppInputLayout) {
   HRESULT hr;
   ComPtr<ID3DBlob> vs_blob;
@@ -456,7 +479,7 @@ void GPUDriverD3D11::LoadVertexShader(const WCHAR* path, ID3D11VertexShader** pp
   }
 }
 
-void GPUDriverD3D11::LoadPixelShader(const WCHAR* path, ID3D11PixelShader** ppPixelShader) {
+void GPUDriverD3D11::LoadPixelShader(const char* path, ID3D11PixelShader** ppPixelShader) {
   HRESULT hr;
 
   ComPtr<ID3DBlob> ps_blob;
@@ -521,14 +544,15 @@ void GPUDriverD3D11::LoadShaders() {
   };
 
   auto& shader_fill_path = shaders_[kShaderType_FillPath];
-  /*
-  LoadVertexShader(L"vs\\v2f_c4f_t2f.hlsl", shader_fill_path.first.GetAddressOf(),
-    layout_2f_4ub_2f, ARRAYSIZE(layout_2f_4ub_2f), vertex_layout_2f_4ub_2f_.GetAddressOf());
-  LoadPixelShader(L"ps\\fill_path.hlsl", shader_fill_path.second.GetAddressOf());
-  */
-  LoadCompiledVertexShader(v2f_c4f_t2f_fxc, v2f_c4f_t2f_fxc_len, shader_fill_path.first.GetAddressOf(),
-    layout_2f_4ub_2f, ARRAYSIZE(layout_2f_4ub_2f), vertex_layout_2f_4ub_2f_.GetAddressOf());
-  LoadCompiledPixelShader(fill_path_fxc, fill_path_fxc_len, shader_fill_path.second.GetAddressOf());
+  if (App::instance()->config().load_shaders_from_file_system) {
+    LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f.hlsl", shader_fill_path.first.GetAddressOf(),
+      layout_2f_4ub_2f, ARRAYSIZE(layout_2f_4ub_2f), vertex_layout_2f_4ub_2f_.GetAddressOf());
+    LoadPixelShader("shaders/hlsl/ps/fill_path.hlsl", shader_fill_path.second.GetAddressOf());
+  } else {
+    LoadCompiledVertexShader(v2f_c4f_t2f_fxc, v2f_c4f_t2f_fxc_len, shader_fill_path.first.GetAddressOf(),
+      layout_2f_4ub_2f, ARRAYSIZE(layout_2f_4ub_2f), vertex_layout_2f_4ub_2f_.GetAddressOf());
+    LoadCompiledPixelShader(fill_path_fxc, fill_path_fxc_len, shader_fill_path.second.GetAddressOf());
+  }
 
   const D3D11_INPUT_ELEMENT_DESC layout_2f_4ub_2f_2f_28f[] = {
     { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -545,14 +569,15 @@ void GPUDriverD3D11::LoadShaders() {
   };
 
   auto& shader_fill = shaders_[kShaderType_Fill];
-  /*
-  LoadVertexShader(L"vs\\v2f_c4f_t2f_t2f_d28f.hlsl", shader_fill.first.GetAddressOf(),
-    layout_2f_4ub_2f_2f_28f, ARRAYSIZE(layout_2f_4ub_2f_2f_28f), vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
-  LoadPixelShader(L"ps\\fill.hlsl", shader_fill.second.GetAddressOf());
-  */
-  LoadCompiledVertexShader(v2f_c4f_t2f_t2f_d28f_fxc, v2f_c4f_t2f_t2f_d28f_fxc_len, shader_fill.first.GetAddressOf(),
-    layout_2f_4ub_2f_2f_28f, ARRAYSIZE(layout_2f_4ub_2f_2f_28f), vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
-  LoadCompiledPixelShader(fill_fxc, fill_fxc_len, shader_fill.second.GetAddressOf());
+  if (App::instance()->config().load_shaders_from_file_system) {
+    LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f_t2f_d28f.hlsl", shader_fill.first.GetAddressOf(),
+      layout_2f_4ub_2f_2f_28f, ARRAYSIZE(layout_2f_4ub_2f_2f_28f), vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+    LoadPixelShader("shaders/hlsl/ps/fill.hlsl", shader_fill.second.GetAddressOf());
+  } else {
+    LoadCompiledVertexShader(v2f_c4f_t2f_t2f_d28f_fxc, v2f_c4f_t2f_t2f_d28f_fxc_len, shader_fill.first.GetAddressOf(),
+      layout_2f_4ub_2f_2f_28f, ARRAYSIZE(layout_2f_4ub_2f_2f_28f), vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+    LoadCompiledPixelShader(fill_fxc, fill_fxc_len, shader_fill.second.GetAddressOf());
+  }
 }
 
 void GPUDriverD3D11::BindShader(uint8_t shader) {

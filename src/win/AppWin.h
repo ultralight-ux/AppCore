@@ -26,6 +26,8 @@ public:
 
   // Inherited from App
 
+  virtual const AppConfig& config() const override { return config_; }
+
   virtual void set_listener(AppListener* listener) override { listener_ = listener; }
 
   virtual void set_window(Ref<Window> window) override;
@@ -47,7 +49,7 @@ public:
   REF_COUNTED_IMPL(AppWin);
 
 protected:
-  AppWin();
+  AppWin(const AppConfig& config);
   virtual ~AppWin();
   void Update();
 
@@ -55,6 +57,7 @@ protected:
   
   DISALLOW_COPY_AND_ASSIGN(AppWin);
 
+  AppConfig config_;
   bool is_running_ = false;
   AppListener* listener_ = nullptr;
   RefPtr<Renderer> renderer_;

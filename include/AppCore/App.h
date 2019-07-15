@@ -37,6 +37,16 @@ public:
   virtual void OnUpdate() {}
 };
 
+struct AExport AppConfig {
+#ifdef __APPLE__
+  String file_system_path = "@resource_path";
+#else
+  String file_system_path = "./assets/";
+#endif
+
+  bool load_shaders_from_file_system = false;
+};
+
 ///
 /// Main application class.
 ///
@@ -50,12 +60,14 @@ public:
   ///        App maintains its own Renderer instance, make sure to set your
   ///        Config before creating App. (@see Platform::set_config)
   ///
-  static Ref<App> Create();
+  static Ref<App> Create(const AppConfig& config = AppConfig());
 
   ///
   /// Get the App singleton.
   ///
   static App* instance();
+
+  virtual const AppConfig& config() const = 0;
 
   ///
   /// Set the main window. You must set this before calling Run.

@@ -65,7 +65,7 @@ public:
 
       gpu_state_.viewport_width = (float) window_->width();
       gpu_state_.viewport_height = (float) window_->height();
-      gpu_state_.transform = ConvertAffineTo4x4(identity);
+      gpu_state_.transform = identity.GetMatrix4x4();
       gpu_state_.enable_blend = true;
       gpu_state_.enable_texturing = true;
       gpu_state_.shader_type = kShaderType_Fill;

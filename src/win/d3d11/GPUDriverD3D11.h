@@ -76,9 +76,9 @@ public:
   int batch_count() const { return batch_count_; }
 
 protected:
-  void LoadVertexShader(const WCHAR* path, ID3D11VertexShader** ppVertexShader,
+  void LoadVertexShader(const char* path, ID3D11VertexShader** ppVertexShader,
     const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs, UINT NumElements, ID3D11InputLayout** ppInputLayout);
-  void LoadPixelShader(const WCHAR* path, ID3D11PixelShader** ppPixelShader);
+  void LoadPixelShader(const char* path, ID3D11PixelShader** ppPixelShader);
   void LoadCompiledVertexShader(unsigned char* data, unsigned int len, ID3D11VertexShader** ppVertexShader,
     const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs, UINT NumElements, ID3D11InputLayout** ppInputLayout);
   void LoadCompiledPixelShader(unsigned char* data, unsigned int len, ID3D11PixelShader** ppPixelShader);
