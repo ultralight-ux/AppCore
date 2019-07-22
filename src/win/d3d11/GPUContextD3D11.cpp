@@ -90,6 +90,14 @@ ID3D11DeviceContext* GPUContextD3D11::immediate_context() { assert(immediate_con
 IDXGISwapChain* GPUContextD3D11::swap_chain() { assert(swap_chain_.Get()); return swap_chain_.Get(); }
 ID3D11RenderTargetView* GPUContextD3D11::render_target_view() { assert(back_buffer_view_.Get()); return back_buffer_view_.Get(); }
 
+void GPUContextD3D11::EnableBlend() {
+  immediate_context_->OMSetBlendState(blend_state_.Get(), NULL, 0xffffffff);
+}
+
+void GPUContextD3D11::DisableBlend() {
+  immediate_context_->OMSetBlendState(disabled_blend_state_.Get(), NULL, 0xffffffff);
+}
+
 // Scale is calculated from monitor DPI, see Application::SetScale
 void GPUContextD3D11::set_scale(double scale) { scale_ = scale; }
 double GPUContextD3D11::scale() const { return scale_; }
@@ -184,6 +192,8 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
 
   immediate_context_->OMSetRenderTargets(1, back_buffer_view_.GetAddressOf(), nullptr);
 
+  // Create Enabled Blend State
+
   D3D11_RENDER_TARGET_BLEND_DESC rt_blend_desc;
   ZeroMemory(&rt_blend_desc, sizeof(rt_blend_desc));
   rt_blend_desc.BlendEnable = true;
@@ -203,7 +213,26 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
 
   device()->CreateBlendState(&blend_desc, blend_state_.GetAddressOf());
 
-  immediate_context_->OMSetBlendState(blend_state_.Get(), NULL, 0xffffffff);
+  // Create Disabled Blend State
+
+  ZeroMemory(&rt_blend_desc, sizeof(rt_blend_desc));
+  rt_blend_desc.BlendEnable = false;
+  rt_blend_desc.SrcBlend = D3D11_BLEND_ONE;
+  rt_blend_desc.DestBlend = D3D11_BLEND_ZERO;
+  rt_blend_desc.BlendOp = D3D11_BLEND_OP_ADD;
+  rt_blend_desc.SrcBlendAlpha = D3D11_BLEND_ONE;
+  rt_blend_desc.DestBlendAlpha = D3D11_BLEND_ZERO;
+  rt_blend_desc.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+  rt_blend_desc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+  ZeroMemory(&blend_desc, sizeof(blend_desc));
+  blend_desc.AlphaToCoverageEnable = false;
+  blend_desc.IndependentBlendEnable = false;
+  blend_desc.RenderTarget[0] = rt_blend_desc;
+
+  device()->CreateBlendState(&blend_desc, disabled_blend_state_.GetAddressOf());
+
+  EnableBlend();
 
   D3D11_RASTERIZER_DESC rasterizer_desc;
   ZeroMemory(&rasterizer_desc, sizeof(rasterizer_desc));

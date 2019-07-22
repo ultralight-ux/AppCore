@@ -48,18 +48,18 @@ struct Uniforms {
 HRESULT CompileShaderFromFile(const char* path, LPCSTR szEntryPoint,
   LPCSTR szShaderModel, ID3DBlob** ppBlobOut) {
   DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG || 1
+//#ifdef _DEBUG || 1
   dwShaderFlags |= D3DCOMPILE_DEBUG;
   dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-  dwShaderFlags |= D3DCOMPILE_PARTIAL_PRECISION;
+//#else
+//  dwShaderFlags |= D3DCOMPILE_PARTIAL_PRECISION;
 
   // Note that this may cause slow Application startup because the Shader Compiler
   // must perform heavy optimizations. In a production build you should use D3D's
   // HLSL Effect Compiler (fxc.exe) to compile the HLSL files offline which grants
   // near-instantaneous load times.
-  dwShaderFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL2;
-#endif
+//  dwShaderFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL2;
+//#endif
 
   ComPtr<ID3DBlob> pErrorBlob;
 
@@ -179,8 +179,8 @@ void GPUDriverD3D11::UpdateTexture(uint32_t texture_id,
   Ref<Bitmap> bitmap) {
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D11::UpdateTexture, texture id doesn't exist.", L"Error", MB_OK);
+    //MessageBoxW(nullptr,
+     // L"GPUDriverD3D11::UpdateTexture, texture id doesn't exist.", L"Error", MB_OK);
     return;
   }
 
@@ -207,8 +207,8 @@ void GPUDriverD3D11::BindTexture(uint8_t texture_unit,
   uint32_t texture_id) {
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D11::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
+    //MessageBoxW(nullptr,
+    //  L"GPUDriverD3D11::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
     return;
   }
 
@@ -413,6 +413,11 @@ void GPUDriverD3D11::DrawGeometry(uint32_t geometry_id,
   immediate_ctx->PSSetSamplers(0, 1, sampler_state.GetAddressOf());
 
   BindShader(state.shader_type);
+
+  if (state.enable_blend)
+    context_->EnableBlend();
+  else
+    context_->DisableBlend();
 
   immediate_ctx->VSSetConstantBuffers(0, 1, constant_buffer_.GetAddressOf());
   immediate_ctx->PSSetConstantBuffers(0, 1, constant_buffer_.GetAddressOf());
@@ -642,7 +647,8 @@ ComPtr<ID3D11SamplerState> GPUDriverD3D11::GetSamplerState() {
   sampler_desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
   sampler_desc.MinLOD = 0;
   //sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
-  sampler_desc.MaxLOD = 0;
+  //sampler_desc.MaxAnisotropy = 16;
+  //sampler_desc.MaxLOD = 0;
   HRESULT hr = context_->device()->CreateSamplerState(&sampler_desc, &sampler_state_);
 
   if (FAILED(hr)) {
