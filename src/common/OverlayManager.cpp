@@ -52,12 +52,12 @@ void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
 
   hovered_overlay_ = HitTest(evt.x, evt.y);
 
-  if (evt.type == ultralight::MouseEvent::kType_MouseDown && evt.button == MouseEvent::kButton_Left) {
-    focused_overlay_ = HitTest(evt.x, evt.y);
-    is_dragging_ = true;
-  }
-
   if (hovered_overlay_) {
+    if (evt.type == ultralight::MouseEvent::kType_MouseDown && evt.button == MouseEvent::kButton_Left) {
+      focused_overlay_ = hovered_overlay_;
+      is_dragging_ = true;
+    }
+
     MouseEvent rel_evt = evt;
     rel_evt.x -= hovered_overlay_->x();
     rel_evt.y -= hovered_overlay_->y();
