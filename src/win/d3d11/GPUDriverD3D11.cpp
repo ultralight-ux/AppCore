@@ -4,10 +4,10 @@
 #include <d3dcompiler.h>
 #include <string>
 #include <sstream>
-#include "../../../shaders/hlsl/fill_fxc.h"
-#include "../../../shaders/hlsl/fill_path_fxc.h"
-#include "../../../shaders/hlsl/v2f_c4f_t2f_fxc.h"
-#include "../../../shaders/hlsl/v2f_c4f_t2f_t2f_d28f_fxc.h"
+#include "../../../shaders/hlsl/bin/fill_fxc.h"
+#include "../../../shaders/hlsl/bin/fill_path_fxc.h"
+#include "../../../shaders/hlsl/bin/v2f_c4f_t2f_fxc.h"
+#include "../../../shaders/hlsl/bin/v2f_c4f_t2f_t2f_d28f_fxc.h"
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/FileSystem.h>
 #include <AppCore/App.h>
@@ -48,18 +48,18 @@ struct Uniforms {
 HRESULT CompileShaderFromFile(const char* path, LPCSTR szEntryPoint,
   LPCSTR szShaderModel, ID3DBlob** ppBlobOut) {
   DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-//#ifdef _DEBUG || 1
+#ifdef _DEBUG
   dwShaderFlags |= D3DCOMPILE_DEBUG;
   dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-//#else
-//  dwShaderFlags |= D3DCOMPILE_PARTIAL_PRECISION;
+#else
+  dwShaderFlags |= D3DCOMPILE_PARTIAL_PRECISION;
 
   // Note that this may cause slow Application startup because the Shader Compiler
   // must perform heavy optimizations. In a production build you should use D3D's
   // HLSL Effect Compiler (fxc.exe) to compile the HLSL files offline which grants
   // near-instantaneous load times.
-//  dwShaderFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL2;
-//#endif
+  dwShaderFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL2;
+#endif
 
   ComPtr<ID3DBlob> pErrorBlob;
 
