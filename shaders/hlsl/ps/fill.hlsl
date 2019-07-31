@@ -36,14 +36,14 @@ struct VS_OUTPUT
 
 float OutColor;
 
-uint FillType(VS_OUTPUT input) { return uint(input.Data0.x); }
+uint FillType(VS_OUTPUT input) { return uint(input.Data0.x + 0.5); }
 float4 TileRectUV() { return Vector[0]; }
 float2 TileSize() { return Vector[1].zw; }
 float2 PatternTransformA() { return Vector[2].xy; }
 float2 PatternTransformB() { return Vector[2].zw; }
 float2 PatternTransformC() { return Vector[3].xy; }
-uint Gradient_NumStops(VS_OUTPUT input) { return uint(input.Data0.y); }
-bool Gradient_IsRadial(VS_OUTPUT input) { return bool(input.Data0.z); }
+uint Gradient_NumStops(VS_OUTPUT input) { return uint(input.Data0.y + 0.5); }
+bool Gradient_IsRadial(VS_OUTPUT input) { return bool(uint(input.Data0.z + 0.5)); }
 float Gradient_R0(VS_OUTPUT input) { return input.Data1.x; }
 float Gradient_R1(VS_OUTPUT input) { return input.Data1.y; }
 float2 Gradient_P0(VS_OUTPUT input) { return input.Data1.xy; }
@@ -197,7 +197,6 @@ float2 transformAffine(float2 val, float2 a, float2 b, float2 c) {
 }
 
 float4 fillPatternImage(VS_OUTPUT input) {
-//return float4(1.0, 0.0, 0.0, 1.0);
   float4 tile_rect_uv = TileRectUV();
   float2 tile_size = TileSize();
 
@@ -275,7 +274,7 @@ float4 fillPatternGradient(VS_OUTPUT input) {
 
   // Add gradient noise to reduce banding (+4/-4 gradations)
   out_Color += (8.0/255.0) * gradientNoise(input.Position.xy) - (4.0/255.0);
-  return out_Color;
+  return float4(out_Color.rgb * out_Color.a, out_Color.a);
 }
 
 float stroke(float d, float s, float a) {
@@ -531,23 +530,26 @@ float4 fillRoundedRect(VS_OUTPUT input) {
 
 float4 fillBoxShadow(VS_OUTPUT input) {
   float2 p = input.ObjectCoord;
-  float inset = bool(input.Data0.y)? -1.0 : 1.0;
+  bool inset = bool(uint(input.Data0.y + 0.5));
   float radius = input.Data0.z;
   float2 origin = input.Data1.xy;
   float2 size = input.Data1.zw;
   float2 clip_origin = input.Data4.xy;
   float2 clip_size = input.Data4.zw;
-
-  float clip = inset * sdRoundRect(p - clip_origin, clip_size, input.Data5, input.Data6);
+  
+  float sdClip = sdRoundRect(p - clip_origin, clip_size, input.Data5, input.Data6);
+  float sdRect = sdRoundRect(p - origin, size, input.Data2, input.Data3);
+  
+  float clip = inset ? -sdRect : sdClip;
+  float d = inset ? -sdClip : sdRect;
 
   if (clip < 0.0) {
     discard;
     return float4(0.0, 0.0, 0.0, 0.0);
   }
-  
-  float d = inset * sdRoundRect(p - origin, size, input.Data2, input.Data3);
+
   float alpha = radius >= 1.0? pow(antialias(-d, radius * 1.2, 0.0), 2.2) * 2.5 / pow(radius, 0.04) :
-                               antialias(-d, AA_WIDTH, 1.0);
+                               antialias(-d, AA_WIDTH, inset ? -1.0 : 1.0);
   alpha = clamp(alpha, 0.0, 1.0) * input.Color.a;
   return float4(input.Color.rgb * alpha, alpha);
 }
