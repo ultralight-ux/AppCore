@@ -549,7 +549,7 @@ void GPUDriverD3D11::LoadShaders() {
   };
 
   auto& shader_fill_path = shaders_[kShaderType_FillPath];
-  if (App::instance()->config().load_shaders_from_file_system) {
+  if (App::instance()->settings().load_shaders_from_file_system) {
     LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f.hlsl", shader_fill_path.first.GetAddressOf(),
       layout_2f_4ub_2f, ARRAYSIZE(layout_2f_4ub_2f), vertex_layout_2f_4ub_2f_.GetAddressOf());
     LoadPixelShader("shaders/hlsl/ps/fill_path.hlsl", shader_fill_path.second.GetAddressOf());
@@ -574,7 +574,7 @@ void GPUDriverD3D11::LoadShaders() {
   };
 
   auto& shader_fill = shaders_[kShaderType_Fill];
-  if (App::instance()->config().load_shaders_from_file_system) {
+  if (App::instance()->settings().load_shaders_from_file_system) {
     LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f_t2f_d28f.hlsl", shader_fill.first.GetAddressOf(),
       layout_2f_4ub_2f_2f_28f, ARRAYSIZE(layout_2f_4ub_2f_2f_28f), vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
     LoadPixelShader("shaders/hlsl/ps/fill.hlsl", shader_fill.second.GetAddressOf());
@@ -693,9 +693,12 @@ void GPUDriverD3D11::SetViewport(float width, float height) {
 
 void GPUDriverD3D11::UpdateConstantBuffer(const GPUState& state) {
   auto buffer = GetConstantBuffer();
+
+  Matrix model_view_projection = ApplyProjection(state.transform, state.viewport_width, state.viewport_height);
+
   Uniforms uniforms;
   uniforms.State = { 0.0, state.viewport_width, state.viewport_height, (float)context_->scale() };
-  uniforms.Transform = DirectX::XMMATRIX(state.transform.data);
+  uniforms.Transform = DirectX::XMMATRIX(model_view_projection.GetMatrix4x4().data);
   uniforms.Scalar4[0] =
     { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2], state.uniform_scalar[3] };
   uniforms.Scalar4[1] = 
@@ -710,6 +713,17 @@ void GPUDriverD3D11::UpdateConstantBuffer(const GPUState& state) {
   context_->immediate_context()->Map(buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
   memcpy(res.pData, &uniforms, sizeof(Uniforms));
   context_->immediate_context()->Unmap(buffer.Get(), 0);
+}
+
+Matrix GPUDriverD3D11::ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height) {
+  Matrix transform_mat;
+  transform_mat.Set(transform);
+
+  Matrix result;
+  result.SetOrthographicProjection(screen_width, screen_height, false);
+  result.Transform(transform_mat);
+
+  return result;
 }
 
 }  // namespace ultralight

@@ -131,6 +131,7 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
   {
     D3D_DRIVER_TYPE_HARDWARE,
     D3D_DRIVER_TYPE_REFERENCE,
+    D3D_DRIVER_TYPE_WARP,
   };
   unsigned numDriverTypes = ARRAYSIZE(driverTypes);
 
@@ -169,6 +170,7 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
   }
   if (FAILED(hr))
   {
+    MessageBoxW(NULL, (LPCWSTR)L"D3D11 Error: Unable to create device and swap chain.", (LPCWSTR)L"D3D11 Error", MB_OK);
     // Unable to create device  & swap chain
     return false;
   }
@@ -178,6 +180,7 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
   hr = swap_chain_->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
   if (FAILED(hr))
   {
+    MessageBoxW(NULL, (LPCWSTR)L"D3D11 Error: Unable to get back buffer.", (LPCWSTR)L"D3D11 Error", MB_OK);
     // Unable get back buffer
     return false;
   }
@@ -186,6 +189,7 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
   pBackBuffer->Release();
   if (FAILED(hr))
   {
+    MessageBoxW(NULL, (LPCWSTR)L"D3D11 Error: Unable to create RenderTargetView.", (LPCWSTR)L"D3D11 Error", MB_OK);
     // Unable create back buffer view
     return false;
   }

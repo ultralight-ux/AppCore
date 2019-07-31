@@ -90,6 +90,7 @@ protected:
   ComPtr<ID3D11Buffer> GetConstantBuffer();
   void SetViewport(float width, float height);
   void UpdateConstantBuffer(const GPUState& state);
+  Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height);
 
   GPUContextD3D11* context_;
   ComPtr<ID3D11InputLayout> vertex_layout_2f_4ub_2f_;
