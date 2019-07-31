@@ -11,16 +11,15 @@
 
 namespace ultralight {
 
-AppWin::AppWin(const AppConfig& config) : config_(config) {
+AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   windows_util_.reset(new WindowsUtil());
   windows_util_->EnableDPIAwareness();
 
   main_monitor_.reset(new MonitorWin(windows_util_.get()));
 
-  Config platform_config;
-  platform_config.device_scale_hint = main_monitor_->scale();
-  platform_config.face_winding = kFaceWinding_Clockwise;
-  Platform::instance().set_config(platform_config);
+  config.device_scale_hint = main_monitor_->scale();
+  config.face_winding = kFaceWinding_Clockwise;
+  Platform::instance().set_config(config);
 
   font_loader_.reset(new FontLoaderWin());
   Platform::instance().set_font_loader(font_loader_.get());
@@ -30,7 +29,7 @@ AppWin::AppWin(const AppConfig& config) : config_(config) {
   GetModuleFileNameW(hModule, path, MAX_PATH);
   PathRemoveFileSpecW(path);
 
-  PathAppendW(path, config.file_system_path.utf16().data());
+  PathAppendW(path, settings_.file_system_path.utf16().data());
 
   file_system_.reset(new FileSystemWin(path));
   Platform::instance().set_file_system(file_system_.get());
@@ -123,8 +122,8 @@ void AppWin::Update() {
 
 static App* g_app_instance = nullptr;
 
-Ref<App> App::Create(const AppConfig& config) {
-  g_app_instance = new AppWin(config);
+Ref<App> App::Create(Settings settings, Config config) {
+  g_app_instance = new AppWin(settings, config);
   return AdoptRef(*g_app_instance);
 }
 

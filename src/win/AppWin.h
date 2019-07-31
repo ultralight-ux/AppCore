@@ -26,7 +26,7 @@ public:
 
   // Inherited from App
 
-  virtual const AppConfig& config() const override { return config_; }
+  virtual const Settings& settings() const override { return settings_; }
 
   virtual void set_listener(AppListener* listener) override { listener_ = listener; }
 
@@ -49,7 +49,7 @@ public:
   REF_COUNTED_IMPL(AppWin);
 
 protected:
-  AppWin(const AppConfig& config);
+  AppWin(Settings settings, Config config);
   virtual ~AppWin();
   void Update();
 
@@ -57,7 +57,7 @@ protected:
   
   DISALLOW_COPY_AND_ASSIGN(AppWin);
 
-  AppConfig config_;
+  Settings settings_;
   bool is_running_ = false;
   AppListener* listener_ = nullptr;
   RefPtr<Renderer> renderer_;
