@@ -1,6 +1,6 @@
 #import "GPUContextMetal.h"
 #import "GPUDriverMetal.h"
-#include "../../../shaders/metal/metal_shader.h"
+#include "../../../shaders/metal/bin/metal_shader.h"
 #import <dispatch/dispatch.h>
 #include <memory>
 
@@ -50,6 +50,22 @@ GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_hei
         exit(-1);
     }
     
+    colorAttachmentDesc.blendingEnabled = false;
+    render_pipeline_state_no_blend_ = [device_ newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
+                                                                              error:&error];
+    if (!render_pipeline_state_no_blend_)
+    {
+        // Pipeline State creation could fail if we haven't properly set up our pipeline descriptor.
+        //  If the Metal API validation is enabled, we can find out more information about what
+        //  went wrong.  (Metal API validation is enabled by default when a debug build is run
+        //  from Xcode)
+        NSLog(@"Failed to create pipeline state (no blend), error %@", error);
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Failed to create pipeline state (no blend)."];
+        [alert runModal];
+        exit(-1);
+    }
+    
     MTLRenderPipelineDescriptor *pathPipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
     pathPipelineStateDescriptor.label = @"Fill Path Pipeline";
     pathPipelineStateDescriptor.vertexFunction = [defaultLibrary newFunctionWithName:@"pathVertexShader"];
@@ -76,6 +92,22 @@ GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_hei
         NSLog(@"Failed to create path pipeline state, error %@", error);
         NSAlert *alert = [[NSAlert alloc] init];
         [alert setMessageText:@"Failed to create path pipeline state."];
+        [alert runModal];
+        exit(-1);
+    }
+    
+    pathColorAttachmentDesc.blendingEnabled = false;
+    path_render_pipeline_state_no_blend_ = [device_ newRenderPipelineStateWithDescriptor:pathPipelineStateDescriptor
+                                                                                   error:&error];
+    if (!path_render_pipeline_state_no_blend_)
+    {
+        // Pipeline State creation could fail if we haven't properly set up our pipeline descriptor.
+        //  If the Metal API validation is enabled, we can find out more information about what
+        //  went wrong.  (Metal API validation is enabled by default when a debug build is run
+        //  from Xcode)
+        NSLog(@"Failed to create path pipeline state (no blend), error %@", error);
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Failed to create path pipeline state (no blend)."];
         [alert runModal];
         exit(-1);
     }

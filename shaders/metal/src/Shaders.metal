@@ -38,13 +38,6 @@ float ScreenHeight(constant Uniforms& u) { return u.State[2]; }
 float ScreenScale(constant Uniforms& u) { return u.State[3]; }
 float Scalar(constant Uniforms& u, uint i) { if (i < 4u) return u.Scalar4[0][i]; else return u.Scalar4[1][i - 4u]; }
 
-float2 ScreenToDeviceCoords(constant Uniforms &u, float2 screen_coord)
-{
-    screen_coord *= 2.0 / float2(ScreenWidth(u), -ScreenHeight(u));
-    screen_coord += float2(-1.0, 1.0);
-    return screen_coord;
-}
-
 // Vertex function
 vertex FragmentInput
 vertexShader(uint vertexID [[vertex_id]],
@@ -54,8 +47,7 @@ vertexShader(uint vertexID [[vertex_id]],
     FragmentInput out;
     
     out.ObjectCoord = vertices[vertexID].ObjCoord;
-    out.ScreenCoord = (uniforms.Transform * float4(vertices[vertexID].Position.xy, 1.0, 1.0)).xy;
-    out.Position = float4(ScreenToDeviceCoords(uniforms, out.ScreenCoord), 1.0, 1.0);
+    out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
     out.Color = float4(vertices[vertexID].Color) / 255.0f;
     out.TexCoord = vertices[vertexID].TexCoord;
     out.Data0 = vertices[vertexID].Data0;
@@ -77,8 +69,7 @@ pathVertexShader(uint vertexID [[vertex_id]],
     PathFragmentInput out;
     
     out.ObjectCoord = vertices[vertexID].ObjCoord;
-    out.ScreenCoord = (uniforms.Transform * float4(vertices[vertexID].Position.xy, 1.0, 1.0)).xy;
-    out.Position = float4(ScreenToDeviceCoords(uniforms, out.ScreenCoord), 1.0, 1.0);
+    out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
     out.Color = float4(vertices[vertexID].Color) / 255.0f;
     
     return out;
@@ -86,14 +77,14 @@ pathVertexShader(uint vertexID [[vertex_id]],
 
 constexpr sampler texSampler(mag_filter::linear, min_filter::linear);
 
-uint FillType(thread FragmentInput& input) { return uint(input.Data0.x); }
+uint FillType(thread FragmentInput& input) { return uint(input.Data0.x + 0.5); }
 float4 TileRectUV(constant Uniforms& u) { return u.Vector[0]; }
 float2 TileSize(constant Uniforms& u) { return u.Vector[1].zw; }
 float2 PatternTransformA(constant Uniforms& u) { return u.Vector[2].xy; }
 float2 PatternTransformB(constant Uniforms& u) { return u.Vector[2].zw; }
 float2 PatternTransformC(constant Uniforms& u) { return u.Vector[3].xy; }
-uint Gradient_NumStops(thread FragmentInput& input) { return uint(input.Data0.y); }
-bool Gradient_IsRadial(thread FragmentInput& input) { return bool(input.Data0.z); }
+uint Gradient_NumStops(thread FragmentInput& input) { return uint(input.Data0.y + 0.5); }
+bool Gradient_IsRadial(thread FragmentInput& input) { return bool(input.Data0.z + 0.5); }
 float Gradient_R0(thread FragmentInput& input) { return input.Data1.x; }
 float Gradient_R1(thread FragmentInput& input) { return input.Data1.y; }
 float2 Gradient_P0(thread FragmentInput& input) { return input.Data1.xy; }
@@ -122,7 +113,7 @@ GradientStop GetGradientStop(thread FragmentInput& input, constant Uniforms& u, 
     return result;
 }
 
-#define AA_WIDTH 0.5
+#define AA_WIDTH 0.354
 
 float antialias(float d, float width, float median) {
     return smoothstep(median - width, median + width, d);
@@ -270,13 +261,28 @@ float4 fillPatternImage(thread FragmentInput& input, constant Uniforms& u, threa
     return float4(tex.sample(texSampler, uv)) * input.Color;
 }
 
+// Gradient noise from Jorge Jimenez's presentation:
+// http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
+float gradientNoise(float2 uv)
+{
+    const float3 magic = float3(0.06711056, 0.00583715, 52.9829189);
+    return fract(magic.z * fract(dot(uv, magic.xy)));
+}
+
+float ramp(float inMin, float inMax, float val)
+{
+    return clamp((val - inMin) / (inMax - inMin), 0.0, 1.0);
+}
+
 float4 fillPatternGradient(thread FragmentInput& input, constant Uniforms& u) {
-    float num_stops = Gradient_NumStops(input);
+    uint num_stops = Gradient_NumStops(input);
     bool is_radial = Gradient_IsRadial(input);
     float r0 = Gradient_R0(input);
     float r1 = Gradient_R1(input);
     float2 p0 = Gradient_P0(input);
     float2 p1 = Gradient_P1(input);
+    
+    float4 col = input.Color;
     
     if (!is_radial) {
         GradientStop stop0 = GetGradientStop(input, u, 0u);
@@ -284,12 +290,33 @@ float4 fillPatternGradient(thread FragmentInput& input, constant Uniforms& u) {
         
         float2 V = p1 - p0;
         float t = dot(input.TexCoord - p0, V) / dot(V, V);
-        t = saturate(t);
-        return mix(stop0.color, stop1.color, t);
+        col = mix(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
+        if (num_stops > 2u) {
+            GradientStop stop2 = GetGradientStop(input, u, 2u);
+            col = mix(col, stop2.color, ramp(stop1.percent, stop2.percent, t));
+            if (num_stops > 3u) {
+                GradientStop stop3 = GetGradientStop(input, u, 3u);
+                col = mix(col, stop3.color, ramp(stop2.percent, stop3.percent, t));
+                if (num_stops > 4u) {
+                    GradientStop stop4 = GetGradientStop(input, u, 4u);
+                    col = mix(col, stop4.color, ramp(stop3.percent, stop4.percent, t));
+                    if (num_stops > 5u) {
+                        GradientStop stop5 = GetGradientStop(input, u, 5u);
+                        col = mix(col, stop5.color, ramp(stop4.percent, stop5.percent, t));
+                        if (num_stops > 6u) {
+                            GradientStop stop6 = GetGradientStop(input, u, 6u);
+                            col = mix(col, stop6.color, ramp(stop5.percent, stop6.percent, t));
+                        }
+                    }
+                }
+            }
+        }
     } else {
         // TODO: Handle radial gradients
-        return input.Color;
     }
+    
+    col += (8.0/255.0) * gradientNoise(input.Position.xy) - (4.0/255.0);
+    return float4(col.rgb * col.a, col.a);
 }
 
 float stroke(float d, float s, float a) {
@@ -535,22 +562,25 @@ float4 fillRoundedRect(thread FragmentInput& input, constant Uniforms& u) {
 
 float4 fillBoxShadow(thread FragmentInput& input) {
     float2 p = input.ObjectCoord;
-    float inset = bool(input.Data0.y)? -1.0 : 1.0;
+    bool inset = bool(uint(input.Data0.y + 0.5));
     float radius = input.Data0.z;
     float2 origin = input.Data1.xy;
     float2 size = input.Data1.zw;
     float2 clip_origin = input.Data4.xy;
     float2 clip_size = input.Data4.zw;
     
-    float clip = inset * sdRoundRect(p - clip_origin, clip_size, input.Data5, input.Data6);
+    float sdClip = sdRoundRect(p - clip_origin, clip_size, input.Data5, input.Data6);
+    float sdRect = sdRoundRect(p - origin, size, input.Data2, input.Data3);
+    
+    float clip = inset ? -sdRect : sdClip;
+    float d = inset ? -sdClip : sdRect;
     
     if (clip < 0.0) {
         return float4(0.0, 0.0, 0.0, 0.0);
     }
     
-    float d = inset * sdRoundRect(p - origin, size, input.Data2, input.Data3);
     float alpha = radius >= 1.0? pow(antialias(-d, radius * 1.2, 0.0), 2.2) * 2.5 / pow(radius, 0.04) :
-    antialias(-d, AA_WIDTH, 1.0);
+    antialias(-d, AA_WIDTH, inset ? -1.0 : 1.0);
     alpha = clamp(alpha, 0.0, 1.0) * input.Color.a;
     return float4(input.Color.rgb * alpha, alpha);
 }

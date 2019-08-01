@@ -1,6 +1,5 @@
 #import "GPUDriverMetal.h"
 #import "GPUContextMetal.h"
-#include "../../../shaders/metal/ShaderTypes.h"
 
 namespace ultralight {
 
@@ -260,10 +259,18 @@ void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
     // Set the region of the drawable to which we'll draw.
     [render_encoder_ setViewport:(MTLViewport){0.0, 0.0, state.viewport_width * context_->scale(), state.viewport_height * context_->scale(), -1.0, 1.0 }];
     
-    if (state.shader_type == kShaderType_Fill)
-        [render_encoder_ setRenderPipelineState:context_->render_pipeline_state()];
-    else
-        [render_encoder_ setRenderPipelineState:context_->path_render_pipeline_state()];
+    if (state.shader_type == kShaderType_Fill) {
+        if (state.enable_blend)
+            [render_encoder_ setRenderPipelineState:context_->render_pipeline_state()];
+        else
+            [render_encoder_ setRenderPipelineState:context_->render_pipeline_state_no_blend()];
+    }
+    else {
+        if (state.enable_blend)
+            [render_encoder_ setRenderPipelineState:context_->path_render_pipeline_state()];
+        else
+            [render_encoder_ setRenderPipelineState:context_->path_render_pipeline_state_no_blend()];
+    }
     
     if (state.texture_1_id)
         BindTexture(0, state.texture_1_id);
@@ -337,9 +344,12 @@ void GPUDriverMetal::EndDrawing() {
 void GPUDriverMetal::SetGPUState(const GPUState& state) {
     uint32_t screen_width, screen_height;
     context_->screen_size(screen_width, screen_height);
+    
+    Matrix model_view_projection = ApplyProjection(state.transform, state.viewport_width, state.viewport_height);
+    
     Uniforms uniforms;
     uniforms.State = { 0.0f, (float)state.viewport_width, (float)state.viewport_height, (float)context_->scale() };
-    uniforms.Transform = ToFloat4x4(state.transform);
+    uniforms.Transform = ToFloat4x4(model_view_projection.GetMatrix4x4());
     uniforms.Scalar4[0] = { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2], state.uniform_scalar[3] };
     uniforms.Scalar4[1] = { state.uniform_scalar[4], state.uniform_scalar[5], state.uniform_scalar[6], state.uniform_scalar[7] };
     uniforms.Vector[0] = ToFloat4(state.uniform_vector[0]);
@@ -362,5 +372,17 @@ void GPUDriverMetal::SetGPUState(const GPUState& state) {
                              length:sizeof(Uniforms)
                             atIndex:FragmentIndex_Uniforms];
 }
+    
+Matrix GPUDriverMetal::ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height) {
+    Matrix transform_mat;
+    transform_mat.Set(transform);
+    
+    Matrix result;
+    result.SetOrthographicProjection(screen_width, screen_height, false);
+    result.Transform(transform_mat);
+    
+    return result;
+}
+
     
 } // namespace ultralight

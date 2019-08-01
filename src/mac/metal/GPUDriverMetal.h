@@ -1,7 +1,7 @@
 #pragma once
 #import <MetalKit/MetalKit.h>
 #import <simd/simd.h>
-#import "../../../shaders/metal/ShaderTypes.h"
+#import "../../../shaders/metal/src/ShaderTypes.h"
 #include <Ultralight/platform/GPUDriver.h>
 #include <map>
 #include <vector>
@@ -97,6 +97,8 @@ protected:
     };
     
     void SetGPUState(const GPUState& state);
+    
+    Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height);
     
     GPUContextMetal* context_;
     

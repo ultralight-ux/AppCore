@@ -10,18 +10,17 @@
 
 namespace ultralight {
 
-AppMac::AppMac() {
+AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   [NSApplication sharedApplication];
     
   AppDelegate *appDelegate = [[AppDelegate alloc] init];
   [NSApp setDelegate:appDelegate];
 
-  Config config;
   config.device_scale_hint = main_monitor_.scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
 
-  file_system_.reset(new FileSystemMac("@resource_path"));
+  file_system_.reset(new FileSystemMac(settings_.file_system_path.utf16()));
   Platform::instance().set_file_system(file_system_.get());
 
   renderer_ = Renderer::Create();
@@ -95,8 +94,8 @@ void AppMac::Update() {
 
 static App* g_app_instance = nullptr;
 
-Ref<App> App::Create() {
-  g_app_instance = (App*)new AppMac();
+Ref<App> App::Create(Settings settings, Config config) {
+  g_app_instance = (App*)new AppMac(settings, config);
   return AdoptRef(*g_app_instance);
 }
 

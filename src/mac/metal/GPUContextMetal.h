@@ -33,6 +33,8 @@ public:
     virtual id<MTLDevice> device() { return device_; }
     virtual id<MTLRenderPipelineState> render_pipeline_state() { return render_pipeline_state_; }
     virtual id<MTLRenderPipelineState> path_render_pipeline_state() { return path_render_pipeline_state_; }
+    virtual id<MTLRenderPipelineState> render_pipeline_state_no_blend() { return render_pipeline_state_no_blend_; }
+    virtual id<MTLRenderPipelineState> path_render_pipeline_state_no_blend() { return path_render_pipeline_state_no_blend_; }
 
     virtual id<MTLCommandBuffer> command_buffer() { return command_buffer_; }
     virtual MTKView* view() { return view_; }
@@ -53,6 +55,8 @@ protected:
     id<MTLDevice> device_;
     id<MTLRenderPipelineState> render_pipeline_state_;
     id<MTLRenderPipelineState> path_render_pipeline_state_;
+    id<MTLRenderPipelineState> render_pipeline_state_no_blend_;
+    id<MTLRenderPipelineState> path_render_pipeline_state_no_blend_;
     id<MTLCommandQueue> command_queue_;
     id<MTLCommandBuffer> command_buffer_;
     MTKView* view_;

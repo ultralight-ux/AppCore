@@ -22,6 +22,8 @@ public:
   virtual void OnResize(uint32_t width, uint32_t height) override;
 
   // Inherited from App
+                   
+  virtual const Settings& settings() const override { return settings_; }
 
   virtual void set_listener(AppListener* listener) override { listener_ = listener; }
 
@@ -46,7 +48,7 @@ public:
   void Update();
 
 protected:
-  AppMac();
+  AppMac(Settings settings, Config config);
   virtual ~AppMac();
 
   friend class App;
@@ -54,6 +56,7 @@ protected:
   DISALLOW_COPY_AND_ASSIGN(AppMac);
 
   bool is_running_ = false;
+  Settings settings_;
   AppListener* listener_ = nullptr;
   RefPtr<Renderer> renderer_;
   RefPtr<Window> window_;
