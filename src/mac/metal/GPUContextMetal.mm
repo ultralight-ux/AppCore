@@ -3,6 +3,10 @@
 #include "../../../shaders/metal/bin/metal_shader.h"
 #import <dispatch/dispatch.h>
 #include <memory>
+#include <AppCore/App.h>
+#include <Ultralight/platform/Platform.h>
+#include <Ultralight/platform/Config.h>
+#include <Ultralight/platform/FileSystem.h>
 
 namespace ultralight {
 
@@ -15,15 +19,52 @@ GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_hei
     
     NSError *error = NULL;
     
+    id<MTLLibrary> library;
+    
     // Load all the shader files with a .metal file extension in the project
     //id<MTLLibrary> defaultLibrary = [device_ newDefaultLibrary];
-    dispatch_data_t data = dispatch_data_create(metal_shader, metal_shader_len, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-    id<MTLLibrary> defaultLibrary = [device_ newLibraryWithData:data error:nil];
+    
+    if (App::instance()->settings().load_shaders_from_file_system) {
+        auto fs = ultralight::Platform::instance().file_system();
+        if (!fs) {
+            NSAlert *alert = [[NSAlert alloc] init];
+            [alert setMessageText:@"Could not load shaders, null FileSystem instance."];
+            [alert runModal];
+            exit(-1);
+        }
+        ultralight::FileHandle handle = fs->OpenFile("shaders/metal/src/Shaders.metal", false);
+        
+        if (handle == ultralight::invalidFileHandle) {
+            NSAlert *alert = [[NSAlert alloc] init];
+            [alert setMessageText:@"Could not load shaders, 'shaders/metal/src/Shaders.metal' not found in FileSystem."];
+            [alert runModal];
+            exit(-1);
+        }
+        
+        int64_t file_size = 0;
+        fs->GetFileSize(handle, file_size);
+        std::unique_ptr<char[]> buffer(new char[file_size]);
+        fs->ReadFromFile(handle, buffer.get(), file_size);
+        fs->CloseFile(handle);
+        
+        NSError* compileError;
+        library = [device_ newLibraryWithSource:[NSString stringWithUTF8String:buffer.get()] options:nil error:&compileError];
+        if (!library) {
+            NSLog(@"Could not compile shader: %@", compileError);
+            NSAlert *alert = [[NSAlert alloc] init];
+            [alert setMessageText:@"Could not compile shader."];
+            [alert runModal];
+            exit(-1);
+        }
+    } else {
+        dispatch_data_t data = dispatch_data_create(metal_shader, metal_shader_len, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+        library = [device_ newLibraryWithData:data error:nil];
+    }
     
     MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
     pipelineStateDescriptor.label = @"Fill Pipeline";
-    pipelineStateDescriptor.vertexFunction = [defaultLibrary newFunctionWithName:@"vertexShader"];
-    pipelineStateDescriptor.fragmentFunction = [defaultLibrary newFunctionWithName:@"fragmentShader"];
+    pipelineStateDescriptor.vertexFunction = [library newFunctionWithName:@"vertexShader"];
+    pipelineStateDescriptor.fragmentFunction = [library newFunctionWithName:@"fragmentShader"];
     pipelineStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
     
     auto colorAttachmentDesc = pipelineStateDescriptor.colorAttachments[0];
@@ -50,8 +91,16 @@ GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_hei
         exit(-1);
     }
     
-    colorAttachmentDesc.blendingEnabled = false;
-    render_pipeline_state_no_blend_ = [device_ newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
+    MTLRenderPipelineDescriptor *pipelineStateNoBlendDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+    pipelineStateNoBlendDescriptor.label = @"Fill Pipeline No Blend";
+    pipelineStateNoBlendDescriptor.vertexFunction = [library newFunctionWithName:@"vertexShader"];
+    pipelineStateNoBlendDescriptor.fragmentFunction = [library newFunctionWithName:@"fragmentShader"];
+    pipelineStateNoBlendDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
+    
+    auto colorAttachmentNoBlendDesc = pipelineStateNoBlendDescriptor.colorAttachments[0];
+    colorAttachmentNoBlendDesc.blendingEnabled = false;
+
+    render_pipeline_state_no_blend_ = [device_ newRenderPipelineStateWithDescriptor:pipelineStateNoBlendDescriptor
                                                                               error:&error];
     if (!render_pipeline_state_no_blend_)
     {
@@ -68,8 +117,8 @@ GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_hei
     
     MTLRenderPipelineDescriptor *pathPipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
     pathPipelineStateDescriptor.label = @"Fill Path Pipeline";
-    pathPipelineStateDescriptor.vertexFunction = [defaultLibrary newFunctionWithName:@"pathVertexShader"];
-    pathPipelineStateDescriptor.fragmentFunction = [defaultLibrary newFunctionWithName:@"pathFragmentShader"];
+    pathPipelineStateDescriptor.vertexFunction = [library newFunctionWithName:@"pathVertexShader"];
+    pathPipelineStateDescriptor.fragmentFunction = [library newFunctionWithName:@"pathFragmentShader"];
     pathPipelineStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
     
     auto pathColorAttachmentDesc = pathPipelineStateDescriptor.colorAttachments[0];
@@ -96,8 +145,16 @@ GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_hei
         exit(-1);
     }
     
-    pathColorAttachmentDesc.blendingEnabled = false;
-    path_render_pipeline_state_no_blend_ = [device_ newRenderPipelineStateWithDescriptor:pathPipelineStateDescriptor
+    MTLRenderPipelineDescriptor *pathPipelineStateNoBlendDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+    pathPipelineStateNoBlendDescriptor.label = @"Fill Path Pipeline No Blend";
+    pathPipelineStateNoBlendDescriptor.vertexFunction = [library newFunctionWithName:@"pathVertexShader"];
+    pathPipelineStateNoBlendDescriptor.fragmentFunction = [library newFunctionWithName:@"pathFragmentShader"];
+    pathPipelineStateNoBlendDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
+    
+    auto pathColorAttachmentNoBlendDesc = pathPipelineStateNoBlendDescriptor.colorAttachments[0];
+    pathColorAttachmentNoBlendDesc.blendingEnabled = false;
+
+    path_render_pipeline_state_no_blend_ = [device_ newRenderPipelineStateWithDescriptor:pathPipelineStateNoBlendDescriptor
                                                                                    error:&error];
     if (!path_render_pipeline_state_no_blend_)
     {
@@ -117,10 +174,13 @@ GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_hei
     
     MTLCaptureManager *sharedCaptureManager = [MTLCaptureManager sharedCaptureManager];
     id<MTLCaptureScope> myCaptureScope = [sharedCaptureManager newCaptureScopeWithDevice:device_];
-    myCaptureScope.label = @"My Capture Scope";
+    myCaptureScope.label = @"Draw Ultralight Frame";
     sharedCaptureManager.defaultCaptureScope = myCaptureScope;
     
     driver_.reset(new ultralight::GPUDriverMetal(this));
+}
+    
+GPUContextMetal::~GPUContextMetal() {
 }
 
 void GPUContextMetal::BeginDrawing() {

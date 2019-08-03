@@ -83,7 +83,7 @@ public:
     
 protected:
     // We triple-buffer vertex/index geometry buffers
-    static const NSUInteger RingBufferSize = 3;
+    static const NSUInteger RingBufferSize = 1;
     
     template <typename T>
     class RingBuffer {
@@ -105,8 +105,7 @@ protected:
     // The render command encoder only exists during rendering
     id<MTLRenderCommandEncoder> render_encoder_;
     uint32_t render_encoder_render_buffer_id_;
-    bool needs_render_buffer_clear_;
-    uint32_t render_buffer_clear_id_;
+    bool main_render_buffer_needs_clear_ = false;
     
     uint32_t next_texture_id_ = 1;
     uint32_t next_render_buffer_id_ = 1; // 0 is reserved for screen
@@ -120,7 +119,12 @@ protected:
     typedef std::map<uint32_t, RingBuffer<Texture>> TextureMap;
     TextureMap textures_;
     
-    typedef std::map<uint32_t, RenderBuffer> RenderBufferMap;
+    struct RenderBufferEntry {
+        RenderBuffer buffer_;
+        bool needs_clear_;
+    };
+    
+    typedef std::map<uint32_t, RenderBufferEntry> RenderBufferMap;
     RenderBufferMap render_buffers_;
     
     struct GeometryBuffer {

@@ -110,7 +110,7 @@ void GPUDriverMetal::DestroyTexture(uint32_t texture_id) {
 
 void GPUDriverMetal::CreateRenderBuffer(uint32_t render_buffer_id,
                                         const RenderBuffer& buffer) {
-    render_buffers_[render_buffer_id] = buffer;
+    render_buffers_[render_buffer_id] = { buffer, true };
 }
 
 void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
@@ -121,25 +121,34 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
     id<MTLTexture> texture;
     MTLClearColor clearColor;
     
+    bool needs_clear = false;
+    
     if (render_buffer_id) {
         auto i = render_buffers_.find(render_buffer_id);
         if (i == render_buffers_.end())
             return;
         
-        auto renderBuffer = i->second;
+        auto renderBuffer = i->second.buffer_;
         auto j = textures_.find(renderBuffer.texture_id);
         if (j == textures_.end())
             return;
         
         texture = j->second.current().texture;
         
-        clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
+        needs_clear = i->second.needs_clear_;
+        //needs_clear = true;
+        clearColor = MTLClearColorMake(0.0, 1.0, 0.0, 1.0);
+        
+        i->second.needs_clear_ = false;
     } else {
         texture = context_->view().currentDrawable.texture;
         uint32_t screen_width, screen_height;
         context_->screen_size(screen_width, screen_height);
         
+        needs_clear = main_render_buffer_needs_clear_;
         clearColor = MTLClearColorMake(1.0, 1.0, 1.0, 1.0);
+        
+        main_render_buffer_needs_clear_ = false;
     }
     
     if (render_encoder_) {
@@ -148,12 +157,10 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
     }
     
     auto renderPassDescriptor = [MTLRenderPassDescriptor new];
-    renderPassDescriptor.colorAttachments[ 0 ].loadAction = (needs_render_buffer_clear_ && render_buffer_clear_id_ == render_buffer_id)? MTLLoadActionClear : MTLLoadActionLoad;
+    renderPassDescriptor.colorAttachments[ 0 ].loadAction = needs_clear? MTLLoadActionClear : MTLLoadActionLoad;
     renderPassDescriptor.colorAttachments[ 0 ].clearColor = clearColor;
     renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionStore;
     renderPassDescriptor.colorAttachments[ 0 ].texture = texture;
-    
-    needs_render_buffer_clear_ = false;
     
     render_encoder_ =
     [context_->command_buffer() renderCommandEncoderWithDescriptor:renderPassDescriptor];
@@ -162,8 +169,14 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
 }
 
 void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id) {
-    needs_render_buffer_clear_ = true;
-    render_buffer_clear_id_ = render_buffer_id;
+    if (render_buffer_id) {
+        auto i = render_buffers_.find(render_buffer_id);
+        if (i == render_buffers_.end())
+            return;
+        i->second.needs_clear_ = true;
+    } else {
+        main_render_buffer_needs_clear_ = true;
+    }
 }
 
 void GPUDriverMetal::DestroyRenderBuffer(uint32_t render_buffer_id) {
@@ -208,8 +221,8 @@ void GPUDriverMetal::UpdateGeometry(uint32_t geometry_id,
     auto& geometry_entry = i->second;
     
     // GPU is running behind, overflowing our ring buffer, wait a bit
-    while (geometry_entry.current().owning_frame_id_ && (geometry_entry.current().owning_frame_id_ - gpu_frame_id_.load() >= (int64_t)RingBufferSize))
-        usleep(1000);
+    //while (geometry_entry.current().owning_frame_id_ && (geometry_entry.current().owning_frame_id_ - gpu_frame_id_.load() >= (int64_t)RingBufferSize))
+     //   usleep(1000);
     
     if (geometry_entry.current().owning_frame_id_ > gpu_frame_id_.load())
         geometry_entry.iterate();

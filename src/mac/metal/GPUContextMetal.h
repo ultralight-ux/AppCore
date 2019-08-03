@@ -12,7 +12,7 @@ class GPUContextMetal {
 public:
     GPUContextMetal(MTKView* view, int screen_width, int screen_height, double screen_scale, bool fullscreen, bool enable_vsync);
     
-    virtual ~GPUContextMetal() {}
+    virtual ~GPUContextMetal();
 
     // Inherited from GPUContext
     virtual ultralight::GPUDriver* driver() const { return (GPUDriver*)driver_.get(); }
