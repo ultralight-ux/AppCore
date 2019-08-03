@@ -112,4 +112,20 @@ if (PORT MATCHES "UltralightMac")
     set_property (TARGET AppCore APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
 endif ()
 
+if(${BUILD_TESTS})
+    add_executable(MiniBrowser WIN32 MACOSX_BUNDLE "tests/MiniBrowser.cpp" ${AppCore_SOURCES})
+
+    if (APPLE)
+      # Enable High-DPI on macOS through our custom Info.plist template
+      set_target_properties(MiniBrowser PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/tests/Info.plist.in") 
+      set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework MetalKit")
+      set_property (TARGET MiniBrowser APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
+    endif()
+
+    if (MSVC)
+      # Tell MSVC to use main instead of WinMain for Windows subsystem executables
+      set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
+    endif()
+endif ()
+
 include(CreateSDK.cmake)
