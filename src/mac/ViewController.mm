@@ -92,6 +92,15 @@
     [_delegate mouseMoved:point.x mouseY:point.y];
 }
 
+- (void)mouseDragged:(NSEvent *)event
+{
+    NSPoint eventLocation = [event locationInWindow];
+    NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+    point.y = self.view.bounds.size.height - point.y;
+    
+    [_delegate mouseMoved:point.x mouseY:point.y];
+}
+
 - (void)mouseDown:(NSEvent *)event
 {
     NSPoint eventLocation = [event locationInWindow];
