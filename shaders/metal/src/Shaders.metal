@@ -4,7 +4,54 @@
 using namespace metal;
 
 // Include header shared between this Metal shader code and C code executing Metal API commands
-#import "ShaderTypes.h"
+#ifndef ShaderTypes_h
+#define ShaderTypes_h
+
+typedef enum VertexIndex
+{
+    VertexIndex_Vertices = 0,
+    VertexIndex_Uniforms = 1,
+    } VertexInputIndex;
+    
+    typedef enum FragmentIndex
+    {
+        FragmentIndex_Uniforms = 0,
+        } FragmentIndex;
+        
+        typedef struct
+        {
+            simd::float4 State;
+            simd::float4x4 Transform;
+            simd::float4 Scalar4[2];
+            simd::float4 Vector[8];
+            unsigned int ClipSize;
+            simd::float4x4 Clip[8];
+        } Uniforms;
+        
+#pragma pack(push, 1)
+        typedef struct
+        {
+            simd::float2 Position;
+            simd::uchar4 Color;
+            simd::float2 TexCoord;
+            simd::float2 ObjCoord;
+            simd::float4 Data0;
+            simd::float4 Data1;
+            simd::float4 Data2;
+            simd::float4 Data3;
+            simd::float4 Data4;
+            simd::float4 Data5;
+            simd::float4 Data6;
+        } Vertex;
+        
+        typedef struct
+        {
+            simd::float2 Position;
+            simd::uchar4 Color;
+            simd::float2 ObjCoord;
+        } PathVertex;
+#pragma pack(pop)
+#endif /* ShaderTypes_h */
 
 // Vertex shader outputs and fragment shader inputs
 typedef struct
@@ -84,7 +131,7 @@ float2 PatternTransformA(constant Uniforms& u) { return u.Vector[2].xy; }
 float2 PatternTransformB(constant Uniforms& u) { return u.Vector[2].zw; }
 float2 PatternTransformC(constant Uniforms& u) { return u.Vector[3].xy; }
 uint Gradient_NumStops(thread FragmentInput& input) { return uint(input.Data0.y + 0.5); }
-bool Gradient_IsRadial(thread FragmentInput& input) { return bool(input.Data0.z + 0.5); }
+bool Gradient_IsRadial(thread FragmentInput& input) { return bool(uint(input.Data0.z + 0.5)); }
 float Gradient_R0(thread FragmentInput& input) { return input.Data1.x; }
 float Gradient_R1(thread FragmentInput& input) { return input.Data1.y; }
 float2 Gradient_P0(thread FragmentInput& input) { return input.Data1.xy; }
@@ -233,6 +280,7 @@ float4 fillSolid(thread FragmentInput& input) {
 float4 fillImage(thread FragmentInput& input, thread texture2d<half>& tex) {
     float4 col = float4(input.Color.rgb * input.Color.a, input.Color.a);
     return float4(tex.sample(texSampler, input.TexCoord)) * col;
+    //return float4(tex.sample(texSampler, input.TexCoord));
 }
 
 float2 transformAffine(float2 val, float2 a, float2 b, float2 c) {
@@ -261,14 +309,6 @@ float4 fillPatternImage(thread FragmentInput& input, constant Uniforms& u, threa
     return float4(tex.sample(texSampler, uv)) * input.Color;
 }
 
-// Gradient noise from Jorge Jimenez's presentation:
-// http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
-float gradientNoise(float2 uv)
-{
-    const float3 magic = float3(0.06711056, 0.00583715, 52.9829189);
-    return fract(magic.z * fract(dot(uv, magic.xy)));
-}
-
 float ramp(float inMin, float inMax, float val)
 {
     return clamp((val - inMin) / (inMax - inMin), 0.0, 1.0);
@@ -290,6 +330,7 @@ float4 fillPatternGradient(thread FragmentInput& input, constant Uniforms& u) {
         
         float2 V = p1 - p0;
         float t = dot(input.TexCoord - p0, V) / dot(V, V);
+        t = saturate(t);
         col = mix(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
         if (num_stops > 2u) {
             GradientStop stop2 = GetGradientStop(input, u, 2u);
@@ -315,7 +356,6 @@ float4 fillPatternGradient(thread FragmentInput& input, constant Uniforms& u) {
         // TODO: Handle radial gradients
     }
     
-    col += (8.0/255.0) * gradientNoise(input.Position.xy) - (4.0/255.0);
     return float4(col.rgb * col.a, col.a);
 }
 
@@ -723,7 +763,7 @@ void applyClip(float2 objCoord, constant Uniforms& u, thread float4& outColor) {
         float2 size = data[0].zw;
         float4 radii_x, radii_y;
         Unpack(data[1], radii_x, radii_y);
-        bool inverse = bool(data[3].z);
+        bool inverse = bool(uint(data[3].z + 0.5));
         
         float2 p = objCoord;
         p = transformAffine(p, data[2].xy, data[2].zw, data[3].xy);
