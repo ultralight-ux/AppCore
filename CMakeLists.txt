@@ -114,6 +114,8 @@ endif ()
 
 if(${BUILD_TESTS})
     add_executable(MiniBrowser WIN32 MACOSX_BUNDLE "tests/MiniBrowser.cpp" ${AppCore_SOURCES})
+    
+    add_dependencies(MiniBrowser UltralightCoreBin WebCoreBin UltralightBin)
 
     if (APPLE)
       # Enable High-DPI on macOS through our custom Info.plist template
