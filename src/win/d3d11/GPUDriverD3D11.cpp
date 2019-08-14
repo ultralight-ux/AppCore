@@ -45,7 +45,8 @@ struct Uniforms {
   DirectX::XMMATRIX Clip[8];
 };
 
-HRESULT CompileShaderFromFile(const char* path, LPCSTR szEntryPoint,
+HRESULT CompileShaderFromSource(const char* source, size_t source_size,
+  const char* source_name, LPCSTR szEntryPoint,
   LPCSTR szShaderModel, ID3DBlob** ppBlobOut) {
   DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
@@ -63,6 +64,18 @@ HRESULT CompileShaderFromFile(const char* path, LPCSTR szEntryPoint,
 
   ComPtr<ID3DBlob> pErrorBlob;
 
+  HRESULT hr = D3DCompile2(source, source_size, source_name, nullptr, nullptr,
+    szEntryPoint, szShaderModel, dwShaderFlags, 0, 0, 0, 0, ppBlobOut,
+    pErrorBlob.GetAddressOf());
+
+  if (FAILED(hr) && pErrorBlob)
+    OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
+
+  return hr;
+}
+
+HRESULT CompileShaderFromFile(const char* path, LPCSTR szEntryPoint,
+  LPCSTR szShaderModel, ID3DBlob** ppBlobOut) {
   auto fs = ultralight::Platform::instance().file_system();
 
   if (!fs) {
@@ -83,14 +96,8 @@ HRESULT CompileShaderFromFile(const char* path, LPCSTR szEntryPoint,
   std::unique_ptr<char[]> buffer(new char[file_size]);
   fs->ReadFromFile(handle, buffer.get(), file_size);
 
-  HRESULT hr = D3DCompile2(buffer.get(), file_size, path, nullptr, nullptr,
-    szEntryPoint, szShaderModel, dwShaderFlags, 0, 0, 0, 0, ppBlobOut,
-    pErrorBlob.GetAddressOf());
-
-  if (FAILED(hr) && pErrorBlob)
-    OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
-
-  return hr;
+  return CompileShaderFromSource(buffer.get(), file_size, path, szEntryPoint,
+    szShaderModel, ppBlobOut);
 }
 
 } // namespace (unnamed)
@@ -418,6 +425,20 @@ void GPUDriverD3D11::DrawGeometry(uint32_t geometry_id,
     context_->EnableBlend();
   else
     context_->DisableBlend();
+
+  if (state.enable_scissor) {
+    context_->EnableScissor();
+    D3D11_RECT scissor_rect = {
+      (LONG)(state.scissor_rect.left * context_->scale()),
+      (LONG)(state.scissor_rect.top * context_->scale()),
+      (LONG)(state.scissor_rect.right * context_->scale()),
+      (LONG)(state.scissor_rect.bottom * context_->scale()) };
+
+    immediate_ctx->RSSetScissorRects(1, &scissor_rect);
+  }
+  else {
+    context_->DisableScissor();
+  }
 
   immediate_ctx->VSSetConstantBuffers(0, 1, constant_buffer_.GetAddressOf());
   immediate_ctx->PSSetConstantBuffers(0, 1, constant_buffer_.GetAddressOf());

@@ -2,6 +2,7 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 #include <stdint.h>
+#include <Ultralight/Geometry.h>
 
 namespace ultralight {
 
@@ -30,6 +31,9 @@ public:
   virtual void EnableBlend();
   virtual void DisableBlend();
 
+  virtual void EnableScissor();
+  virtual void DisableScissor();
+
   // Scale is calculated from monitor DPI, see Application::SetScale
   virtual void set_scale(double scale);
   virtual double scale() const;
@@ -52,6 +56,7 @@ private:
   Microsoft::WRL::ComPtr<ID3D11BlendState> blend_state_;
   Microsoft::WRL::ComPtr<ID3D11BlendState> disabled_blend_state_;
   Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizer_state_;
+  Microsoft::WRL::ComPtr<ID3D11RasterizerState> scissored_rasterizer_state_;
   D3D_FEATURE_LEVEL feature_level_;
   double scale_;
   bool enable_vsync_;

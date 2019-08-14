@@ -127,6 +127,13 @@ if(${BUILD_TESTS})
     if (MSVC)
       # Tell MSVC to use main instead of WinMain for Windows subsystem executables
       set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
+      
+      add_custom_target(CopyDLL ALL
+          COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHTCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
+          COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
+          COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
+          DEPENDS MiniBrowser
+      )
     endif()
 endif ()
 

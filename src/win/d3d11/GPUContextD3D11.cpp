@@ -98,6 +98,14 @@ void GPUContextD3D11::DisableBlend() {
   immediate_context_->OMSetBlendState(disabled_blend_state_.Get(), NULL, 0xffffffff);
 }
 
+void GPUContextD3D11::EnableScissor() {
+  immediate_context_->RSSetState(scissored_rasterizer_state_.Get());
+}
+
+void GPUContextD3D11::DisableScissor() {
+  immediate_context_->RSSetState(rasterizer_state_.Get());
+}
+
 // Scale is calculated from monitor DPI, see Application::SetScale
 void GPUContextD3D11::set_scale(double scale) { scale_ = scale; }
 double GPUContextD3D11::scale() const { return scale_; }
@@ -253,7 +261,22 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
 
   device()->CreateRasterizerState(&rasterizer_desc, rasterizer_state_.GetAddressOf());
 
-  immediate_context_->RSSetState(rasterizer_state_.Get());
+  D3D11_RASTERIZER_DESC scissor_rasterizer_desc;
+  ZeroMemory(&scissor_rasterizer_desc, sizeof(scissor_rasterizer_desc));
+  scissor_rasterizer_desc.FillMode = D3D11_FILL_SOLID;
+  scissor_rasterizer_desc.CullMode = D3D11_CULL_NONE;
+  scissor_rasterizer_desc.FrontCounterClockwise = false;
+  scissor_rasterizer_desc.DepthBias = 0;
+  scissor_rasterizer_desc.SlopeScaledDepthBias = 0.0f;
+  scissor_rasterizer_desc.DepthBiasClamp = 0.0f;
+  scissor_rasterizer_desc.DepthClipEnable = false;
+  scissor_rasterizer_desc.ScissorEnable = true;
+  scissor_rasterizer_desc.MultisampleEnable = false;
+  scissor_rasterizer_desc.AntialiasedLineEnable = false;
+
+  device()->CreateRasterizerState(&scissor_rasterizer_desc, scissored_rasterizer_state_.GetAddressOf());
+
+  DisableScissor();
 
   // Setup the viewport
   D3D11_VIEWPORT vp;
