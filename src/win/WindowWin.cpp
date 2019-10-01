@@ -51,6 +51,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         WINDOWDATA()->cur_btn });
     break;
   case WM_LBUTTONDOWN:
+    SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Left;
     WINDOW()->FireMouseEvent(
       { MouseEvent::kType_MouseDown,
@@ -59,6 +60,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         WINDOWDATA()->cur_btn });
     break;
   case WM_MBUTTONDOWN:
+    SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Middle;
     WINDOW()->FireMouseEvent(
     { MouseEvent::kType_MouseDown,
@@ -67,6 +69,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
       WINDOWDATA()->cur_btn });
     break;
   case WM_RBUTTONDOWN:
+    SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Right;
     WINDOW()->FireMouseEvent(
     { MouseEvent::kType_MouseDown,
@@ -77,6 +80,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
   case WM_LBUTTONUP:
   case WM_MBUTTONUP:
   case WM_RBUTTONUP:
+    ReleaseCapture();
     WINDOW()->FireMouseEvent(
     { MouseEvent::kType_MouseUp,
       WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
