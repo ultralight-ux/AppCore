@@ -53,7 +53,7 @@ void AppWin::set_window(Ref<Window> window) {
   gpu_context_.reset(new GPUContextD3D11());
   WindowWin* win = static_cast<WindowWin*>(window_.get());
   if (!gpu_context_->Initialize(win->hwnd(), win->width(),
-    win->height(), win->scale(), win->is_fullscreen(), true, false, 1)) {
+    win->height(), win->scale(), win->is_fullscreen(), true, true, 1)) {
     MessageBoxW(NULL, (LPCWSTR)L"Failed to initialize D3D11 context", (LPCWSTR)L"Notification", MB_OK);
     exit(-1);
   }
