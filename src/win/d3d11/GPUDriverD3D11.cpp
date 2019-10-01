@@ -127,7 +127,7 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id,
     return;
   }
 
-  if (bitmap->format() != kBitmapFormat_RGBA8) {
+  if (!(bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB || bitmap->format() == kBitmapFormat_A8_UNORM)) {
     MessageBoxW(nullptr,
       L"GPUDriverD3D11::CreateTexture, unsupported format.", L"Error", MB_OK);
   }
@@ -137,7 +137,7 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id,
   desc.Width = bitmap->width();
   desc.Height = bitmap->height();
   desc.MipLevels = desc.ArraySize = 1;
-  desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+  desc.Format = bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_A8_UNORM;
   desc.SampleDesc.Count = 1;
   desc.Usage = D3D11_USAGE_DYNAMIC;
   desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
@@ -151,9 +151,15 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id,
     desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
     desc.Usage = D3D11_USAGE_DEFAULT;
     desc.CPUAccessFlags = 0;
+#if ENABLE_MSAA
+    desc.SampleDesc.Count = 4;
+    desc.SampleDesc.Quality = D3D11_STANDARD_MULTISAMPLE_PATTERN;
+
+    texture_entry.is_msaa_render_target = true;
+#endif
 
     hr = context_->device()->CreateTexture2D(
-      &desc, NULL, texture_entry.first.GetAddressOf());
+      &desc, NULL, texture_entry.texture.GetAddressOf());
   } else {
     D3D11_SUBRESOURCE_DATA tex_data;
     ZeroMemory(&tex_data, sizeof(tex_data));
@@ -162,7 +168,7 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id,
     tex_data.SysMemSlicePitch = (UINT)bitmap->size();
 
     hr = context_->device()->CreateTexture2D(
-      &desc, &tex_data, texture_entry.first.GetAddressOf());
+      &desc, &tex_data, texture_entry.texture.GetAddressOf());
     bitmap->UnlockPixels();
   }
 
@@ -174,26 +180,58 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id,
   D3D11_SHADER_RESOURCE_VIEW_DESC srv_desc;
   ZeroMemory(&srv_desc, sizeof(srv_desc));
   srv_desc.Format = desc.Format;
-  srv_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+  srv_desc.ViewDimension = texture_entry.is_msaa_render_target ?
+    D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
   srv_desc.Texture2D.MostDetailedMip = 0;
   srv_desc.Texture2D.MipLevels = 1;
 
   hr = context_->device()->CreateShaderResourceView(
-    texture_entry.first.Get(), &srv_desc, texture_entry.second.GetAddressOf());
+    texture_entry.texture.Get(), &srv_desc, texture_entry.texture_srv.GetAddressOf());
+
+  if (FAILED(hr)) {
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D11::CreateTexture, unable to create shader resource view for texture.", L"Error", MB_OK);
+  }
+
+#if ENABLE_MSAA
+  if (texture_entry.is_msaa_render_target) {
+    // Create resolve texture and shader resource view
+
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    hr = context_->device()->CreateTexture2D(
+      &desc, NULL, texture_entry.resolve_texture.GetAddressOf());
+
+    if (FAILED(hr)) {
+      MessageBoxW(nullptr,
+        L"GPUDriverD3D11::CreateTexture, unable to create MSAA resolve texture.", L"Error", MB_OK);
+    }
+
+    srv_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+
+    hr = context_->device()->CreateShaderResourceView(
+      texture_entry.resolve_texture.Get(), &srv_desc, texture_entry.resolve_texture_srv.GetAddressOf());
+
+    if (FAILED(hr)) {
+      MessageBoxW(nullptr,
+        L"GPUDriverD3D11::CreateTexture, unable to create shader resource view for MSAA resolve texture.", L"Error", MB_OK);
+    }
+  }
+#endif
 }
 
 void GPUDriverD3D11::UpdateTexture(uint32_t texture_id,
   Ref<Bitmap> bitmap) {
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
-    //MessageBoxW(nullptr,
-     // L"GPUDriverD3D11::UpdateTexture, texture id doesn't exist.", L"Error", MB_OK);
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D11::UpdateTexture, texture id doesn't exist.", L"Error", MB_OK);
     return;
   }
 
   auto& entry = i->second;
   D3D11_MAPPED_SUBRESOURCE res;
-  context_->immediate_context()->Map(entry.first.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0,
+  context_->immediate_context()->Map(entry.texture.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0,
     &res);
 
   if (res.RowPitch == bitmap->row_bytes()) {
@@ -201,34 +239,46 @@ void GPUDriverD3D11::UpdateTexture(uint32_t texture_id,
     bitmap->UnlockPixels();
   }
   else {
-    Ref<Bitmap> mapped_bitmap = Bitmap::Create(bitmap->width(), bitmap->height(), kBitmapFormat_RGBA8,
+    Ref<Bitmap> mapped_bitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format(),
       res.RowPitch, res.pData, res.RowPitch * bitmap->height(), false);
     IntRect dest_rect = { 0, 0, (int)bitmap->width(), (int)bitmap->height() };
     mapped_bitmap->DrawBitmap(dest_rect, dest_rect, bitmap, false);
   }
 
-  context_->immediate_context()->Unmap(entry.first.Get(), 0);
+  context_->immediate_context()->Unmap(entry.texture.Get(), 0);
 }
 
 void GPUDriverD3D11::BindTexture(uint8_t texture_unit,
   uint32_t texture_id) {
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
-    //MessageBoxW(nullptr,
-    //  L"GPUDriverD3D11::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D11::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
     return;
   }
 
   auto& entry = i->second;
-  context_->immediate_context()->PSSetShaderResources(texture_unit, 1, entry.second.GetAddressOf());
+
+  if (entry.is_msaa_render_target) {
+    if (entry.needs_resolve) {
+      context_->immediate_context()->ResolveSubresource(
+        entry.resolve_texture.Get(), 0, entry.texture.Get(), 0,
+        DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
+      entry.needs_resolve = false;
+    }
+
+    context_->immediate_context()->PSSetShaderResources(texture_unit, 1, 
+      entry.resolve_texture_srv.GetAddressOf());
+  }
+  else {
+    context_->immediate_context()->PSSetShaderResources(texture_unit, 1,
+      entry.texture_srv.GetAddressOf());
+  }
 }
 
 void GPUDriverD3D11::DestroyTexture(uint32_t texture_id) {
   auto i = textures_.find(texture_id);
   if (i != textures_.end()) {
-    i->second.first.Reset();
-    i->second.second.Reset();
-
     textures_.erase(i);
   }
 }
@@ -259,13 +309,18 @@ void GPUDriverD3D11::CreateRenderBuffer(uint32_t render_buffer_id,
 
   D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
   ZeroMemory(&renderTargetViewDesc, sizeof(renderTargetViewDesc));
-  renderTargetViewDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+  renderTargetViewDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
   renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+#if ENABLE_MSAA
+  renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+#endif
 
-  ComPtr<ID3D11Texture2D> tex = tex_entry->second.first;
+  ComPtr<ID3D11Texture2D> tex = tex_entry->second.texture;
   auto& render_target_entry = render_targets_[render_buffer_id];
   HRESULT hr = context_->device()->CreateRenderTargetView(tex.Get(), &renderTargetViewDesc,
-    render_target_entry.GetAddressOf());
+    render_target_entry.render_target_view.GetAddressOf());
+
+  render_target_entry.render_target_texture_id = buffer.texture_id;
 
   if (FAILED(hr)) {
     MessageBoxW(nullptr,
@@ -292,7 +347,22 @@ void GPUDriverD3D11::BindRenderBuffer(uint32_t render_buffer_id) {
       return;
     }
 
-    target = i->second.Get();
+    target = i->second.render_target_view.Get();
+
+#if ENABLE_MSAA
+    auto j = textures_.find(i->second.render_target_texture_id);
+    if (j == textures_.end()) {
+      MessageBoxW(nullptr,
+        L"GPUDriverD3D11::BindRenderBuffer, render target texture id doesn't exist.", L"Error", MB_OK);
+      return;
+    }
+
+    // Flag the MSAA render target texture for Resolve when we bind it to
+    // a shader for reading later.
+    if (j->second.is_msaa_render_target) {
+      j->second.needs_resolve = true;
+    }
+#endif
   }
 
   context_->immediate_context()->OMSetRenderTargets(1, &target, nullptr);
@@ -313,13 +383,28 @@ void GPUDriverD3D11::ClearRenderBuffer(uint32_t render_buffer_id) {
     return;
   }
 
-  context_->immediate_context()->ClearRenderTargetView(i->second.Get(), color);
+  context_->immediate_context()->ClearRenderTargetView(i->second.render_target_view.Get(), color);
+
+#if ENABLE_MSAA
+  auto j = textures_.find(i->second.render_target_texture_id);
+  if (j == textures_.end()) {
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D11::ClearRenderBuffer, render target texture id doesn't exist.", L"Error", MB_OK);
+    return;
+  }
+
+  // Flag the MSAA render target texture for Resolve when we bind it to
+  // a shader for reading later.
+  if (j->second.is_msaa_render_target) {
+    j->second.needs_resolve = true;
+  }
+#endif
 }
 
 void GPUDriverD3D11::DestroyRenderBuffer(uint32_t render_buffer_id) {
   auto i = render_targets_.find(render_buffer_id);
   if (i != render_targets_.end()) {
-    i->second.Reset();
+    i->second.render_target_view.Reset();
     render_targets_.erase(i);
   }
 }
@@ -662,6 +747,7 @@ ComPtr<ID3D11SamplerState> GPUDriverD3D11::GetSamplerState() {
   D3D11_SAMPLER_DESC sampler_desc;
   ZeroMemory(&sampler_desc, sizeof(sampler_desc));
   sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+  //sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
   sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
   sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
   sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;

@@ -187,9 +187,31 @@ float4 fillSolid(VS_OUTPUT input) {
   return float4(input.Color.rgb * alpha, alpha);
 }
 
+float4 fillImageSuperSample(VS_OUTPUT input) {
+  float2 dx = ddx(input.TexCoord.xy);
+  float2 dy = ddy(input.TexCoord.xy);
+
+  float mip_bias = 0.0;
+  float2 uvOffsets = float2(0.125, 0.375);
+  float2 offsetUV = float2(0.0, 0.0);
+
+  float4 col = 0;
+  offsetUV.xy = input.TexCoord.xy + uvOffsets.x * dx + uvOffsets.y * dy;
+  col += texture0.SampleBias(sampler0, offsetUV, mip_bias);
+  offsetUV.xy = input.TexCoord.xy - uvOffsets.x * dx - uvOffsets.y * dy;
+  col += texture0.SampleBias(sampler0, offsetUV, mip_bias);
+  offsetUV.xy = input.TexCoord.xy + uvOffsets.y * dx - uvOffsets.x * dy;
+  col += texture0.SampleBias(sampler0, offsetUV, mip_bias);
+  offsetUV.xy = input.TexCoord.xy - uvOffsets.y * dx + uvOffsets.x * dy;
+  col += texture0.SampleBias(sampler0, offsetUV, mip_bias);
+  col *= 0.25;
+
+  return col * input.Color;
+}
+
 float4 fillImage(VS_OUTPUT input) {
-  float4 col = float4(input.Color.rgb * input.Color.a, input.Color.a);
-  return texture0.Sample(sampler0, input.TexCoord) * col;
+  //return fillImageSuperSample(input);
+  return texture0.Sample(sampler0, input.TexCoord) * input.Color;
 }
 
 float2 transformAffine(float2 val, float2 a, float2 b, float2 c) {
@@ -313,7 +335,7 @@ float supersample(in float2 uv) {
 
 float4 fillSDF(VS_OUTPUT input) {
   float a = supersample(input.TexCoord);
-  return float4(input.Color.rgb * a, a);
+  return input.Color * a;
 }
 
 float samp_stroke(in float2 uv, float w, float m, float max_d) {
@@ -343,7 +365,7 @@ float4 fillStrokeSDF(VS_OUTPUT input) {
 #endif
 
   alpha = 1.0 - alpha;
-  return float4(input.Color.rgb * alpha, alpha);
+  return input.Color * alpha;
 }
 
 void Unpack(float4 x, out float4 a, out float4 b) {
@@ -471,13 +493,13 @@ float4 fillBoxDecorations(VS_OUTPUT input) {
 
   float4 color_top, color_right;
   Unpack(input.Data4, color_top, color_right);
-  color_top /= 255.0f;
-  color_right /= 255.0f;
+  color_top /= 65534.0f;
+  color_right /= 65534.0f;
 
   float4 color_bottom, color_left;
   Unpack(input.Data5, color_bottom, color_left);
-  color_bottom /= 255.0f;
-  color_left /= 255.0f;
+  color_bottom /= 65534.0f;
+  color_left /= 65534.0f;
 
   float width = AA_WIDTH;
 
@@ -627,49 +649,67 @@ float3 blendLuminosity(float3 src, float3 dest) {
   return hsl2rgb(float3(baseHSL.r, baseHSL.g, rgb2hsl(src).b));
 }
 
-float4 fillBlend(VS_OUTPUT input) {
-  const uint BlendMode_Normal = 1u;
-  const uint BlendMode_Multiply = 2u;
-  const uint BlendMode_Screen = 3u;
-  const uint BlendMode_Darken = 4u;
-  const uint BlendMode_Lighten = 5u;
-  const uint BlendMode_Overlay = 6u;
-  const uint BlendMode_ColorDodge = 7u;
-  const uint BlendMode_ColorBurn = 8u;
-  const uint BlendMode_HardLight = 9u;
-  const uint BlendMode_SoftLight = 10u;
-  const uint BlendMode_Difference = 11u;
-  const uint BlendMode_Exclusion = 12u;
-  const uint BlendMode_Hue = 13u;
-  const uint BlendMode_Saturation = 14u;
-  const uint BlendMode_Color = 15u;
-  const uint BlendMode_Luminosity = 16u;
-  const uint BlendMode_PlusDarker = 17u;
-  const uint BlendMode_PlusLighter = 18u;
+float4 fillBlend(VS_OUTPUT input) { 
+  const uint BlendOp_Clear = 0u;
+  const uint BlendOp_Source = 1u;
+  const uint BlendOp_Over = 2u;
+  const uint BlendOp_In = 3u;
+  const uint BlendOp_Out = 4u;
+  const uint BlendOp_Atop = 5u;
+  const uint BlendOp_DestOver = 6u;
+  const uint BlendOp_DestIn = 7u;
+  const uint BlendOp_DestOut = 8u;
+  const uint BlendOp_DestAtop = 9u;
+  const uint BlendOp_XOR = 10u;
+  const uint BlendOp_Darken = 11u;
+  const uint BlendOp_Add = 12u;
+  const uint BlendOp_Difference = 13u;
+  const uint BlendOp_Multiply = 14u;
+  const uint BlendOp_Screen = 15u;
+  const uint BlendOp_Overlay = 16u;
+  const uint BlendOp_Lighten = 17u;
+  const uint BlendOp_ColorDodge = 18u;
+  const uint BlendOp_ColorBurn = 19u;
+  const uint BlendOp_HardLight = 20u;
+  const uint BlendOp_SoftLight = 21u;
+  const uint BlendOp_Exclusion = 22u;
+  const uint BlendOp_Hue = 23u;
+  const uint BlendOp_Saturation = 24u;
+  const uint BlendOp_Color = 25u;
+  const uint BlendOp_Luminosity = 26u;
 
   float4 src = fillImage(input);
   float4 dest = texture1.Sample(sampler0, input.ObjectCoord);
 
-  switch(uint(input.Data0.y))
+  switch(uint(input.Data0.y + 0.5))
   {
-  case BlendMode_Normal: return src; 
-  case BlendMode_Multiply: return float4(src.rgb * dest.rgb * src.a, dest.a * src.a);
-  case BlendMode_Screen: return float4((1.0 - ((1.0 - dest.rgb) * (1.0 - src.rgb))) * src.a, dest.a * src.a);
-  case BlendMode_Darken: return float4(min(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Lighten: return float4(max(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Overlay: return float4(blendOverlay(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_ColorDodge: return float4(blendColorDodge(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_ColorBurn: return float4(blendColorBurn(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_HardLight: return float4(blendOverlay(dest.rgb, src.rgb) * src.a, dest.a * src.a);
-  case BlendMode_SoftLight: return float4(blendSoftLight(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Difference: return float4(abs(dest.rgb - src.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Exclusion: return float4((dest.rgb + src.rgb - 2.0 * dest.rgb * src.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Hue: return float4(blendHue(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Saturation: return float4(blendSaturation(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Color: return float4(blendColor(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Luminosity: return float4(blendLuminosity(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_PlusDarker: return src;
-  case BlendMode_PlusLighter: return src;
+  case BlendOp_Clear: return float4(0.0, 0.0, 0.0, 0.0);
+  case BlendOp_Source: return src;
+  case BlendOp_Over: return src + dest * (1.0 - src.a);
+  case BlendOp_In: return src * dest.a;
+  case BlendOp_Out: return src * (1.0 - dest.a);
+  case BlendOp_Atop: return src * dest.a + dest * (1.0 - src.a);
+  case BlendOp_DestOver: return src * (1.0 - dest.a) + dest;
+  case BlendOp_DestIn: return dest * src.a;
+  case BlendOp_DestOut: return dest * (1.0 - src.a);
+  case BlendOp_DestAtop: return src * (1.0 - dest.a) + dest * src.a;
+  case BlendOp_XOR: return saturate(src * (1.0 - dest.a) + dest * (1.0 - src.a));
+  case BlendOp_Darken: return float4(min(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Add: return saturate(src + dest);
+  case BlendOp_Difference: return float4(abs(dest.rgb - src.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Multiply: return float4(src.rgb * dest.rgb * src.a, dest.a * src.a);
+  case BlendOp_Screen: return float4((1.0 - ((1.0 - dest.rgb) * (1.0 - src.rgb))) * src.a, dest.a * src.a);
+  case BlendOp_Overlay: return float4(blendOverlay(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Lighten: return float4(max(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_ColorDodge: return float4(blendColorDodge(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_ColorBurn: return float4(blendColorBurn(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_HardLight: return float4(blendOverlay(dest.rgb, src.rgb) * src.a, dest.a * src.a);
+  case BlendOp_SoftLight: return float4(blendSoftLight(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Exclusion: return float4((dest.rgb + src.rgb - 2.0 * dest.rgb * src.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Hue: return float4(blendHue(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Saturation: return float4(blendSaturation(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Color: return float4(blendColor(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Luminosity: return float4(blendLuminosity(src.rgb, dest.rgb) * src.a, dest.a * src.a);
   }
 
   return src;
@@ -709,6 +749,14 @@ void applyClip(VS_OUTPUT input, inout float4 outColor) {
   }
 }
 
+float4 fillGlyph(VS_OUTPUT input) {
+  float alpha = texture0.Sample(sampler0, input.TexCoord).a * input.Color.a;
+
+  // Transform from 2.2 Gamma to 1.8 Gamma (favored by Adobe and Apple)
+  alpha = pow(alpha, 1.8 / 2.2);
+  return float4(input.Color.rgb * alpha, alpha);
+}
+
 float4 PS(VS_OUTPUT input) : SV_Target
 {
   const uint FillType_Solid = 0u;
@@ -722,6 +770,7 @@ float4 PS(VS_OUTPUT input) : SV_Target
   const uint FillType_Box_Shadow = 8u;
   const uint FillType_Blend = 9u;
   const uint FillType_Mask = 10u;
+  const uint FillType_Glyph = 11u;
 
   float4 outColor = input.Color;
 
@@ -738,6 +787,7 @@ float4 PS(VS_OUTPUT input) : SV_Target
   case FillType_Box_Shadow: outColor = fillBoxShadow(input); break;
   case FillType_Blend: outColor = fillBlend(input); break;
   case FillType_Mask: outColor = fillMask(input); break;
+  case FillType_Glyph: outColor = fillGlyph(input); break;
   }
 
   applyClip(input, outColor);

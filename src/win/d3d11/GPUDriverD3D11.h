@@ -106,11 +106,26 @@ protected:
   typedef std::map<uint32_t, GeometryEntry> GeometryMap;
   GeometryMap geometry_;
 
-  typedef std::pair<ComPtr<ID3D11Texture2D>, ComPtr<ID3D11ShaderResourceView>> TextureEntry;
+  struct TextureEntry { 
+    ComPtr<ID3D11Texture2D> texture;
+    ComPtr<ID3D11ShaderResourceView> texture_srv;
+
+    // These members are only used when MSAA is enabled
+    bool is_msaa_render_target = false;
+    bool needs_resolve = false;
+    ComPtr<ID3D11Texture2D> resolve_texture;
+    ComPtr<ID3D11ShaderResourceView> resolve_texture_srv;
+  };
+
   typedef std::map<uint32_t, TextureEntry> TextureMap;
   TextureMap textures_;
 
-  typedef std::map<uint32_t, ComPtr<ID3D11RenderTargetView>> RenderTargetMap;
+  struct RenderTargetEntry {
+    ComPtr<ID3D11RenderTargetView> render_target_view;
+    uint32_t render_target_texture_id;
+  };
+
+  typedef std::map<uint32_t, RenderTargetEntry> RenderTargetMap;
   RenderTargetMap render_targets_;
 
   typedef std::map<ShaderType, std::pair<ComPtr<ID3D11VertexShader>, ComPtr<ID3D11PixelShader>>> ShaderMap;

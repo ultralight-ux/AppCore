@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <Ultralight/Geometry.h>
 
+#define ENABLE_MSAA 1
+
 namespace ultralight {
 
 class GPUContextD3D11 {

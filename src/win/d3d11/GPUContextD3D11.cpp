@@ -116,6 +116,9 @@ void GPUContextD3D11::screen_size(uint32_t& width, uint32_t& height) { width = w
 
 bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height, double screen_scale, bool fullscreen, bool enable_vsync, bool sRGB, int samples) {
   samples_ = samples;
+#if ENABLE_MSAA
+  samples_ = 4;
+#endif
   enable_vsync_ = enable_vsync;
   set_screen_size(screen_width, screen_height);
   set_scale(screen_scale);
@@ -161,8 +164,10 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
   sd.BufferDesc.RefreshRate.Denominator = 1;
   sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
   sd.OutputWindow = hWnd;
-  sd.SampleDesc.Count = samples_;
-  sd.SampleDesc.Quality = D3D11_STANDARD_MULTISAMPLE_PATTERN;
+  //sd.SampleDesc.Count = samples_;
+  //sd.SampleDesc.Quality = D3D11_STANDARD_MULTISAMPLE_PATTERN;
+  sd.SampleDesc.Count = 1;
+  sd.SampleDesc.Quality = 0;
   sd.Windowed = !fullscreen;
   sd.Flags = fullscreen ? DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH : 0;
 
@@ -256,8 +261,13 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
   rasterizer_desc.DepthBiasClamp = 0.0f;
   rasterizer_desc.DepthClipEnable = false;
   rasterizer_desc.ScissorEnable = false;
+#if ENABLE_MSAA
+  rasterizer_desc.MultisampleEnable = true;
+  rasterizer_desc.AntialiasedLineEnable = true;
+#else
   rasterizer_desc.MultisampleEnable = false;
   rasterizer_desc.AntialiasedLineEnable = false;
+#endif
 
   device()->CreateRasterizerState(&rasterizer_desc, rasterizer_state_.GetAddressOf());
 
@@ -271,8 +281,13 @@ bool GPUContextD3D11::Initialize(HWND hWnd, int screen_width, int screen_height,
   scissor_rasterizer_desc.DepthBiasClamp = 0.0f;
   scissor_rasterizer_desc.DepthClipEnable = false;
   scissor_rasterizer_desc.ScissorEnable = true;
+#if ENABLE_MSAA
+  scissor_rasterizer_desc.MultisampleEnable = true;
+  scissor_rasterizer_desc.AntialiasedLineEnable = true;
+#else
   scissor_rasterizer_desc.MultisampleEnable = false;
   scissor_rasterizer_desc.AntialiasedLineEnable = false;
+#endif
 
   device()->CreateRasterizerState(&scissor_rasterizer_desc, scissored_rasterizer_state_.GetAddressOf());
 
