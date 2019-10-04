@@ -83,7 +83,7 @@ public:
     
 protected:
     // We double-buffer vertex/index geometry buffers
-    static const NSUInteger RingBufferSize = 2;
+    static const NSUInteger RingBufferSize = 1;
     
     template <typename T>
     class RingBuffer {
