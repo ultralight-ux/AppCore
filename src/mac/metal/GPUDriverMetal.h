@@ -82,8 +82,8 @@ public:
     void EndDrawing();
     
 protected:
-    // We triple-buffer vertex/index geometry buffers
-    static const NSUInteger RingBufferSize = 1;
+    // We double-buffer vertex/index geometry buffers
+    static const NSUInteger RingBufferSize = 2;
     
     template <typename T>
     class RingBuffer {
@@ -117,11 +117,11 @@ protected:
     struct Texture {
         id<MTLTexture> texture_;
         id<MTLTexture> resolve_texture_;
-        int64_t owning_frame_id_ = 0;
         bool needs_init_ = true;
     };
     
-    typedef std::map<uint32_t, RingBuffer<Texture>> TextureMap;
+    //typedef std::map<uint32_t, RingBuffer<Texture>> TextureMap;
+    typedef std::map<uint32_t, Texture> TextureMap;
     TextureMap textures_;
     
     typedef std::map<uint32_t, RenderBuffer> RenderBufferMap;

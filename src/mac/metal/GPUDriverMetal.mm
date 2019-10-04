@@ -42,18 +42,18 @@ void GPUDriverMetal::CreateTexture(uint32_t texture_id,
             textureDescriptor.storageMode = MTLStorageModePrivate;
             
             auto& texture_entry = textures_[texture_id];
-            texture_entry.current().texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
+            texture_entry.texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
             
             textureDescriptor.sampleCount = 1;
             textureDescriptor.textureType = MTLTextureType2D;
-            texture_entry.current().resolve_texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
+            texture_entry.resolve_texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
         }
         else {
             textureDescriptor.storageMode = MTLStorageModePrivate;
             textureDescriptor.sampleCount = 1;
             textureDescriptor.textureType = MTLTextureType2D;
             auto& texture_entry = textures_[texture_id];
-            texture_entry.current().texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
+            texture_entry.texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
         }
     } else {
         textureDescriptor.usage = MTLTextureUsageShaderRead;
@@ -61,7 +61,7 @@ void GPUDriverMetal::CreateTexture(uint32_t texture_id,
         textureDescriptor.textureType = MTLTextureType2D;
         
         auto& texture_entry = textures_[texture_id];
-        auto& texture = texture_entry.current().texture_;
+        auto& texture = texture_entry.texture_;
         texture = [context_->device() newTextureWithDescriptor:textureDescriptor];
         
         void* pixels = bitmap->LockPixels();
@@ -94,13 +94,13 @@ void GPUDriverMetal::UpdateTexture(uint32_t texture_id,
     auto& texture_entry = i->second;
     
     // GPU is running behind, overflowing our ring buffer, wait a bit
-    //while (texture_entry.current().owning_frame_id_ && (texture_entry.current().owning_frame_id_ - gpu_frame_id_.load() >= (int64_t)RingBufferSize))
+    //while (texture_entry.owning_frame_id_ && (texture_entry.owning_frame_id_ - gpu_frame_id_.load() >= (int64_t)RingBufferSize))
     //    usleep(1000);
     
-    if (texture_entry.current().owning_frame_id_ > gpu_frame_id_.load())
-        texture_entry.iterate();
+    //if (texture_entry.owning_frame_id_ > gpu_frame_id_.load())
+    //    texture_entry.iterate();
     
-    auto& texture = texture_entry.current().texture_;
+    auto& texture = texture_entry.texture_;
     
     if (!texture) {
         MTLTextureDescriptor *textureDescriptor = [MTLTextureDescriptor
@@ -109,7 +109,7 @@ void GPUDriverMetal::UpdateTexture(uint32_t texture_id,
                                                    height: bitmap->height()
                                                    mipmapped: NO];
         textureDescriptor.usage = bitmap->IsEmpty()? MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead : MTLTextureUsageShaderRead;
-        textures_[texture_id].current().texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
+        textures_[texture_id].texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
     }
     
     if (!bitmap->IsEmpty()) {
@@ -130,7 +130,7 @@ void GPUDriverMetal::BindTexture(uint8_t texture_unit,
         return;
     }
     
-    auto& texture = i->second.current();
+    auto& texture = i->second;
     
     id<MTLTexture> tex;
     // In case this texture is a MSAA render target, make sure that we
@@ -140,7 +140,7 @@ void GPUDriverMetal::BindTexture(uint8_t texture_unit,
     else
         tex = texture.texture_;
     
-    texture.owning_frame_id_ = cpu_frame_id_;
+    //texture.owning_frame_id_ = cpu_frame_id_;
     
     if (render_encoder_)
         [render_encoder_ setFragmentTexture:tex
@@ -180,11 +180,11 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
         if (j == textures_.end())
             return;
         
-        texture = j->second.current().texture_;
-        resolveTexture = j->second.current().resolve_texture_;
+        texture = j->second.texture_;
+        resolveTexture = j->second.resolve_texture_;
         
-        if (j->second.current().needs_init_) {
-            j->second.current().needs_init_ = false;
+        if (j->second.needs_init_) {
+            j->second.needs_init_ = false;
             force_clear = true;
         }
     } else {
@@ -231,9 +231,9 @@ void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id) {
             return;
 
         if (context_->msaa_enabled())
-            resolveTexture = j->second.current().resolve_texture_;
+            resolveTexture = j->second.resolve_texture_;
 
-        texture = j->second.current().texture_;
+        texture = j->second.texture_;
 
         clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
     } else {
@@ -307,8 +307,8 @@ void GPUDriverMetal::UpdateGeometry(uint32_t geometry_id,
     auto& geometry_entry = i->second;
     
     // GPU is running behind, overflowing our ring buffer, wait a bit
-    //while (geometry_entry.current().owning_frame_id_ && (geometry_entry.current().owning_frame_id_ - gpu_frame_id_.load() >= (int64_t)RingBufferSize))
-     //   usleep(1000);
+    while (geometry_entry.current().owning_frame_id_ && (geometry_entry.current().owning_frame_id_ - gpu_frame_id_.load() >= (int64_t)RingBufferSize))
+       usleep(1000);
     
     if (geometry_entry.current().owning_frame_id_ > gpu_frame_id_.load())
         geometry_entry.iterate();
