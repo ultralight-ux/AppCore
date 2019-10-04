@@ -37,9 +37,10 @@
     MTKView* view = [[CustomMTKView alloc] initWithFrame:_initialFrame device:MTLCreateSystemDefaultDevice()];
     
     [view setClearColor:MTLClearColorMake(0, 0, 0, 1)];
-    [view setColorPixelFormat:MTLPixelFormatBGRA8Unorm];
+    [view setColorPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB];
     [view setDepthStencilPixelFormat:MTLPixelFormatDepth32Float];
     [view setAutoResizeDrawable:false];
+    [view setSampleCount:1];
     
     [self setView:view];
 }

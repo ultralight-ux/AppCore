@@ -100,31 +100,31 @@ protected:
     
     Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height);
     
+    void ApplyScissor(const GPUState& state);
+    
     GPUContextMetal* context_;
     
     // The render command encoder only exists during rendering
     id<MTLRenderCommandEncoder> render_encoder_;
     uint32_t render_encoder_render_buffer_id_;
-    bool main_render_buffer_needs_clear_ = false;
+    NSUInteger render_encoder_render_buffer_width_;
+    NSUInteger render_encoder_render_buffer_height_;
     
     uint32_t next_texture_id_ = 1;
     uint32_t next_render_buffer_id_ = 1; // 0 is reserved for screen
     uint32_t next_geometry_id_ = 1;
     
     struct Texture {
-        id<MTLTexture> texture;
+        id<MTLTexture> texture_;
+        id<MTLTexture> resolve_texture_;
         int64_t owning_frame_id_ = 0;
+        bool needs_init_ = true;
     };
     
     typedef std::map<uint32_t, RingBuffer<Texture>> TextureMap;
     TextureMap textures_;
     
-    struct RenderBufferEntry {
-        RenderBuffer buffer_;
-        bool needs_clear_;
-    };
-    
-    typedef std::map<uint32_t, RenderBufferEntry> RenderBufferMap;
+    typedef std::map<uint32_t, RenderBuffer> RenderBufferMap;
     RenderBufferMap render_buffers_;
     
     struct GeometryBuffer {

@@ -3,23 +3,44 @@
 #include "../../../shaders/metal/bin/metal_shader.h"
 #import <dispatch/dispatch.h>
 #include <memory>
+#include <functional>
 #include <AppCore/App.h>
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/Config.h>
 #include <Ultralight/platform/FileSystem.h>
 
 namespace ultralight {
+    
+// Public domain from https://stackoverflow.com/a/27952689
+inline size_t hash_combine( size_t lhs, size_t rhs ) {
+#if defined(__x86_64__)
+    lhs ^= rhs + 0x9e3779b97f4a7c15 + (lhs << 6) + (lhs >> 2);
+#else
+    lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+#endif
+    return lhs;
+}
+    
+RenderState::RenderState() : shader_type(kShaderType_Fill),
+                             blend_enabled(true),
+                             pixel_format(MTLPixelFormatBGRA8Unorm_sRGB),
+                             sample_count(1) {}
 
-GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_height, double screen_scale, bool fullscreen, bool enable_vsync) {
+size_t RenderState::Hash() {
+    size_t result = std::hash<uint32_t>{}((uint32_t)shader_type);
+    result = hash_combine(result, std::hash<bool>{}(blend_enabled));
+    result = hash_combine(result, std::hash<uint32_t>{}((uint32_t)pixel_format));
+    result = hash_combine(result, std::hash<uint32_t>{}((uint32_t)sample_count));
+    return result;
+}
+
+GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_height, double screen_scale, bool fullscreen, bool enable_vsync, bool enable_msaa) {
     device_ = view.device;
     view_ = view;
+    msaa_enabled_ = enable_msaa;
     
     set_screen_size(screen_width, screen_height);
     set_scale(screen_scale);
-    
-    NSError *error = NULL;
-    
-    id<MTLLibrary> library;
     
     // Load all the shader files with a .metal file extension in the project
     //id<MTLLibrary> defaultLibrary = [device_ newDefaultLibrary];
@@ -43,13 +64,14 @@ GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_hei
         
         int64_t file_size = 0;
         fs->GetFileSize(handle, file_size);
-        std::unique_ptr<char[]> buffer(new char[file_size]);
+        std::unique_ptr<char[]> buffer(new char[file_size + 1]);
         fs->ReadFromFile(handle, buffer.get(), file_size);
+        buffer[file_size] = '\0';
         fs->CloseFile(handle);
         
         NSError* compileError;
-        library = [device_ newLibraryWithSource:[NSString stringWithUTF8String:buffer.get()] options:nil error:&compileError];
-        if (!library) {
+        library_ = [device_ newLibraryWithSource:[NSString stringWithUTF8String:buffer.get()] options:nil error:&compileError];
+        if (!library_) {
             NSLog(@"Could not compile shader: %@", compileError);
             NSAlert *alert = [[NSAlert alloc] init];
             [alert setMessageText:@"Could not compile shader."];
@@ -58,115 +80,7 @@ GPUContextMetal::GPUContextMetal(MTKView* view, int screen_width, int screen_hei
         }
     } else {
         dispatch_data_t data = dispatch_data_create(metal_shader, metal_shader_len, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-        library = [device_ newLibraryWithData:data error:nil];
-    }
-    
-    MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-    pipelineStateDescriptor.label = @"Fill Pipeline";
-    pipelineStateDescriptor.vertexFunction = [library newFunctionWithName:@"vertexShader"];
-    pipelineStateDescriptor.fragmentFunction = [library newFunctionWithName:@"fragmentShader"];
-    pipelineStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
-    
-    auto colorAttachmentDesc = pipelineStateDescriptor.colorAttachments[0];
-    colorAttachmentDesc.blendingEnabled = true;
-    colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
-    colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
-    colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorOne;
-    colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-    colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
-    colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorOne;
-    
-    render_pipeline_state_ = [device_ newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
-                                                                     error:&error];
-    if (!render_pipeline_state_)
-    {
-        // Pipeline State creation could fail if we haven't properly set up our pipeline descriptor.
-        //  If the Metal API validation is enabled, we can find out more information about what
-        //  went wrong.  (Metal API validation is enabled by default when a debug build is run
-        //  from Xcode)
-        NSLog(@"Failed to create pipeline state, error %@", error);
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Failed to create pipeline state."];
-        [alert runModal];
-        exit(-1);
-    }
-    
-    MTLRenderPipelineDescriptor *pipelineStateNoBlendDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-    pipelineStateNoBlendDescriptor.label = @"Fill Pipeline No Blend";
-    pipelineStateNoBlendDescriptor.vertexFunction = [library newFunctionWithName:@"vertexShader"];
-    pipelineStateNoBlendDescriptor.fragmentFunction = [library newFunctionWithName:@"fragmentShader"];
-    pipelineStateNoBlendDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
-    
-    auto colorAttachmentNoBlendDesc = pipelineStateNoBlendDescriptor.colorAttachments[0];
-    colorAttachmentNoBlendDesc.blendingEnabled = false;
-
-    render_pipeline_state_no_blend_ = [device_ newRenderPipelineStateWithDescriptor:pipelineStateNoBlendDescriptor
-                                                                              error:&error];
-    if (!render_pipeline_state_no_blend_)
-    {
-        // Pipeline State creation could fail if we haven't properly set up our pipeline descriptor.
-        //  If the Metal API validation is enabled, we can find out more information about what
-        //  went wrong.  (Metal API validation is enabled by default when a debug build is run
-        //  from Xcode)
-        NSLog(@"Failed to create pipeline state (no blend), error %@", error);
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Failed to create pipeline state (no blend)."];
-        [alert runModal];
-        exit(-1);
-    }
-    
-    MTLRenderPipelineDescriptor *pathPipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-    pathPipelineStateDescriptor.label = @"Fill Path Pipeline";
-    pathPipelineStateDescriptor.vertexFunction = [library newFunctionWithName:@"pathVertexShader"];
-    pathPipelineStateDescriptor.fragmentFunction = [library newFunctionWithName:@"pathFragmentShader"];
-    pathPipelineStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
-    
-    auto pathColorAttachmentDesc = pathPipelineStateDescriptor.colorAttachments[0];
-    pathColorAttachmentDesc.blendingEnabled = true;
-    pathColorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
-    pathColorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
-    pathColorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorOne;
-    pathColorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-    pathColorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
-    pathColorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorOne;
-    
-    path_render_pipeline_state_ = [device_ newRenderPipelineStateWithDescriptor:pathPipelineStateDescriptor
-                                                                          error:&error];
-    if (!path_render_pipeline_state_)
-    {
-        // Pipeline State creation could fail if we haven't properly set up our pipeline descriptor.
-        //  If the Metal API validation is enabled, we can find out more information about what
-        //  went wrong.  (Metal API validation is enabled by default when a debug build is run
-        //  from Xcode)
-        NSLog(@"Failed to create path pipeline state, error %@", error);
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Failed to create path pipeline state."];
-        [alert runModal];
-        exit(-1);
-    }
-    
-    MTLRenderPipelineDescriptor *pathPipelineStateNoBlendDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-    pathPipelineStateNoBlendDescriptor.label = @"Fill Path Pipeline No Blend";
-    pathPipelineStateNoBlendDescriptor.vertexFunction = [library newFunctionWithName:@"pathVertexShader"];
-    pathPipelineStateNoBlendDescriptor.fragmentFunction = [library newFunctionWithName:@"pathFragmentShader"];
-    pathPipelineStateNoBlendDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
-    
-    auto pathColorAttachmentNoBlendDesc = pathPipelineStateNoBlendDescriptor.colorAttachments[0];
-    pathColorAttachmentNoBlendDesc.blendingEnabled = false;
-
-    path_render_pipeline_state_no_blend_ = [device_ newRenderPipelineStateWithDescriptor:pathPipelineStateNoBlendDescriptor
-                                                                                   error:&error];
-    if (!path_render_pipeline_state_no_blend_)
-    {
-        // Pipeline State creation could fail if we haven't properly set up our pipeline descriptor.
-        //  If the Metal API validation is enabled, we can find out more information about what
-        //  went wrong.  (Metal API validation is enabled by default when a debug build is run
-        //  from Xcode)
-        NSLog(@"Failed to create path pipeline state (no blend), error %@", error);
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Failed to create path pipeline state (no blend)."];
-        [alert runModal];
-        exit(-1);
+        library_ = [device_ newLibraryWithData:data error:nil];
     }
     
     // Create the command queue
@@ -214,6 +128,63 @@ void GPUContextMetal::PresentFrame() {
     
 void GPUContextMetal::Resize(int width, int height) {
     set_screen_size(width, height);
+}
+    
+id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
+    uint32_t hash = render_state_.Hash();
+    
+    auto i = render_pipeline_states_.find(hash);
+    if (i != render_pipeline_states_.end())
+        return i->second;
+    
+    // RenderPipelineState hasn't yet been created for this RenderState permutation. Create it now.
+        
+    MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+    pipelineStateDescriptor.label = @"Ultralight RenderPipelineState";
+    if (render_state_.shader_type == kShaderType_Fill) {
+        pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"vertexShader"];
+        pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"fragmentShader"];
+    } else if (render_state_.shader_type == kShaderType_FillPath) {
+        pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"pathVertexShader"];
+        pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"pathFragmentShader"];
+    } else {
+        NSLog(@"Failed to create pipeline state, unhandled shader type");
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Failed to create pipeline state, unhandled shader type"];
+        [alert runModal];
+        exit(-1);
+    }
+    
+    pipelineStateDescriptor.sampleCount = render_state_.sample_count;
+    pipelineStateDescriptor.colorAttachments[0].pixelFormat = render_state_.pixel_format;
+    
+    auto colorAttachmentDesc = pipelineStateDescriptor.colorAttachments[0];
+    colorAttachmentDesc.blendingEnabled = render_state_.blend_enabled;
+    colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
+    colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
+    colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorOne;
+    colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+    colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
+    colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorOne;
+    
+    NSError *error = NULL;
+    id<MTLRenderPipelineState> result = [device_ newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
+                                                                                error:&error];
+    if (!result)
+    {
+        // Pipeline State creation could fail if we haven't properly set up our pipeline descriptor.
+        //  If the Metal API validation is enabled, we can find out more information about what
+        //  went wrong.  (Metal API validation is enabled by default when a debug build is run
+        //  from Xcode)
+        NSLog(@"Failed to create pipeline state, error %@", error);
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Failed to create pipeline state."];
+        [alert runModal];
+        exit(-1);
+    }
+    
+    render_pipeline_states_[hash] = result;
+    return result;
 }
     
 }  // namespace ultralight
