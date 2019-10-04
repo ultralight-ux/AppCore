@@ -84,6 +84,7 @@ float ScreenWidth(constant Uniforms& u) { return u.State[1]; }
 float ScreenHeight(constant Uniforms& u) { return u.State[2]; }
 float ScreenScale(constant Uniforms& u) { return u.State[3]; }
 float Scalar(constant Uniforms& u, uint i) { if (i < 4u) return u.Scalar4[0][i]; else return u.Scalar4[1][i - 4u]; }
+float4 sRGBToLinear(float4 val) { return float4(val.xyz * (val.xyz * (val.xyz * 0.305306011 + 0.682171111) + 0.012522878), val.w); }
 
 // Vertex function
 vertex FragmentInput
@@ -95,7 +96,7 @@ vertexShader(uint vertexID [[vertex_id]],
     
     out.ObjectCoord = vertices[vertexID].ObjCoord;
     out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
-    out.Color = float4(vertices[vertexID].Color) / 255.0f;
+    out.Color = sRGBToLinear(float4(vertices[vertexID].Color) / 255.0f);
     out.TexCoord = vertices[vertexID].TexCoord;
     out.Data0 = vertices[vertexID].Data0;
     out.Data1 = vertices[vertexID].Data1;
@@ -117,7 +118,7 @@ pathVertexShader(uint vertexID [[vertex_id]],
     
     out.ObjectCoord = vertices[vertexID].ObjCoord;
     out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
-    out.Color = float4(vertices[vertexID].Color) / 255.0f;
+    out.Color = sRGBToLinear(float4(vertices[vertexID].Color) / 255.0f);
     
     return out;
 }
@@ -278,9 +279,7 @@ float4 fillSolid(thread FragmentInput& input) {
 }
 
 float4 fillImage(thread FragmentInput& input, thread texture2d<half>& tex) {
-    float4 col = float4(input.Color.rgb * input.Color.a, input.Color.a);
-    return float4(tex.sample(texSampler, input.TexCoord)) * col;
-    //return float4(tex.sample(texSampler, input.TexCoord));
+    return float4(tex.sample(texSampler, input.TexCoord)) * input.Color;
 }
 
 float2 transformAffine(float2 val, float2 a, float2 b, float2 c) {
@@ -395,7 +394,7 @@ float supersample(thread texture2d<half>& tex, float2 uv) {
 
 float4 fillSDF(thread FragmentInput& input, thread texture2d<half>& tex) {
     float a = supersample(tex, input.TexCoord);
-    return float4(input.Color.rgb * a, a);
+    return input.Color * a;
 }
 
 float samp_stroke(thread texture2d<half>& tex, float2 uv, float w, float m, float max_d) {
@@ -425,7 +424,7 @@ float4 fillStrokeSDF(thread FragmentInput& input, thread texture2d<half>& tex) {
 #endif
     
     alpha = 1.0 - alpha;
-    return float4(input.Color.rgb * alpha, alpha);
+    return input.Color * alpha;
 }
 
 void Unpack(float4 x, thread float4& a, thread float4& b) {
@@ -543,13 +542,13 @@ float4 fillBoxDecorations(thread FragmentInput& input) {
     
     float4 color_top, color_right;
     Unpack(input.Data4, color_top, color_right);
-    color_top /= 255.0f;
-    color_right /= 255.0f;
+    color_top /= 65534.0f;
+    color_right /= 65534.0f;
     
     float4 color_bottom, color_left;
     Unpack(input.Data5, color_bottom, color_left);
-    color_bottom /= 255.0f;
-    color_left /= 255.0f;
+    color_bottom /= 65534.0f;
+    color_left /= 65534.0f;
     
     float width = AA_WIDTH;
     
@@ -699,48 +698,66 @@ float3 blendLuminosity(float3 src, float3 dest) {
 }
 
 float4 fillBlend(thread FragmentInput& input, thread texture2d<half>& tex0, thread texture2d<half>& tex1) {
-    const uint BlendMode_Normal = 1u;
-    const uint BlendMode_Multiply = 2u;
-    const uint BlendMode_Screen = 3u;
-    const uint BlendMode_Darken = 4u;
-    const uint BlendMode_Lighten = 5u;
-    const uint BlendMode_Overlay = 6u;
-    const uint BlendMode_ColorDodge = 7u;
-    const uint BlendMode_ColorBurn = 8u;
-    const uint BlendMode_HardLight = 9u;
-    const uint BlendMode_SoftLight = 10u;
-    const uint BlendMode_Difference = 11u;
-    const uint BlendMode_Exclusion = 12u;
-    const uint BlendMode_Hue = 13u;
-    const uint BlendMode_Saturation = 14u;
-    const uint BlendMode_Color = 15u;
-    const uint BlendMode_Luminosity = 16u;
-    const uint BlendMode_PlusDarker = 17u;
-    const uint BlendMode_PlusLighter = 18u;
+    const uint BlendOp_Clear = 0u;
+    const uint BlendOp_Source = 1u;
+    const uint BlendOp_Over = 2u;
+    const uint BlendOp_In = 3u;
+    const uint BlendOp_Out = 4u;
+    const uint BlendOp_Atop = 5u;
+    const uint BlendOp_DestOver = 6u;
+    const uint BlendOp_DestIn = 7u;
+    const uint BlendOp_DestOut = 8u;
+    const uint BlendOp_DestAtop = 9u;
+    const uint BlendOp_XOR = 10u;
+    const uint BlendOp_Darken = 11u;
+    const uint BlendOp_Add = 12u;
+    const uint BlendOp_Difference = 13u;
+    const uint BlendOp_Multiply = 14u;
+    const uint BlendOp_Screen = 15u;
+    const uint BlendOp_Overlay = 16u;
+    const uint BlendOp_Lighten = 17u;
+    const uint BlendOp_ColorDodge = 18u;
+    const uint BlendOp_ColorBurn = 19u;
+    const uint BlendOp_HardLight = 20u;
+    const uint BlendOp_SoftLight = 21u;
+    const uint BlendOp_Exclusion = 22u;
+    const uint BlendOp_Hue = 23u;
+    const uint BlendOp_Saturation = 24u;
+    const uint BlendOp_Color = 25u;
+    const uint BlendOp_Luminosity = 26u;
     
     float4 src = fillImage(input, tex0);
     float4 dest = float4(tex1.sample(texSampler, input.ObjectCoord));
     
-    switch(uint(input.Data0.y))
+    switch(uint(input.Data0.y + 0.5))
     {
-        case BlendMode_Normal: return src;
-        case BlendMode_Multiply: return float4(src.rgb * dest.rgb * src.a, dest.a * src.a);
-        case BlendMode_Screen: return float4((1.0 - ((1.0 - dest.rgb) * (1.0 - src.rgb))) * src.a, dest.a * src.a);
-        case BlendMode_Darken: return float4(min(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Lighten: return float4(max(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Overlay: return float4(blendOverlay(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_ColorDodge: return float4(blendColorDodge(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_ColorBurn: return float4(blendColorBurn(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_HardLight: return float4(blendOverlay(dest.rgb, src.rgb) * src.a, dest.a * src.a);
-        case BlendMode_SoftLight: return float4(blendSoftLight(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Difference: return float4(abs(dest.rgb - src.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Exclusion: return float4((dest.rgb + src.rgb - 2.0 * dest.rgb * src.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Hue: return float4(blendHue(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Saturation: return float4(blendSaturation(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Color: return float4(blendColor(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Luminosity: return float4(blendLuminosity(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_PlusDarker: return src;
-        case BlendMode_PlusLighter: return src;
+        case BlendOp_Clear: return float4(0.0, 0.0, 0.0, 0.0);
+        case BlendOp_Source: return src;
+        case BlendOp_Over: return src + dest * (1.0 - src.a);
+        case BlendOp_In: return src * dest.a;
+        case BlendOp_Out: return src * (1.0 - dest.a);
+        case BlendOp_Atop: return src * dest.a + dest * (1.0 - src.a);
+        case BlendOp_DestOver: return src * (1.0 - dest.a) + dest;
+        case BlendOp_DestIn: return dest * src.a;
+        case BlendOp_DestOut: return dest * (1.0 - src.a);
+        case BlendOp_DestAtop: return src * (1.0 - dest.a) + dest * src.a;
+        case BlendOp_XOR: return saturate(src * (1.0 - dest.a) + dest * (1.0 - src.a));
+        case BlendOp_Darken: return float4(min(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Add: return saturate(src + dest);
+        case BlendOp_Difference: return float4(abs(dest.rgb - src.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Multiply: return float4(src.rgb * dest.rgb * src.a, dest.a * src.a);
+        case BlendOp_Screen: return float4((1.0 - ((1.0 - dest.rgb) * (1.0 - src.rgb))) * src.a, dest.a * src.a);
+        case BlendOp_Overlay: return float4(blendOverlay(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Lighten: return float4(max(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_ColorDodge: return float4(blendColorDodge(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_ColorBurn: return float4(blendColorBurn(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_HardLight: return float4(blendOverlay(dest.rgb, src.rgb) * src.a, dest.a * src.a);
+        case BlendOp_SoftLight: return float4(blendSoftLight(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Exclusion: return float4((dest.rgb + src.rgb - 2.0 * dest.rgb * src.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Hue: return float4(blendHue(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Saturation: return float4(blendSaturation(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Color: return float4(blendColor(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Luminosity: return float4(blendLuminosity(src.rgb, dest.rgb) * src.a, dest.a * src.a);
     }
     
     return src;
@@ -750,6 +767,10 @@ float4 fillMask(thread FragmentInput& input, thread texture2d<half>& tex0, threa
     float4 col = fillImage(input, tex0);
     float alpha = float4(tex1.sample(texSampler, input.ObjectCoord)).a;
     return float4(col.rgb * alpha, col.a * alpha);
+}
+        
+float4 fillGlyph(thread FragmentInput& input, thread texture2d<half>& tex) {
+    return float(tex.sample(texSampler, input.TexCoord).a) * input.Color;
 }
 
 //float4 GetCol(float4x4 m, uint i) { return float4(m[0][i], m[1][i], m[2][i], m[3][i]); }
@@ -797,6 +818,7 @@ fragment float4 fragmentShader(FragmentInput input [[stage_in]],
     const uint FillType_Box_Shadow = 8u;
     const uint FillType_Blend = 9u;
     const uint FillType_Mask = 10u;
+    const uint FillType_Glyph = 11u;
     
     float4 outColor = input.Color;
     
@@ -813,6 +835,7 @@ fragment float4 fragmentShader(FragmentInput input [[stage_in]],
         case FillType_Box_Shadow: outColor = fillBoxShadow(input); break;
         case FillType_Blend: outColor = fillBlend(input, tex0, tex1); break;
         case FillType_Mask: outColor = fillMask(input, tex0, tex1); break;
+        case FillType_Glyph: outColor = fillGlyph(input, tex0); break;
     }
     
     applyClip(input.ObjectCoord, uniforms, outColor);
