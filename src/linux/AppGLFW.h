@@ -24,6 +24,8 @@ public:
 
   // Inherited from App
 
+  virtual const Settings& settings() const override { return settings_; }
+
   virtual void set_listener(AppListener* listener) override { listener_ = listener; }
 
   virtual void set_window(Ref<Window> window) override;
@@ -45,7 +47,7 @@ public:
   REF_COUNTED_IMPL(AppGLFW);
 
 protected:
-  AppGLFW();
+  AppGLFW(Settings settings, Config config);
   virtual ~AppGLFW();
   void Update();
 
@@ -55,6 +57,7 @@ protected:
 
   bool is_running_ = false;
   AppListener* listener_ = nullptr;
+  Settings settings_;
   RefPtr<Renderer> renderer_;
   RefPtr<Window> window_;
   std::unique_ptr<MonitorGLFW> main_monitor_;

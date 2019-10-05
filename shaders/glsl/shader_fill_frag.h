@@ -39,14 +39,14 @@ in vec4 ex_Data6;
 // Out Params
 out vec4 out_Color;
 
-uint FillType() { return uint(ex_Data0.x); }
+uint FillType() { return uint(ex_Data0.x + 0.5); }
 vec4 TileRectUV() { return Vector[0]; }
 vec2 TileSize() { return Vector[1].zw; }
 vec2 PatternTransformA() { return Vector[2].xy; }
 vec2 PatternTransformB() { return Vector[2].zw; }
 vec2 PatternTransformC() { return Vector[3].xy; }
-uint Gradient_NumStops() { return uint(ex_Data0.y); }
-bool Gradient_IsRadial() { return bool(ex_Data0.z); }
+uint Gradient_NumStops() { return uint(ex_Data0.y + 0.5); }
+bool Gradient_IsRadial() { return bool(uint(ex_Data0.z + 0.5)); }
 float Gradient_R0() { return ex_Data1.x; }
 float Gradient_R1() { return ex_Data1.y; }
 vec2 Gradient_P0() { return ex_Data1.xy; }
@@ -189,8 +189,7 @@ void fillSolid() {
 }
 
 void fillImage(vec2 uv) {
-  vec4 col = vec4(ex_Color.rgb * ex_Color.a, ex_Color.a);
-  out_Color = texture(Texture1, uv) * col;
+  out_Color = texture(Texture1, uv) * ex_Color;
 }
 
 vec2 transformAffine(vec2 val, vec2 a, vec2 b, vec2 c) {
@@ -270,9 +269,9 @@ void fillPatternGradient() {
   } else {
     // TODO Radial Gradients
   }
-
+  
   // Add gradient noise to reduce banding (+4/-4 gradations)
-  out_Color += (8.0/255.0) * gradientNoise(gl_FragCoord.xy) - (4.0/255.0);
+  //out_Color += (8.0/255.0) * gradientNoise(gl_FragCoord.xy) - (4.0/255.0);
 }
 
 float stroke(float d, float s, float a) {
@@ -312,7 +311,7 @@ float supersample(in vec2 uv) {
 
 void fillSDF() {
   float a = supersample(ex_TexCoord);
-  out_Color = vec4(ex_Color.rgb * a, a);
+  out_Color = ex_Color * a;
 }
 
 float samp_stroke(in vec2 uv, float w, float m, float max_d) {
@@ -342,7 +341,7 @@ void fillStrokeSDF() {
 #endif
 
   alpha = 1.0 - alpha;
-  out_Color = vec4(ex_Color.rgb * alpha, alpha);
+  out_Color = ex_Color * alpha;
 }
 
 void Unpack(vec4 x, out vec4 a, out vec4 b) {
@@ -471,13 +470,13 @@ void fillBoxDecorations() {
 
   vec4 color_top, color_right;
   Unpack(ex_Data4, color_top, color_right);
-  color_top /= 255.0f;
-  color_right /= 255.0f;
+  color_top /= 65534.0f;
+  color_right /= 65534.0f;
 
   vec4 color_bottom, color_left;
   Unpack(ex_Data5, color_bottom, color_left);
-  color_bottom /= 255.0f;
-  color_left /= 255.0f;
+  color_bottom /= 65534.0f;
+  color_left /= 65534.0f;
 
   float width = AA_WIDTH;
 
@@ -526,14 +525,18 @@ void fillRoundedRect() {
 
 void fillBoxShadow() {
   vec2 p = ex_ObjectCoord;
-  float inset = bool(ex_Data0.y)? -1.0 : 1.0;
+  bool inset = bool(uint(ex_Data0.y + 0.5));
   float radius = ex_Data0.z;
   vec2 origin = ex_Data1.xy;
   vec2 size = ex_Data1.zw;
   vec2 clip_origin = ex_Data4.xy;
   vec2 clip_size = ex_Data4.zw;
 
-  float clip = inset * sdRoundRect(p - clip_origin, clip_size, ex_Data5, ex_Data6);
+  float sdClip = sdRoundRect(p - clip_origin, clip_size, ex_Data5, ex_Data6);
+  float sdRect = sdRoundRect(p - origin, size, ex_Data2, ex_Data3);
+
+  float clip = inset ? -sdRect : sdClip;
+  float d = inset ? -sdClip : sdRect;
 
   if (clip < 0.0) {
     discard;
@@ -541,9 +544,8 @@ void fillBoxShadow() {
     return;
   }
   
-  float d = inset * sdRoundRect(p - origin, size, ex_Data2, ex_Data3);
   float alpha = radius >= 1.0? pow(antialias(-d, radius * 1.2, 0.0), 2.2) * 2.5 / pow(radius, 0.04) :
-                               antialias(-d, AA_WIDTH, 1.0);
+                               antialias(-d, AA_WIDTH, inset ? -1.0 : 1.0);
   alpha = clamp(alpha, 0.0, 1.0) * ex_Color.a;
   out_Color = vec4(ex_Color.rgb * alpha, alpha);
   return;
@@ -622,50 +624,72 @@ vec3 blendLuminosity(vec3 src, vec3 dest) {
   return hsl2rgb(vec3(baseHSL.r, baseHSL.g, rgb2hsl(src).b));
 }
 
+vec4 saturate(vec4 val) {
+  return clamp(val, 0.0, 1.0);
+}
+
 vec4 calcBlend() {
-  const uint BlendMode_Normal = 1u;
-  const uint BlendMode_Multiply = 2u;
-  const uint BlendMode_Screen = 3u;
-  const uint BlendMode_Darken = 4u;
-  const uint BlendMode_Lighten = 5u;
-  const uint BlendMode_Overlay = 6u;
-  const uint BlendMode_ColorDodge = 7u;
-  const uint BlendMode_ColorBurn = 8u;
-  const uint BlendMode_HardLight = 9u;
-  const uint BlendMode_SoftLight = 10u;
-  const uint BlendMode_Difference = 11u;
-  const uint BlendMode_Exclusion = 12u;
-  const uint BlendMode_Hue = 13u;
-  const uint BlendMode_Saturation = 14u;
-  const uint BlendMode_Color = 15u;
-  const uint BlendMode_Luminosity = 16u;
-  const uint BlendMode_PlusDarker = 17u;
-  const uint BlendMode_PlusLighter = 18u;
+  const uint BlendOp_Clear = 0u;
+  const uint BlendOp_Source = 1u;
+  const uint BlendOp_Over = 2u;
+  const uint BlendOp_In = 3u;
+  const uint BlendOp_Out = 4u;
+  const uint BlendOp_Atop = 5u;
+  const uint BlendOp_DestOver = 6u;
+  const uint BlendOp_DestIn = 7u;
+  const uint BlendOp_DestOut = 8u;
+  const uint BlendOp_DestAtop = 9u;
+  const uint BlendOp_XOR = 10u;
+  const uint BlendOp_Darken = 11u;
+  const uint BlendOp_Add = 12u;
+  const uint BlendOp_Difference = 13u;
+  const uint BlendOp_Multiply = 14u;
+  const uint BlendOp_Screen = 15u;
+  const uint BlendOp_Overlay = 16u;
+  const uint BlendOp_Lighten = 17u;
+  const uint BlendOp_ColorDodge = 18u;
+  const uint BlendOp_ColorBurn = 19u;
+  const uint BlendOp_HardLight = 20u;
+  const uint BlendOp_SoftLight = 21u;
+  const uint BlendOp_Exclusion = 22u;
+  const uint BlendOp_Hue = 23u;
+  const uint BlendOp_Saturation = 24u;
+  const uint BlendOp_Color = 25u;
+  const uint BlendOp_Luminosity = 26u;
 
   fillImage(ex_TexCoord);
   vec4 src = out_Color;
   vec4 dest = texture(Texture2, ex_ObjectCoord);
 
-  switch(uint(ex_Data0.y))
+  switch(uint(ex_Data0.y + 0.5))
   {
-  case BlendMode_Normal: return src; 
-  case BlendMode_Multiply: return vec4(src.rgb * dest.rgb * src.a, dest.a * src.a);
-  case BlendMode_Screen: return vec4((1.0 - ((1.0 - dest.rgb) * (1.0 - src.rgb))) * src.a, dest.a * src.a);
-  case BlendMode_Darken: return vec4(min(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Lighten: return vec4(max(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Overlay: return vec4(blendOverlay(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_ColorDodge: return vec4(blendColorDodge(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_ColorBurn: return vec4(blendColorBurn(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_HardLight: return vec4(blendOverlay(dest.rgb, src.rgb) * src.a, dest.a * src.a);
-  case BlendMode_SoftLight: return vec4(blendSoftLight(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Difference: return vec4(abs(dest.rgb - src.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Exclusion: return vec4((dest.rgb + src.rgb - 2.0 * dest.rgb * src.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Hue: return vec4(blendHue(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Saturation: return vec4(blendSaturation(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Color: return vec4(blendColor(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_Luminosity: return vec4(blendLuminosity(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-  case BlendMode_PlusDarker: return src;
-  case BlendMode_PlusLighter: return src;
+  case BlendOp_Clear: return vec4(0.0, 0.0, 0.0, 0.0);
+  case BlendOp_Source: return src;
+  case BlendOp_Over: return src + dest * (1.0 - src.a);
+  case BlendOp_In: return src * dest.a;
+  case BlendOp_Out: return src * (1.0 - dest.a);
+  case BlendOp_Atop: return src * dest.a + dest * (1.0 - src.a);
+  case BlendOp_DestOver: return src * (1.0 - dest.a) + dest;
+  case BlendOp_DestIn: return dest * src.a;
+  case BlendOp_DestOut: return dest * (1.0 - src.a);
+  case BlendOp_DestAtop: return src * (1.0 - dest.a) + dest * src.a;
+  case BlendOp_XOR: return saturate(src * (1.0 - dest.a) + dest * (1.0 - src.a));
+  case BlendOp_Darken: return vec4(min(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Add: return saturate(src + dest);
+  case BlendOp_Difference: return vec4(abs(dest.rgb - src.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Multiply: return vec4(src.rgb * dest.rgb * src.a, dest.a * src.a);
+  case BlendOp_Screen: return vec4((1.0 - ((1.0 - dest.rgb) * (1.0 - src.rgb))) * src.a, dest.a * src.a);
+  case BlendOp_Overlay: return vec4(blendOverlay(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Lighten: return vec4(max(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_ColorDodge: return vec4(blendColorDodge(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_ColorBurn: return vec4(blendColorBurn(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_HardLight: return vec4(blendOverlay(dest.rgb, src.rgb) * src.a, dest.a * src.a);
+  case BlendOp_SoftLight: return vec4(blendSoftLight(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Exclusion: return vec4((dest.rgb + src.rgb - 2.0 * dest.rgb * src.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Hue: return vec4(blendHue(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Saturation: return vec4(blendSaturation(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Color: return vec4(blendColor(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+  case BlendOp_Luminosity: return vec4(blendLuminosity(src.rgb, dest.rgb) * src.a, dest.a * src.a);
   }
 
   return src;
@@ -679,6 +703,14 @@ void fillMask() {
   fillImage(ex_TexCoord);
   float alpha = texture(Texture2, ex_ObjectCoord).a;
   out_Color = vec4(out_Color.rgb * alpha, out_Color.a * alpha);
+}
+
+void fillGlyph(vec2 uv) {
+  float alpha = texture(Texture1, uv).r * ex_Color.a;
+
+  // Transform from 2.2 Gamma to 1.8 Gamma (favored by Adobe and Apple)
+  alpha = pow(alpha, 1.8 / 2.2);
+  out_Color = vec4(ex_Color.rgb * alpha, alpha);
 }
 
 void applyClip() {
@@ -715,6 +747,7 @@ void main(void) {
   const uint FillType_Box_Shadow = 8u;
   const uint FillType_Blend = 9u;
   const uint FillType_Mask = 10u;
+  const uint FillType_Glyph = 11u;
 
   switch (FillType())
   {
@@ -729,6 +762,7 @@ void main(void) {
   case FillType_Box_Shadow: fillBoxShadow(); break;
   case FillType_Blend: fillBlend(); break;
   case FillType_Mask: fillMask(); break;
+  case FillType_Glyph: fillGlyph(ex_TexCoord); break;
   }
 
   applyClip();

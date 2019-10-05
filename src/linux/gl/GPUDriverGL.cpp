@@ -147,14 +147,14 @@ void GPUDriverGL::CreateTexture(uint32_t texture_id,
   glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->row_bytes() / bitmap->bpp());
   CHECK_GL();
 
-  if (bitmap->format() == kBitmapFormat_A8) {
+  if (bitmap->format() == kBitmapFormat_A8_UNORM) {
     const void* pixels = bitmap->LockPixels();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, bitmap->width(), bitmap->height(), 0,
       GL_RED, GL_UNSIGNED_BYTE, pixels);
     bitmap->UnlockPixels();
-  } else if (bitmap->format() == kBitmapFormat_RGBA8) {
+  } else if (bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB) {
     const void* pixels = bitmap->LockPixels();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bitmap->width(), bitmap->height(), 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, bitmap->IsEmpty()? GL_RGBA8 : GL_SRGB8_ALPHA8, bitmap->width(), bitmap->height(), 0,
       GL_BGRA, GL_UNSIGNED_BYTE, pixels);
     bitmap->UnlockPixels();
   } else {
@@ -175,14 +175,14 @@ void GPUDriverGL::UpdateTexture(uint32_t texture_id,
   glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->row_bytes() / bitmap->bpp());
 
   if (!bitmap->IsEmpty()) {
-    if (bitmap->format() == kBitmapFormat_A8) {
+    if (bitmap->format() == kBitmapFormat_A8_UNORM) {
       const void* pixels = bitmap->LockPixels();
       glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, bitmap->width(), bitmap->height(), 0,
         GL_RED, GL_UNSIGNED_BYTE, pixels);
       bitmap->UnlockPixels();
-    } else if (bitmap->format() == kBitmapFormat_RGBA8) {
+    } else if (bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB) {
       const void* pixels = bitmap->LockPixels();
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bitmap->width(), bitmap->height(), 0,
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, bitmap->width(), bitmap->height(), 0,
         GL_BGRA, GL_UNSIGNED_BYTE, pixels);
       bitmap->UnlockPixels();
     } else {
@@ -238,6 +238,11 @@ void GPUDriverGL::CreateRenderBuffer(uint32_t render_buffer_id,
 }
 
 void GPUDriverGL::BindRenderBuffer(uint32_t render_buffer_id) {
+  if (render_buffer_id == 0)
+    glEnable(GL_FRAMEBUFFER_SRGB);
+  else
+    glDisable(GL_FRAMEBUFFER_SRGB);
+
   glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_map[render_buffer_id]);
   CHECK_GL();
 }
@@ -369,6 +374,19 @@ void GPUDriverGL::DrawGeometry(uint32_t geometry_id,
   BindTexture(2, state.texture_3_id);
 
   CHECK_GL();
+
+  if (state.enable_scissor) {
+    glEnable(GL_SCISSOR_TEST);
+    const Rect& r = state.scissor_rect;
+    glScissor(r.left * scale_, r.top * scale_, (r.right - r.left) * scale_, (r.bottom - r.top) * scale_);
+  } else {
+    glDisable(GL_SCISSOR_TEST);
+  }
+
+  if (state.enable_blend)
+    glEnable(GL_BLEND);
+  else
+    glDisable(GL_BLEND);
 
   glDrawElements(GL_TRIANGLES, indices_count, GL_UNSIGNED_INT,
     (GLvoid*)(indices_offset * sizeof(unsigned int)));
@@ -517,22 +535,14 @@ void GPUDriverGL::SelectProgram(ProgramType type) {
 }
 
 void GPUDriverGL::UpdateUniforms(const GPUState& state) {
+  bool flip_y = state.render_buffer_id != 0;
+  Matrix model_view_projection = ApplyProjection(state.transform, state.viewport_width, state.viewport_height, flip_y);
+
   float params[4] = { (float)(glfwGetTime() / 1000.0), state.viewport_width, state.viewport_height, scale_ };
   SetUniform4f("State", params);
   CHECK_GL();
-  if (state.render_buffer_id == 0) {
-    // Anything drawn to screen needs to be flipped vertically to compensate for
-    // flipping in vertex shader.
-    ultralight::Matrix4x4 mat = state.transform;
-    mat.data[4] *= -1.0;
-    mat.data[5] *= -1.0;
-    mat.data[12] += -state.viewport_height * mat.data[4];
-    mat.data[13] += -state.viewport_height * mat.data[5];
-    SetUniformMatrix4fv("Transform", 1, &mat.data[0]);
-  }
-  else {
-    SetUniformMatrix4fv("Transform", 1, &state.transform.data[0]);
-  }
+  ultralight::Matrix4x4 mat = model_view_projection.GetMatrix4x4();
+  SetUniformMatrix4fv("Transform", 1, mat.data);
   CHECK_GL();
   SetUniform4fv("Scalar4", 2, &state.uniform_scalar[0]);
   CHECK_GL();
@@ -571,6 +581,17 @@ void GPUDriverGL::SetUniformMatrix4fv(const char* name, size_t count, const floa
 void GPUDriverGL::SetViewport(float width, float height) {
   glViewport(0, 0, static_cast<GLsizei>(width * scale_),
                    static_cast<GLsizei>(height * scale_));
+}
+
+Matrix GPUDriverGL::ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height, bool flip_y) {
+  Matrix transform_mat;
+  transform_mat.Set(transform);
+
+  Matrix result;
+  result.SetOrthographicProjection(screen_width, screen_height, flip_y);
+  result.Transform(transform_mat);
+
+  return result;
 }
 
 }  // namespace ultralight

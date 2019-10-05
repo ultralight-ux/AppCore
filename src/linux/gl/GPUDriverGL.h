@@ -84,6 +84,8 @@ public:
   void SetUniformMatrix4fv(const char* name, size_t count, const float* val);
   void SetViewport(float width, float height);
 
+  Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height, bool flip_y);
+
 protected:
   std::map<int, GLuint> texture_map;
   uint32_t next_texture_id_ = 1;

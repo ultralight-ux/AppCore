@@ -20,7 +20,7 @@ static void GLFW_error_callback(int error, const char* description)
 
 namespace ultralight {
 
-AppGLFW::AppGLFW() {
+AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
   glfwSetErrorCallback(GLFW_error_callback);
 
   if (!glfwInit())
@@ -28,7 +28,6 @@ AppGLFW::AppGLFW() {
 
   main_monitor_.reset(new MonitorGLFW());
 
-  Config config;
   config.device_scale_hint = main_monitor_->scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
@@ -114,8 +113,8 @@ void AppGLFW::Update() {
 
 static App* g_app_instance = nullptr;
 
-Ref<App> App::Create() {
-  g_app_instance = new AppGLFW();
+Ref<App> App::Create(Settings settings, Config config) {
+  g_app_instance = new AppGLFW(settings, config);
   return AdoptRef(*g_app_instance);
 }
 

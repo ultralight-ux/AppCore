@@ -12,7 +12,7 @@ class Overlay;
 class OverlayManager {
 public:
   OverlayManager();
-  ~OverlayManager();
+  virtual ~OverlayManager();
 
   virtual void Add(Overlay* overlay);
 
