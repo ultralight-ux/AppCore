@@ -39,6 +39,7 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
 }
 
 AppGLFW::~AppGLFW() {
+  window_ = nullptr;
   glfwTerminate();
 }
 
@@ -81,8 +82,6 @@ void AppGLFW::Run() {
     Update();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
-
-  glfwTerminate();
 }
 
 void AppGLFW::Quit() {
