@@ -1,4 +1,5 @@
 #include "GPUDriverGL.h"
+#include "GPUContextGL.h"
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/FileSystem.h>
 #include <iostream>
@@ -121,20 +122,17 @@ static GLuint LoadShaderFromFile(GLenum shader_type, const char* filename) {
 
 namespace ultralight {
 
-GPUDriverGL::GPUDriverGL(GLfloat scale) :
-  scale_(scale) {
+GPUDriverGL::GPUDriverGL(GPUContextGL* context) : context_(context) {
   // Render Buffer ID 0 is reserved for the screen
-  frame_buffer_map[0] = 0;
+  render_buffer_map[0].fbo_id = 0;
 }
 
 void GPUDriverGL::CreateTexture(uint32_t texture_id,
   Ref<Bitmap> bitmap) {
-  GLuint tex_id;
-  glGenTextures(1, &tex_id);
-  texture_map[texture_id] = tex_id;
-
-  glActiveTexture(GL_TEXTURE0 + 0);
-  glBindTexture(GL_TEXTURE_2D, tex_id);
+  if (bitmap->IsEmpty()) {
+    CreateFBOTexture(texture_id, bitmap);
+    return;
+  }
 
   CHECK_GL();
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -143,10 +141,15 @@ void GPUDriverGL::CreateTexture(uint32_t texture_id,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   CHECK_GL();
+
+  TextureEntry& entry = texture_map[texture_id];
+  glGenTextures(1, &entry.tex_id);
+  glActiveTexture(GL_TEXTURE0 + 0);
+  glBindTexture(GL_TEXTURE_2D, entry.tex_id);
+  CHECK_GL();
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->row_bytes() / bitmap->bpp());
   CHECK_GL();
-
   if (bitmap->format() == kBitmapFormat_A8_UNORM) {
     const void* pixels = bitmap->LockPixels();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, bitmap->width(), bitmap->height(), 0,
@@ -169,7 +172,8 @@ void GPUDriverGL::CreateTexture(uint32_t texture_id,
 void GPUDriverGL::UpdateTexture(uint32_t texture_id,
   Ref<Bitmap> bitmap) {
   glActiveTexture(GL_TEXTURE0 + 0);
-  glBindTexture(GL_TEXTURE_2D, texture_map[texture_id]);
+  TextureEntry& entry = texture_map[texture_id];
+  glBindTexture(GL_TEXTURE_2D, entry.tex_id);
   CHECK_GL();
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->row_bytes() / bitmap->bpp());
@@ -198,13 +202,15 @@ void GPUDriverGL::UpdateTexture(uint32_t texture_id,
 
 void GPUDriverGL::BindTexture(uint8_t texture_unit, uint32_t texture_id) {
   glActiveTexture(GL_TEXTURE0 + texture_unit);
-  glBindTexture(GL_TEXTURE_2D, texture_map[texture_id]);
-  CHECK_GL();
+  BindUltralightTexture(texture_id);
 }
 
 void GPUDriverGL::DestroyTexture(uint32_t texture_id) {
-  GLuint tex_id = texture_map[texture_id];
-  glDeleteTextures(1, &tex_id);
+  TextureEntry& entry = texture_map[texture_id];
+  glDeleteTextures(1, &entry.tex_id);
+
+  if (entry.msaa_tex_id)
+    glDeleteTextures(1, &entry.msaa_tex_id);
 }
 
 void GPUDriverGL::CreateRenderBuffer(uint32_t render_buffer_id,
@@ -214,17 +220,18 @@ void GPUDriverGL::CreateRenderBuffer(uint32_t render_buffer_id,
     return;
   }
 
-  GLuint frame_buffer_id = 0;
-  glGenFramebuffers(1, &frame_buffer_id);
+  RenderBufferEntry& entry = render_buffer_map[render_buffer_id];
+  glGenFramebuffers(1, &entry.fbo_id);
   CHECK_GL();
-  frame_buffer_map[render_buffer_id] = frame_buffer_id;
-  glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_id);
+  glBindFramebuffer(GL_FRAMEBUFFER, entry.fbo_id);
   CHECK_GL();
 
-  GLuint rbuf_texture_id = texture_map[buffer.texture_id];
-  glBindTexture(GL_TEXTURE_2D, rbuf_texture_id);
+  TextureEntry& textureEntry = texture_map[buffer.texture_id];
+  textureEntry.render_buffer_id = render_buffer_id;
+
+  glBindTexture(GL_TEXTURE_2D, textureEntry.tex_id);
   CHECK_GL();
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rbuf_texture_id, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureEntry.tex_id, 0);
   CHECK_GL();
 
   GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
@@ -233,17 +240,52 @@ void GPUDriverGL::CreateRenderBuffer(uint32_t render_buffer_id,
 
   GLenum result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (result != GL_FRAMEBUFFER_COMPLETE)
-    FATAL("Error creating FBO: " << result);
+    FATAL("Error creating FBO, this usually fails if your DPI scale is invalid or View dimensions are massive: " << result);
+  CHECK_GL();
+
+  if (!context_->msaa_enabled())
+    return;
+
+  // Create MSAA FBO
+  glGenFramebuffers(1, &entry.msaa_fbo_id);
+  CHECK_GL();
+  glBindFramebuffer(GL_FRAMEBUFFER, entry.msaa_fbo_id);
+  CHECK_GL();
+
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, textureEntry.msaa_tex_id);
+  CHECK_GL();
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, textureEntry.msaa_tex_id, 0);
+  CHECK_GL();
+
+  glDrawBuffers(1, drawBuffers);
+  CHECK_GL();
+
+  result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  if (result != GL_FRAMEBUFFER_COMPLETE)
+    FATAL("Error creating MSAA FBO, this usually fails if your DPI scale is invalid or View dimensions are massive: " << result);
   CHECK_GL();
 }
 
 void GPUDriverGL::BindRenderBuffer(uint32_t render_buffer_id) {
+  // All FBOs are in linear gamma, we need to convert the final framebuffer
+  // to sRGB before presenting on screen. Enable sRGB conversion if we are
+  // binding the main render buffer (id == 0)
   if (render_buffer_id == 0)
     glEnable(GL_FRAMEBUFFER_SRGB);
   else
     glDisable(GL_FRAMEBUFFER_SRGB);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_map[render_buffer_id]);
+  RenderBufferEntry& entry = render_buffer_map[render_buffer_id];
+
+  if (context_->msaa_enabled()) {
+    // We use the MSAA FBO when doing multisampled rendering.
+    // The other FBO (entry.fbo_id) is used for resolving.
+    glBindFramebuffer(GL_FRAMEBUFFER, entry.msaa_fbo_id);
+    entry.needs_resolve = true;
+  } else {
+    glBindFramebuffer(GL_FRAMEBUFFER, entry.fbo_id);
+  }
+
   CHECK_GL();
 }
 
@@ -260,10 +302,11 @@ void GPUDriverGL::ClearRenderBuffer(uint32_t render_buffer_id) {
 void GPUDriverGL::DestroyRenderBuffer(uint32_t render_buffer_id) {
   if (render_buffer_id == 0)
     return;
-  GLuint framebuffer_id = frame_buffer_map[render_buffer_id];
-  glDeleteFramebuffers(1, &framebuffer_id);
+  RenderBufferEntry& entry = render_buffer_map[render_buffer_id];
+  glDeleteFramebuffers(1, &entry.fbo_id);
+  if (context_->msaa_enabled())
+    glDeleteFramebuffers(1, &entry.msaa_fbo_id);
 }
-
 
 void GPUDriverGL::CreateGeometry(uint32_t geometry_id,
   const VertexBuffer& vertices,
@@ -378,7 +421,8 @@ void GPUDriverGL::DrawGeometry(uint32_t geometry_id,
   if (state.enable_scissor) {
     glEnable(GL_SCISSOR_TEST);
     const Rect& r = state.scissor_rect;
-    glScissor(r.left * scale_, r.top * scale_, (r.right - r.left) * scale_, (r.bottom - r.top) * scale_);
+    float scale = context_->scale();
+    glScissor(r.left * scale, r.top * scale, (r.right - r.left) * scale, (r.bottom - r.top) * scale);
   } else {
     glDisable(GL_SCISSOR_TEST);
   }
@@ -450,8 +494,28 @@ void GPUDriverGL::DrawCommandList() {
 }
 
 void GPUDriverGL::BindUltralightTexture(uint32_t ultralight_texture_id) {
-  GLuint tex_id = texture_map[ultralight_texture_id];
-  glBindTexture(GL_TEXTURE_2D, tex_id);
+  TextureEntry& entry = texture_map[ultralight_texture_id];
+  if (context_->msaa_enabled() && entry.render_buffer_id) {
+    RenderBufferEntry& renderBufferEntry = render_buffer_map[entry.render_buffer_id];
+    if (renderBufferEntry.needs_resolve) {
+      GLint drawFboId = 0, readFboId = 0;
+      glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+      glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
+      CHECK_GL();
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, renderBufferEntry.fbo_id);
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, renderBufferEntry.msaa_fbo_id);
+      CHECK_GL();
+      glBlitFramebuffer(0, 0, entry.width, entry.height, 0, 0, entry.width, entry.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      CHECK_GL();
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFboId);
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, readFboId);
+
+      renderBufferEntry.needs_resolve = false;
+    }
+  }
+
+  glBindTexture(GL_TEXTURE_2D, entry.tex_id);
+  CHECK_GL();
 }
 
 void GPUDriverGL::LoadPrograms(void) {
@@ -538,7 +602,7 @@ void GPUDriverGL::UpdateUniforms(const GPUState& state) {
   bool flip_y = state.render_buffer_id != 0;
   Matrix model_view_projection = ApplyProjection(state.transform, state.viewport_width, state.viewport_height, flip_y);
 
-  float params[4] = { (float)(glfwGetTime() / 1000.0), state.viewport_width, state.viewport_height, scale_ };
+  float params[4] = { (float)(glfwGetTime() / 1000.0), state.viewport_width, state.viewport_height, context_->scale() };
   SetUniform4f("State", params);
   CHECK_GL();
   ultralight::Matrix4x4 mat = model_view_projection.GetMatrix4x4();
@@ -579,8 +643,8 @@ void GPUDriverGL::SetUniformMatrix4fv(const char* name, size_t count, const floa
 }
 
 void GPUDriverGL::SetViewport(float width, float height) {
-  glViewport(0, 0, static_cast<GLsizei>(width * scale_),
-                   static_cast<GLsizei>(height * scale_));
+  glViewport(0, 0, static_cast<GLsizei>(width * context_->scale()),
+                   static_cast<GLsizei>(height * context_->scale()));
 }
 
 Matrix GPUDriverGL::ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height, bool flip_y) {
@@ -593,5 +657,42 @@ Matrix GPUDriverGL::ApplyProjection(const Matrix4x4& transform, float screen_wid
 
   return result;
 }
+
+void GPUDriverGL::CreateFBOTexture(uint32_t texture_id, Ref<Bitmap> bitmap) {
+  CHECK_GL();
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  CHECK_GL();
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  CHECK_GL();
+
+  TextureEntry& entry = texture_map[texture_id];
+  entry.width = bitmap->width();
+  entry.height = bitmap->height();
+
+  // Allocate a single-sampled texture
+  glGenTextures(1, &entry.tex_id);
+  glActiveTexture(GL_TEXTURE0 + 0);
+  glBindTexture(GL_TEXTURE_2D, entry.tex_id);
+  
+  // Allocate texture in linear space.
+  // We will convert back to sRGB for monitor when binding renderbuffer 0
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, entry.width, entry.height, 0,
+    GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+
+  if (context_->msaa_enabled()) {
+    // Allocate the multisampled texture
+    glGenTextures(1, &entry.msaa_tex_id);
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, entry.msaa_tex_id);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, entry.width, entry.height, false);
+  }
+
+  CHECK_GL();
+  glGenerateMipmap(GL_TEXTURE_2D);
+  CHECK_GL();
+}
+
 
 }  // namespace ultralight

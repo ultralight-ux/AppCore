@@ -706,11 +706,11 @@ void fillMask() {
 }
 
 void fillGlyph(vec2 uv) {
-  float alpha = texture(Texture1, uv).r * ex_Color.a;
+  float alpha = texture(Texture1, uv).r;
 
   // Transform from 2.2 Gamma to 1.8 Gamma (favored by Adobe and Apple)
   alpha = pow(alpha, 1.8 / 2.2);
-  out_Color = vec4(ex_Color.rgb * alpha, alpha);
+  out_Color = ex_Color * alpha;
 }
 
 void applyClip() {

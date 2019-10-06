@@ -8,10 +8,11 @@
 namespace ultralight {
 
 typedef ShaderType ProgramType;
+class GPUContextGL;
 
 class GPUDriverGL : public GPUDriver {
 public:
-  GPUDriverGL(GLfloat scale);
+  GPUDriverGL(GPUContextGL* context);
 
   virtual ~GPUDriverGL() { }
 
@@ -87,7 +88,18 @@ public:
   Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height, bool flip_y);
 
 protected:
-  std::map<int, GLuint> texture_map;
+  void CreateFBOTexture(uint32_t texture_id, Ref<Bitmap> bitmap);
+
+  struct TextureEntry {
+    GLuint tex_id = 0; // GL Texture ID
+    GLuint msaa_tex_id = 0; // GL Texture ID (only used if MSAA is enabled)
+    uint32_t render_buffer_id = 0; // Used to check if we need to perform MSAA resolve
+    GLuint width, height; // Used when resolving MSAA FBO, only valid if FBO
+  };
+
+  // Maps Ultralight Texture IDs to OpenGL texture handles
+  std::map<uint32_t, TextureEntry> texture_map;
+  
   uint32_t next_texture_id_ = 1;
   uint32_t next_render_buffer_id_ = 1; // 0 is reserved for default render buffer
   uint32_t next_geometry_id_ = 1;
@@ -97,9 +109,15 @@ protected:
     GLuint vbo_vertices; // VBO id for vertices
     GLuint vbo_indices; // VBO id for indices
   };
-  std::map<int, GeometryEntry> geometry_map;
+  std::map<uint32_t, GeometryEntry> geometry_map;
 
-  std::map<int, GLuint> frame_buffer_map;
+  struct RenderBufferEntry {
+    GLuint fbo_id = 0; // GL FBO ID (if MSAA is enabled, this will be used for resolve)
+    GLuint msaa_fbo_id = 0; // GL FBO ID for MSAA
+    bool needs_resolve = false; // Whether or not we need to perform MSAA resolve
+  };
+
+  std::map<uint32_t, RenderBufferEntry> render_buffer_map;
 
   struct ProgramEntry {
     GLuint program_id;
@@ -111,7 +129,7 @@ protected:
 
   std::vector<Command> command_list;
   int batch_count_;
-  GLfloat scale_;
+  GPUContextGL* context_;
 };
 
 }  // namespace ultralight

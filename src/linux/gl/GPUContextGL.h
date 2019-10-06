@@ -11,8 +11,10 @@ class GPUContextGL {
 protected:
   std::unique_ptr<ultralight::GPUDriver> driver_;
   GLFWwindow* window_;
+  float scale_;
+  bool msaa_enabled_;
 public:
-  GPUContextGL(GLFWwindow* window, float scale, bool enable_vsync);
+  GPUContextGL(GLFWwindow* window, float scale, bool enable_vsync, bool enable_msaa);
 
   virtual ~GPUContextGL() {}
 
@@ -28,6 +30,10 @@ public:
   virtual void PresentFrame();
 
   virtual void Resize(int width, int height);
+
+  virtual bool msaa_enabled() const { return msaa_enabled_; }
+
+  virtual float scale() const { return scale_; }
 };
 
 }  // namespace ultralight
