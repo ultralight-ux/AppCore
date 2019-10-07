@@ -14,7 +14,7 @@ endif ()
 
 set(ULTRALIGHTCORE_REV "970d073")
 set(WEBCORE_REV "3382307")
-set(ULTRALIGHT_REV "48ddfe3")
+set(ULTRALIGHT_REV "c8ded3f")
 
 set(ULTRALIGHTCORE_DIR "${CMAKE_SOURCE_DIR}/deps/UltralightCore/")
 set(WEBCORE_DIR "${CMAKE_SOURCE_DIR}/deps/WebCore/")
