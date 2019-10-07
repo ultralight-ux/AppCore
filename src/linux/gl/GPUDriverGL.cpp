@@ -5,10 +5,17 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#if ENABLE_OFFSCREEN_GL
+#include "shader_fill_frag.h"
+#include "shader_fill_path_frag.h"
+#include "shader_v2f_c4f_t2f_t2f_d28f_vert.h"
+#include "shader_v2f_c4f_t2f_vert.h"
+#else
 #include "../../../shaders/glsl/shader_fill_frag.h"
 #include "../../../shaders/glsl/shader_fill_path_frag.h"
 #include "../../../shaders/glsl/shader_v2f_c4f_t2f_t2f_d28f_vert.h"
 #include "../../../shaders/glsl/shader_v2f_c4f_t2f_vert.h"
+#endif
 
 #define SHADER_PATH "glsl/"
 
@@ -127,6 +134,60 @@ GPUDriverGL::GPUDriverGL(GPUContextGL* context) : context_(context) {
   render_buffer_map[0].fbo_id = 0;
 }
 
+#if ENABLE_OFFSCREEN_GL
+void GPUDriverGL::SetRenderBufferBitmap(uint32_t render_buffer_id,
+  RefPtr<Bitmap> bitmap) {
+  // Get our entry from RenderBuffer map, creating it if it does not exist
+  auto& entry = render_buffer_map[render_buffer_id];
+
+  CHECK_GL();
+
+  // Delete any existing PBOs
+  if (entry.bitmap)
+    glDeleteBuffers(1, &entry.pbo_id);
+
+  entry.bitmap = bitmap;
+
+  if (entry.bitmap) {
+    // Generate PBO ids
+    glGenBuffers(1, &entry.pbo_id);
+
+    // Setup PBOs
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, entry.pbo_id);
+    glBufferData(GL_PIXEL_PACK_BUFFER, bitmap->size(), 0, GL_STREAM_READ);
+    
+    CHECK_GL();
+
+    // Reset glBindBuffer
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+    CHECK_GL();
+  }
+
+  // Setup rest of RenderBufferEntry, we have to be careful not to overwrite
+  // the FBO id which may or may not be already set in CreateRenderBuffer()
+  entry.is_bitmap_dirty = false;
+  entry.is_first_draw = true;
+  entry.needs_update = false;
+
+  if (entry.texture_id) {
+    // We already have a backing texture
+    MakeTextureSRGBIfNeeded(entry.texture_id);
+  }
+}
+
+bool GPUDriverGL::IsRenderBufferBitmapDirty(uint32_t render_buffer_id) {
+  auto& entry = render_buffer_map[render_buffer_id];
+  return entry.is_bitmap_dirty;
+}
+
+void GPUDriverGL::SetRenderBufferBitmapDirty(uint32_t render_buffer_id,
+  bool dirty) {
+  auto& entry = render_buffer_map[render_buffer_id];
+  entry.is_bitmap_dirty = dirty;
+}
+#endif
+
 void GPUDriverGL::CreateTexture(uint32_t texture_id,
   Ref<Bitmap> bitmap) {
   if (bitmap->IsEmpty()) {
@@ -208,9 +269,10 @@ void GPUDriverGL::BindTexture(uint8_t texture_unit, uint32_t texture_id) {
 void GPUDriverGL::DestroyTexture(uint32_t texture_id) {
   TextureEntry& entry = texture_map[texture_id];
   glDeleteTextures(1, &entry.tex_id);
-
+  CHECK_GL();
   if (entry.msaa_tex_id)
     glDeleteTextures(1, &entry.msaa_tex_id);
+  CHECK_GL();
 }
 
 void GPUDriverGL::CreateRenderBuffer(uint32_t render_buffer_id,
@@ -227,7 +289,15 @@ void GPUDriverGL::CreateRenderBuffer(uint32_t render_buffer_id,
   CHECK_GL();
 
   TextureEntry& textureEntry = texture_map[buffer.texture_id];
+
+#if ENABLE_OFFSCREEN_GL
+  if (entry.bitmap)
+    MakeTextureSRGBIfNeeded(buffer.texture_id);
+#endif
+
   textureEntry.render_buffer_id = render_buffer_id;
+
+  entry.texture_id = buffer.texture_id;
 
   glBindTexture(GL_TEXTURE_2D, textureEntry.tex_id);
   CHECK_GL();
@@ -267,14 +337,6 @@ void GPUDriverGL::CreateRenderBuffer(uint32_t render_buffer_id,
 }
 
 void GPUDriverGL::BindRenderBuffer(uint32_t render_buffer_id) {
-  // All FBOs are in linear gamma, we need to convert the final framebuffer
-  // to sRGB before presenting on screen. Enable sRGB conversion if we are
-  // binding the main render buffer (id == 0)
-  if (render_buffer_id == 0)
-    glEnable(GL_FRAMEBUFFER_SRGB);
-  else
-    glDisable(GL_FRAMEBUFFER_SRGB);
-
   RenderBufferEntry& entry = render_buffer_map[render_buffer_id];
 
   if (context_->msaa_enabled()) {
@@ -304,8 +366,17 @@ void GPUDriverGL::DestroyRenderBuffer(uint32_t render_buffer_id) {
     return;
   RenderBufferEntry& entry = render_buffer_map[render_buffer_id];
   glDeleteFramebuffers(1, &entry.fbo_id);
+  CHECK_GL();
   if (context_->msaa_enabled())
     glDeleteFramebuffers(1, &entry.msaa_fbo_id);
+  CHECK_GL();
+#if ENABLE_OFFSCREEN_GL
+  // Clean up PBOs if a bitmap is bound
+  if (entry.bitmap)
+    glDeleteBuffers(1, &entry.pbo_id);
+#endif
+  CHECK_GL();
+  render_buffer_map.erase(render_buffer_id);
 }
 
 void GPUDriverGL::CreateGeometry(uint32_t geometry_id,
@@ -431,11 +502,17 @@ void GPUDriverGL::DrawGeometry(uint32_t geometry_id,
     glEnable(GL_BLEND);
   else
     glDisable(GL_BLEND);
-
+  CHECK_GL();
   glDrawElements(GL_TRIANGLES, indices_count, GL_UNSIGNED_INT,
     (GLvoid*)(indices_offset * sizeof(unsigned int)));
-
+  CHECK_GL();
   glBindVertexArray(0);
+
+#if ENABLE_OFFSCREEN_GL
+  auto& rbuf = render_buffer_map[state.render_buffer_id];
+  if (rbuf.bitmap)
+    rbuf.needs_update = true;
+#endif
 
   batch_count_++;
 
@@ -444,12 +521,12 @@ void GPUDriverGL::DrawGeometry(uint32_t geometry_id,
 
 void GPUDriverGL::DestroyGeometry(uint32_t geometry_id) {
   GeometryEntry& geometry = geometry_map[geometry_id];
-
+  CHECK_GL();
   glDeleteBuffers(1, &geometry.vbo_indices);
   glDeleteBuffers(1, &geometry.vbo_vertices);
-
+  CHECK_GL();
   glDeleteVertexArrays(1, &geometry.vao);
-
+  CHECK_GL();
   geometry_map.erase(geometry_id);
 }
 
@@ -469,6 +546,7 @@ void GPUDriverGL::DrawCommandList() {
   batch_count_ = 0;
 
   glEnable(GL_BLEND);
+  glEnable(GL_FRAMEBUFFER_SRGB);
   glDisable(GL_SCISSOR_TEST);
   glDisable(GL_DEPTH_TEST);
   glDepthFunc(GL_NEVER);
@@ -490,30 +568,35 @@ void GPUDriverGL::DrawCommandList() {
   command_list.clear();
   glDisable(GL_SCISSOR_TEST);
 
+#if ENABLE_OFFSCREEN_GL
+  GLenum format = Platform::instance().config().use_bgra_for_offscreen_rendering ?
+    GL_BGRA : GL_RGBA;
+
+  for (auto i = render_buffer_map.begin(); i != render_buffer_map.end(); ++i) {
+    auto& rbuf = i->second;
+
+    if (rbuf.bitmap && rbuf.needs_update) {
+      ResolveIfNeeded(i->first);
+      glBindFramebuffer(GL_FRAMEBUFFER, i->second.fbo_id);
+      CHECK_GL();
+      // Perform blocking copy of pixels from FBO to current PBO
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, rbuf.pbo_id);
+      CHECK_GL();
+      glReadPixels(0, 0, rbuf.bitmap->width(), rbuf.bitmap->height(), format, GL_UNSIGNED_BYTE, 0);
+      CHECK_GL();
+      UpdateBitmap(rbuf, rbuf.pbo_id);
+      rbuf.needs_update = false;
+  }
+}
+#endif
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  CHECK_GL();
 }
 
 void GPUDriverGL::BindUltralightTexture(uint32_t ultralight_texture_id) {
   TextureEntry& entry = texture_map[ultralight_texture_id];
-  if (context_->msaa_enabled() && entry.render_buffer_id) {
-    RenderBufferEntry& renderBufferEntry = render_buffer_map[entry.render_buffer_id];
-    if (renderBufferEntry.needs_resolve) {
-      GLint drawFboId = 0, readFboId = 0;
-      glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-      glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
-      CHECK_GL();
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, renderBufferEntry.fbo_id);
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, renderBufferEntry.msaa_fbo_id);
-      CHECK_GL();
-      glBlitFramebuffer(0, 0, entry.width, entry.height, 0, 0, entry.width, entry.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-      CHECK_GL();
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFboId);
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, readFboId);
-
-      renderBufferEntry.needs_resolve = false;
-    }
-  }
-
+  ResolveIfNeeded(entry.render_buffer_id);
   glBindTexture(GL_TEXTURE_2D, entry.tex_id);
   CHECK_GL();
 }
@@ -615,6 +698,7 @@ void GPUDriverGL::UpdateUniforms(const GPUState& state) {
   SetUniform1ui("ClipSize", state.clip_size);
   CHECK_GL();
   SetUniformMatrix4fv("Clip", 8, &state.clip[0].data[0]);
+  CHECK_GL();
 }
 
 void GPUDriverGL::SetUniform1ui(const char* name, GLuint val) {
@@ -694,5 +778,71 @@ void GPUDriverGL::CreateFBOTexture(uint32_t texture_id, Ref<Bitmap> bitmap) {
   CHECK_GL();
 }
 
+void GPUDriverGL::ResolveIfNeeded(uint32_t render_buffer_id) {
+  if (!context_->msaa_enabled())
+    return;
+
+  if (!render_buffer_id)
+    return;
+
+  RenderBufferEntry& renderBufferEntry = render_buffer_map[render_buffer_id];
+  if (!renderBufferEntry.texture_id)
+    return;
+
+  TextureEntry& textureEntry = texture_map[renderBufferEntry.texture_id];
+  if (renderBufferEntry.needs_resolve) {
+    GLint drawFboId = 0, readFboId = 0;
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
+    CHECK_GL();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, renderBufferEntry.fbo_id);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, renderBufferEntry.msaa_fbo_id);
+    CHECK_GL();
+    glBlitFramebuffer(0, 0, textureEntry.width, textureEntry.height, 0, 0, 
+      textureEntry.width, textureEntry.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    CHECK_GL();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFboId);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, readFboId);
+    CHECK_GL();
+    renderBufferEntry.needs_resolve = false;
+  }
+}
+
+void GPUDriverGL::MakeTextureSRGBIfNeeded(uint32_t texture_id) {
+  TextureEntry& textureEntry = texture_map[texture_id];
+  if (!textureEntry.is_sRGB) {
+    // We need to make the primary texture sRGB
+    // First, Destroy existing texture.
+    glDeleteTextures(1, &textureEntry.tex_id);
+    CHECK_GL();
+    // Create new sRGB texture
+    glGenTextures(1, &textureEntry.tex_id);
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D, textureEntry.tex_id);
+    CHECK_GL();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, textureEntry.width, textureEntry.height, 0,
+      GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+    CHECK_GL();
+    textureEntry.is_sRGB = true;
+  }
+}
+
+#if ENABLE_OFFSCREEN_GL
+void GPUDriverGL::UpdateBitmap(RenderBufferEntry& entry, GLuint pbo_id) {
+  // Map previous PBO to system memory and copy it to bitmap (may block)
+  CHECK_GL();
+  glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_id);
+  CHECK_GL();
+  GLubyte* src = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+  CHECK_GL();
+  void* dest = entry.bitmap->LockPixels();
+  memcpy(dest, src, entry.bitmap->size());
+  entry.bitmap->UnlockPixels();
+  glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+  CHECK_GL();
+  // Flag our bitmap as dirty
+  entry.is_bitmap_dirty = true;
+}
+#endif
 
 }  // namespace ultralight

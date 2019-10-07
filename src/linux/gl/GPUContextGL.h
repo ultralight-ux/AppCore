@@ -5,6 +5,8 @@
 
 typedef struct GLFWwindow GLFWwindow;
 
+#define ENABLE_OFFSCREEN_GL 0
+
 namespace ultralight {
 
 class GPUContextGL {

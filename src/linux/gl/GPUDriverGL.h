@@ -2,19 +2,29 @@
 #include <Ultralight/platform/GPUDriver.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "GPUContextGL.h"
 #include <vector>
 #include <map>
 
 namespace ultralight {
 
 typedef ShaderType ProgramType;
-class GPUContextGL;
 
 class GPUDriverGL : public GPUDriver {
 public:
   GPUDriverGL(GPUContextGL* context);
 
   virtual ~GPUDriverGL() { }
+
+#if ENABLE_OFFSCREEN_GL
+  virtual void SetRenderBufferBitmap(uint32_t render_buffer_id,
+    RefPtr<Bitmap> bitmap);
+
+  virtual bool IsRenderBufferBitmapDirty(uint32_t render_buffer_id);
+
+  virtual void SetRenderBufferBitmapDirty(uint32_t render_buffer_id,
+    bool dirty);
+#endif
 
   virtual void BeginSynchronize() override { }
 
@@ -85,9 +95,9 @@ public:
   void SetUniformMatrix4fv(const char* name, size_t count, const float* val);
   void SetViewport(float width, float height);
 
+protected:
   Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height, bool flip_y);
 
-protected:
   void CreateFBOTexture(uint32_t texture_id, Ref<Bitmap> bitmap);
 
   struct TextureEntry {
@@ -95,6 +105,7 @@ protected:
     GLuint msaa_tex_id = 0; // GL Texture ID (only used if MSAA is enabled)
     uint32_t render_buffer_id = 0; // Used to check if we need to perform MSAA resolve
     GLuint width, height; // Used when resolving MSAA FBO, only valid if FBO
+    bool is_sRGB = false; // Whether or not the primary texture is sRGB or not.
   };
 
   // Maps Ultralight Texture IDs to OpenGL texture handles
@@ -115,7 +126,23 @@ protected:
     GLuint fbo_id = 0; // GL FBO ID (if MSAA is enabled, this will be used for resolve)
     GLuint msaa_fbo_id = 0; // GL FBO ID for MSAA
     bool needs_resolve = false; // Whether or not we need to perform MSAA resolve
+    uint32_t texture_id = 0; // The Ultralight texture ID backing this RenderBuffer.
+#if ENABLE_OFFSCREEN_GL
+    RefPtr<Bitmap> bitmap;
+    GLuint pbo_id = 0;
+    bool is_bitmap_dirty = false;
+    bool is_first_draw = true;
+    bool needs_update = false;
+#endif
   };
+
+  void ResolveIfNeeded(uint32_t render_buffer_id);
+
+  void MakeTextureSRGBIfNeeded(uint32_t texture_id);
+
+#if ENABLE_OFFSCREEN_GL
+  void UpdateBitmap(RenderBufferEntry& entry, GLuint pbo_id);
+#endif
 
   std::map<uint32_t, RenderBufferEntry> render_buffer_map;
 
