@@ -88,7 +88,7 @@ void AppWin::Run() {
       DispatchMessage(&msg);
     }
     else {
-      Update();
+      OnPaint();
 
       // Sleep a tiny bit to reduce CPU usage
       Sleep(1);
@@ -100,17 +100,17 @@ void AppWin::Quit() {
   is_running_ = false;
 }
 
-void AppWin::Update() {
-  if (listener_)
-    listener_->OnUpdate();
-
-  renderer()->Update();
+void AppWin::OnPaint() {
+  Update();
+  if (!gpu_driver_)
+    return;
 
   gpu_driver_->BeginSynchronize();
   renderer_->Render();
   gpu_driver_->EndSynchronize();
 
   if (gpu_driver_->HasCommandsPending()) {
+    
     gpu_context_->BeginDrawing();
     gpu_driver_->DrawCommandList();
     if (window_)
@@ -118,6 +118,13 @@ void AppWin::Update() {
     gpu_context_->PresentFrame();
     gpu_context_->EndDrawing();
   }
+}
+
+void AppWin::Update() {
+  if (listener_)
+    listener_->OnUpdate();
+
+  renderer()->Update();
 }
 
 static App* g_app_instance = nullptr;

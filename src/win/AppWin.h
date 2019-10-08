@@ -48,6 +48,8 @@ public:
 
   REF_COUNTED_IMPL(AppWin);
 
+  void OnPaint();
+
 protected:
   AppWin(Settings settings, Config config);
   virtual ~AppWin();

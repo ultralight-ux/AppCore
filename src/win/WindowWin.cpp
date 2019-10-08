@@ -26,13 +26,17 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     WINDOWDATA()->is_resizing_modal = true;
     break;
   case WM_SIZE:
-    if (WINDOWDATA())
-      if (!WINDOWDATA()->is_resizing_modal)
-        WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
+  {
+    if (WINDOWDATA()) {
+      WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
+      static_cast<AppWin*>(App::instance())->OnPaint();
+    }
     break;
+  }
   case WM_EXITSIZEMOVE:
     WINDOWDATA()->is_resizing_modal = false;
     WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
+    static_cast<AppWin*>(App::instance())->OnPaint();
     break;
   case WM_KEYDOWN:
     WINDOW()->FireKeyEvent(KeyEvent(KeyEvent::kType_RawKeyDown, (uintptr_t)wParam, (intptr_t)lParam, false));
