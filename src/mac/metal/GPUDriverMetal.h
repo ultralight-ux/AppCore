@@ -120,6 +120,8 @@ protected:
         bool needs_init_ = true;
     };
     
+    bool drawable_needs_flush_ = false;
+    
     //typedef std::map<uint32_t, RingBuffer<Texture>> TextureMap;
     typedef std::map<uint32_t, Texture> TextureMap;
     TextureMap textures_;

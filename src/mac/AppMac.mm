@@ -24,6 +24,8 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   Platform::instance().set_file_system(file_system_.get());
 
   renderer_ = Renderer::Create();
+    
+  config_force_repaint_ = config.force_repaint;
 }
 
 AppMac::~AppMac() {
@@ -33,8 +35,16 @@ void AppMac::OnClose() {
 }
 
 void AppMac::OnResize(uint32_t width, uint32_t height) {
-  if (gpu_context_)
+  if (gpu_context_) {
     gpu_context_->Resize((int)width, (int)height);
+
+    // When we resize the MTKView on macOS it seems to invalidate all of our
+    // render buffers (the front and back buffers). Handle this condition by
+    // forcing two full repaints after resize.
+    const_cast<Config&>(Platform::instance().config()).force_repaint = true;
+    is_forcing_next_two_repaints_ = true;
+    repaint_count_ = 0;
+  }
 }
 
 void AppMac::set_window(Ref<Window> window) {
@@ -91,8 +101,16 @@ void AppMac::Update() {
     gpu_context_->driver()->DrawCommandList();
     if (window_)
 	    static_cast<WindowMac*>(window_.get())->Draw();
-    gpu_context_->PresentFrame();
     gpu_context_->EndDrawing();
+    gpu_context_->PresentFrame();
+  }
+    
+  if (is_forcing_next_two_repaints_) {
+    repaint_count_++;
+    if (repaint_count_ == 2) {
+      const_cast<Config&>(Platform::instance().config()).force_repaint = config_force_repaint_;
+      is_forcing_next_two_repaints_ = false;
+    }
   }
 }
 
