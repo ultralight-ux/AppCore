@@ -28,6 +28,10 @@ public:
   }
 
   virtual void Resize(uint32_t width, uint32_t height) override {
+    // Clamp each dimension to 2
+    width = width <= 2 ? 2 : width;
+    height = height <= 2 ? 2 : height;
+
     if (width == width_ && height == height_)
       return;
 
@@ -230,6 +234,10 @@ protected:
 
 Ref<Overlay> Overlay::Create(Ref<Window> window, uint32_t width,
                              uint32_t height, int x, int y) {
+  // Clamp each dimension to 2
+  width = width <= 2 ? 2 : width;
+  height = height <= 2 ? 2 : height;
+
   return AdoptRef(*new OverlayImpl(window, width, height, x, y));
 }
 
