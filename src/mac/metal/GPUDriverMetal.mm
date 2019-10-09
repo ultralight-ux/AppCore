@@ -189,6 +189,10 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
         }
     } else {
         texture = context_->view().currentDrawable.texture;
+        if (drawable_needs_flush_) {
+            drawable_needs_flush_ = true;
+            force_clear = true;
+        }
     }
     
     if (render_encoder_) {
@@ -307,8 +311,9 @@ void GPUDriverMetal::UpdateGeometry(uint32_t geometry_id,
     auto& geometry_entry = i->second;
     
     // GPU is running behind, overflowing our ring buffer, wait a bit
-    while (geometry_entry.current().owning_frame_id_ && (geometry_entry.current().owning_frame_id_ - gpu_frame_id_.load() >= (int64_t)RingBufferSize))
-       usleep(1000);
+    if (RingBufferSize > 1)
+        while (geometry_entry.current().owning_frame_id_ && (geometry_entry.current().owning_frame_id_ - gpu_frame_id_.load() >= (int64_t)RingBufferSize))
+            usleep(1000);
     
     if (geometry_entry.current().owning_frame_id_ > gpu_frame_id_.load())
         geometry_entry.iterate();

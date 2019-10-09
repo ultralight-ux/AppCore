@@ -41,8 +41,18 @@
     [view setDepthStencilPixelFormat:MTLPixelFormatDepth32Float];
     [view setAutoResizeDrawable:false];
     [view setSampleCount:1];
+    [view setPresentsWithTransaction:true];
     
     [self setView:view];
+}
+
+- (void)viewDidLayout
+{
+    NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
+                                    initWithRect:self.view.bounds
+                                    options:NSTrackingMouseMoved | NSTrackingActiveAlways
+                                    owner:self userInfo:nil];
+    [self.view addTrackingArea:trackingArea];
 }
 
 - (void)viewDidLoad

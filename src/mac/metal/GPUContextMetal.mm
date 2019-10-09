@@ -122,8 +122,8 @@ void GPUContextMetal::EndDrawing() {
 }
     
 void GPUContextMetal::PresentFrame() {
-    if (command_buffer_ && view_.currentDrawable)
-        [command_buffer_ presentDrawable:view_.currentDrawable];
+    if (view_.currentDrawable)
+        [view_.currentDrawable present];
 }
     
 void GPUContextMetal::Resize(int width, int height) {

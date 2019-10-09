@@ -61,6 +61,9 @@ protected:
   RefPtr<Renderer> renderer_;
   RefPtr<Window> window_;
   MonitorMac main_monitor_;
+  bool config_force_repaint_ = false;
+  bool is_forcing_next_two_repaints_ = false;
+  int repaint_count_ = 0;
   std::unique_ptr<GPUContextMetal> gpu_context_;
   std::unique_ptr<FileSystemMac> file_system_;
 };

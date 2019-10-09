@@ -17,6 +17,7 @@
 - (void)windowDidResize:(NSNotification *)notification {
     NSWindow* window = [notification object];
     window_->OnResize(window.frame.size.width, window.frame.size.height);
+    [window setViewsNeedDisplay:true];
 }
 
 - (void)windowWillStartLiveResize:(NSNotification *)notification {
