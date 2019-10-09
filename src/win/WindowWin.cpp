@@ -173,7 +173,7 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height,
 
   // Create window
   RECT rc = { 0, 0, (LONG)DeviceToPixels(width), (LONG)DeviceToPixels(height) };
-  AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+  AdjustWindowRect(&rc, style, FALSE);
   hwnd_ = ::CreateWindowEx(NULL
     , class_name
     , _T("")
