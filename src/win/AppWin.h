@@ -50,6 +50,8 @@ public:
 
   void OnPaint();
 
+  void InvalidateWindow() { window_needs_repaint_ = true; }
+
 protected:
   AppWin(Settings settings, Config config);
   virtual ~AppWin();
@@ -61,6 +63,8 @@ protected:
 
   Settings settings_;
   bool is_running_ = false;
+  bool is_first_paint_ = true;
+  bool window_needs_repaint_ = false;
   AppListener* listener_ = nullptr;
   RefPtr<Renderer> renderer_;
   RefPtr<Window> window_;

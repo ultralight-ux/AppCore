@@ -110,14 +110,23 @@ void AppWin::OnPaint() {
   gpu_driver_->EndSynchronize();
 
   if (gpu_driver_->HasCommandsPending()) {
-    
     gpu_context_->BeginDrawing();
     gpu_driver_->DrawCommandList();
     if (window_)
 	    static_cast<WindowWin*>(window_.get())->Draw();
     gpu_context_->PresentFrame();
     gpu_context_->EndDrawing();
+    is_first_paint_ = false;
   }
+  else if (window_needs_repaint_ && !is_first_paint_) {
+    gpu_context_->BeginDrawing();
+    if (window_)
+      static_cast<WindowWin*>(window_.get())->Draw();
+    gpu_context_->PresentFrame();
+    gpu_context_->EndDrawing();
+  }
+
+  window_needs_repaint_ = false;
 }
 
 void AppWin::Update() {

@@ -17,6 +17,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
   switch (message) {
   case WM_PAINT:
     hdc = BeginPaint(hWnd, &ps);
+    static_cast<AppWin*>(App::instance())->InvalidateWindow();
+    static_cast<AppWin*>(App::instance())->OnPaint();
     EndPaint(hWnd, &ps);
     break;
   case WM_DESTROY:
@@ -29,6 +31,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
   {
     if (WINDOWDATA()) {
       WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
+      // This would normally be called when the message loop is idle
+      // but during resize the window consumes all messages so we need
+      // to force paints during the operation.
       static_cast<AppWin*>(App::instance())->OnPaint();
     }
     break;
