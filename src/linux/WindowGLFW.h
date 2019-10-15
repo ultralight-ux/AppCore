@@ -40,7 +40,7 @@ public:
     return (int)round(val / scale());
   }
 
-  virtual OverlayManager* overlay_manager() const { return const_cast<WindowGLFW*>(this); }
+  virtual OverlayManager* overlay_manager() const override { return const_cast<WindowGLFW*>(this); }
 
   REF_COUNTED_IMPL(WindowGLFW);
 

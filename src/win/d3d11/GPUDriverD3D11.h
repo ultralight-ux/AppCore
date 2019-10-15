@@ -76,9 +76,9 @@ public:
   int batch_count() const { return batch_count_; }
 
 protected:
-  void LoadVertexShader(const WCHAR* path, ID3D11VertexShader** ppVertexShader,
+  void LoadVertexShader(const char* path, ID3D11VertexShader** ppVertexShader,
     const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs, UINT NumElements, ID3D11InputLayout** ppInputLayout);
-  void LoadPixelShader(const WCHAR* path, ID3D11PixelShader** ppPixelShader);
+  void LoadPixelShader(const char* path, ID3D11PixelShader** ppPixelShader);
   void LoadCompiledVertexShader(unsigned char* data, unsigned int len, ID3D11VertexShader** ppVertexShader,
     const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs, UINT NumElements, ID3D11InputLayout** ppInputLayout);
   void LoadCompiledPixelShader(unsigned char* data, unsigned int len, ID3D11PixelShader** ppPixelShader);
@@ -90,6 +90,7 @@ protected:
   ComPtr<ID3D11Buffer> GetConstantBuffer();
   void SetViewport(float width, float height);
   void UpdateConstantBuffer(const GPUState& state);
+  Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height);
 
   GPUContextD3D11* context_;
   ComPtr<ID3D11InputLayout> vertex_layout_2f_4ub_2f_;
@@ -105,11 +106,26 @@ protected:
   typedef std::map<uint32_t, GeometryEntry> GeometryMap;
   GeometryMap geometry_;
 
-  typedef std::pair<ComPtr<ID3D11Texture2D>, ComPtr<ID3D11ShaderResourceView>> TextureEntry;
+  struct TextureEntry { 
+    ComPtr<ID3D11Texture2D> texture;
+    ComPtr<ID3D11ShaderResourceView> texture_srv;
+
+    // These members are only used when MSAA is enabled
+    bool is_msaa_render_target = false;
+    bool needs_resolve = false;
+    ComPtr<ID3D11Texture2D> resolve_texture;
+    ComPtr<ID3D11ShaderResourceView> resolve_texture_srv;
+  };
+
   typedef std::map<uint32_t, TextureEntry> TextureMap;
   TextureMap textures_;
 
-  typedef std::map<uint32_t, ComPtr<ID3D11RenderTargetView>> RenderTargetMap;
+  struct RenderTargetEntry {
+    ComPtr<ID3D11RenderTargetView> render_target_view;
+    uint32_t render_target_texture_id;
+  };
+
+  typedef std::map<uint32_t, RenderTargetEntry> RenderTargetMap;
   RenderTargetMap render_targets_;
 
   typedef std::map<ShaderType, std::pair<ComPtr<ID3D11VertexShader>, ComPtr<ID3D11PixelShader>>> ShaderMap;

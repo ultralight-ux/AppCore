@@ -37,11 +37,22 @@
     MTKView* view = [[CustomMTKView alloc] initWithFrame:_initialFrame device:MTLCreateSystemDefaultDevice()];
     
     [view setClearColor:MTLClearColorMake(0, 0, 0, 1)];
-    [view setColorPixelFormat:MTLPixelFormatBGRA8Unorm];
+    [view setColorPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB];
     [view setDepthStencilPixelFormat:MTLPixelFormatDepth32Float];
     [view setAutoResizeDrawable:false];
+    [view setSampleCount:1];
+    [view setPresentsWithTransaction:true];
     
     [self setView:view];
+}
+
+- (void)viewDidLayout
+{
+    NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
+                                    initWithRect:self.view.bounds
+                                    options:NSTrackingMouseMoved | NSTrackingActiveAlways
+                                    owner:self userInfo:nil];
+    [self.view addTrackingArea:trackingArea];
 }
 
 - (void)viewDidLoad
@@ -84,6 +95,15 @@
 }
 
 - (void)mouseMoved:(NSEvent *)event
+{
+    NSPoint eventLocation = [event locationInWindow];
+    NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+    point.y = self.view.bounds.size.height - point.y;
+    
+    [_delegate mouseMoved:point.x mouseY:point.y];
+}
+
+- (void)mouseDragged:(NSEvent *)event
 {
     NSPoint eventLocation = [event locationInWindow];
     NSPoint point = [self.view convertPoint:eventLocation fromView:nil];

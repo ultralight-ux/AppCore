@@ -11,13 +11,12 @@
 
 namespace ultralight {
 
-AppWin::AppWin() {
+AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   windows_util_.reset(new WindowsUtil());
   windows_util_->EnableDPIAwareness();
 
   main_monitor_.reset(new MonitorWin(windows_util_.get()));
 
-  Config config;
   config.device_scale_hint = main_monitor_->scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
@@ -30,7 +29,7 @@ AppWin::AppWin() {
   GetModuleFileNameW(hModule, path, MAX_PATH);
   PathRemoveFileSpecW(path);
 
-  PathAppendW(path, L"assets");
+  PathAppendW(path, settings_.file_system_path.utf16().data());
 
   file_system_.reset(new FileSystemWin(path));
   Platform::instance().set_file_system(file_system_.get());
@@ -54,7 +53,7 @@ void AppWin::set_window(Ref<Window> window) {
   gpu_context_.reset(new GPUContextD3D11());
   WindowWin* win = static_cast<WindowWin*>(window_.get());
   if (!gpu_context_->Initialize(win->hwnd(), win->width(),
-    win->height(), win->scale(), win->is_fullscreen(), true, false, 1)) {
+    win->height(), win->scale(), win->is_fullscreen(), true, true, 1)) {
     MessageBoxW(NULL, (LPCWSTR)L"Failed to initialize D3D11 context", (LPCWSTR)L"Notification", MB_OK);
     exit(-1);
   }
@@ -89,7 +88,7 @@ void AppWin::Run() {
       DispatchMessage(&msg);
     }
     else {
-      Update();
+      OnPaint();
 
       // Sleep a tiny bit to reduce CPU usage
       Sleep(1);
@@ -101,11 +100,10 @@ void AppWin::Quit() {
   is_running_ = false;
 }
 
-void AppWin::Update() {
-  if (listener_)
-    listener_->OnUpdate();
-
-  renderer()->Update();
+void AppWin::OnPaint() {
+  Update();
+  if (!gpu_driver_)
+    return;
 
   gpu_driver_->BeginSynchronize();
   renderer_->Render();
@@ -118,13 +116,30 @@ void AppWin::Update() {
 	    static_cast<WindowWin*>(window_.get())->Draw();
     gpu_context_->PresentFrame();
     gpu_context_->EndDrawing();
+    is_first_paint_ = false;
   }
+  else if (window_needs_repaint_ && !is_first_paint_) {
+    gpu_context_->BeginDrawing();
+    if (window_)
+      static_cast<WindowWin*>(window_.get())->Draw();
+    gpu_context_->PresentFrame();
+    gpu_context_->EndDrawing();
+  }
+
+  window_needs_repaint_ = false;
+}
+
+void AppWin::Update() {
+  if (listener_)
+    listener_->OnUpdate();
+
+  renderer()->Update();
 }
 
 static App* g_app_instance = nullptr;
 
-Ref<App> App::Create() {
-  g_app_instance = new AppWin();
+Ref<App> App::Create(Settings settings, Config config) {
+  g_app_instance = new AppWin(settings, config);
   return AdoptRef(*g_app_instance);
 }
 

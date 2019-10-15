@@ -26,6 +26,8 @@ public:
 
   // Inherited from App
 
+  virtual const Settings& settings() const override { return settings_; }
+
   virtual void set_listener(AppListener* listener) override { listener_ = listener; }
 
   virtual void set_window(Ref<Window> window) override;
@@ -46,8 +48,12 @@ public:
 
   REF_COUNTED_IMPL(AppWin);
 
+  void OnPaint();
+
+  void InvalidateWindow() { window_needs_repaint_ = true; }
+
 protected:
-  AppWin();
+  AppWin(Settings settings, Config config);
   virtual ~AppWin();
   void Update();
 
@@ -55,7 +61,10 @@ protected:
   
   DISALLOW_COPY_AND_ASSIGN(AppWin);
 
+  Settings settings_;
   bool is_running_ = false;
+  bool is_first_paint_ = true;
+  bool window_needs_repaint_ = false;
   AppListener* listener_ = nullptr;
   RefPtr<Renderer> renderer_;
   RefPtr<Window> window_;

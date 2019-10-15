@@ -4,7 +4,54 @@
 using namespace metal;
 
 // Include header shared between this Metal shader code and C code executing Metal API commands
-#import "ShaderTypes.h"
+#ifndef ShaderTypes_h
+#define ShaderTypes_h
+
+typedef enum VertexIndex
+{
+    VertexIndex_Vertices = 0,
+    VertexIndex_Uniforms = 1,
+    } VertexInputIndex;
+    
+    typedef enum FragmentIndex
+    {
+        FragmentIndex_Uniforms = 0,
+        } FragmentIndex;
+        
+        typedef struct
+        {
+            simd::float4 State;
+            simd::float4x4 Transform;
+            simd::float4 Scalar4[2];
+            simd::float4 Vector[8];
+            unsigned int ClipSize;
+            simd::float4x4 Clip[8];
+        } Uniforms;
+        
+#pragma pack(push, 1)
+        typedef struct
+        {
+            simd::float2 Position;
+            simd::uchar4 Color;
+            simd::float2 TexCoord;
+            simd::float2 ObjCoord;
+            simd::float4 Data0;
+            simd::float4 Data1;
+            simd::float4 Data2;
+            simd::float4 Data3;
+            simd::float4 Data4;
+            simd::float4 Data5;
+            simd::float4 Data6;
+        } Vertex;
+        
+        typedef struct
+        {
+            simd::float2 Position;
+            simd::uchar4 Color;
+            simd::float2 ObjCoord;
+        } PathVertex;
+#pragma pack(pop)
+#endif /* ShaderTypes_h */
 
 // Vertex shader outputs and fragment shader inputs
 typedef struct
@@ -37,13 +84,7 @@ float ScreenWidth(constant Uniforms& u) { return u.State[1]; }
 float ScreenHeight(constant Uniforms& u) { return u.State[2]; }
 float ScreenScale(constant Uniforms& u) { return u.State[3]; }
 float Scalar(constant Uniforms& u, uint i) { if (i < 4u) return u.Scalar4[0][i]; else return u.Scalar4[1][i - 4u]; }
-
-float2 ScreenToDeviceCoords(constant Uniforms &u, float2 screen_coord)
-{
-    screen_coord *= 2.0 / float2(ScreenWidth(u), -ScreenHeight(u));
-    screen_coord += float2(-1.0, 1.0);
-    return screen_coord;
-}
+float4 sRGBToLinear(float4 val) { return float4(val.xyz * (val.xyz * (val.xyz * 0.305306011 + 0.682171111) + 0.012522878), val.w); }
 
 // Vertex function
 vertex FragmentInput
@@ -54,9 +95,8 @@ vertexShader(uint vertexID [[vertex_id]],
     FragmentInput out;
     
     out.ObjectCoord = vertices[vertexID].ObjCoord;
-    out.ScreenCoord = (uniforms.Transform * float4(vertices[vertexID].Position.xy, 1.0, 1.0)).xy;
-    out.Position = float4(ScreenToDeviceCoords(uniforms, out.ScreenCoord), 1.0, 1.0);
-    out.Color = float4(vertices[vertexID].Color) / 255.0f;
+    out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
+    out.Color = sRGBToLinear(float4(vertices[vertexID].Color) / 255.0f);
     out.TexCoord = vertices[vertexID].TexCoord;
     out.Data0 = vertices[vertexID].Data0;
     out.Data1 = vertices[vertexID].Data1;
@@ -77,23 +117,22 @@ pathVertexShader(uint vertexID [[vertex_id]],
     PathFragmentInput out;
     
     out.ObjectCoord = vertices[vertexID].ObjCoord;
-    out.ScreenCoord = (uniforms.Transform * float4(vertices[vertexID].Position.xy, 1.0, 1.0)).xy;
-    out.Position = float4(ScreenToDeviceCoords(uniforms, out.ScreenCoord), 1.0, 1.0);
-    out.Color = float4(vertices[vertexID].Color) / 255.0f;
+    out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
+    out.Color = sRGBToLinear(float4(vertices[vertexID].Color) / 255.0f);
     
     return out;
 }
 
 constexpr sampler texSampler(mag_filter::linear, min_filter::linear);
 
-uint FillType(thread FragmentInput& input) { return uint(input.Data0.x); }
+uint FillType(thread FragmentInput& input) { return uint(input.Data0.x + 0.5); }
 float4 TileRectUV(constant Uniforms& u) { return u.Vector[0]; }
 float2 TileSize(constant Uniforms& u) { return u.Vector[1].zw; }
 float2 PatternTransformA(constant Uniforms& u) { return u.Vector[2].xy; }
 float2 PatternTransformB(constant Uniforms& u) { return u.Vector[2].zw; }
 float2 PatternTransformC(constant Uniforms& u) { return u.Vector[3].xy; }
-uint Gradient_NumStops(thread FragmentInput& input) { return uint(input.Data0.y); }
-bool Gradient_IsRadial(thread FragmentInput& input) { return bool(input.Data0.z); }
+uint Gradient_NumStops(thread FragmentInput& input) { return uint(input.Data0.y + 0.5); }
+bool Gradient_IsRadial(thread FragmentInput& input) { return bool(uint(input.Data0.z + 0.5)); }
 float Gradient_R0(thread FragmentInput& input) { return input.Data1.x; }
 float Gradient_R1(thread FragmentInput& input) { return input.Data1.y; }
 float2 Gradient_P0(thread FragmentInput& input) { return input.Data1.xy; }
@@ -122,7 +161,7 @@ GradientStop GetGradientStop(thread FragmentInput& input, constant Uniforms& u, 
     return result;
 }
 
-#define AA_WIDTH 0.5
+#define AA_WIDTH 0.354
 
 float antialias(float d, float width, float median) {
     return smoothstep(median - width, median + width, d);
@@ -240,8 +279,7 @@ float4 fillSolid(thread FragmentInput& input) {
 }
 
 float4 fillImage(thread FragmentInput& input, thread texture2d<half>& tex) {
-    float4 col = float4(input.Color.rgb * input.Color.a, input.Color.a);
-    return float4(tex.sample(texSampler, input.TexCoord)) * col;
+    return float4(tex.sample(texSampler, input.TexCoord)) * input.Color;
 }
 
 float2 transformAffine(float2 val, float2 a, float2 b, float2 c) {
@@ -270,13 +308,20 @@ float4 fillPatternImage(thread FragmentInput& input, constant Uniforms& u, threa
     return float4(tex.sample(texSampler, uv)) * input.Color;
 }
 
+float ramp(float inMin, float inMax, float val)
+{
+    return clamp((val - inMin) / (inMax - inMin), 0.0, 1.0);
+}
+
 float4 fillPatternGradient(thread FragmentInput& input, constant Uniforms& u) {
-    float num_stops = Gradient_NumStops(input);
+    uint num_stops = Gradient_NumStops(input);
     bool is_radial = Gradient_IsRadial(input);
     float r0 = Gradient_R0(input);
     float r1 = Gradient_R1(input);
     float2 p0 = Gradient_P0(input);
     float2 p1 = Gradient_P1(input);
+    
+    float4 col = input.Color;
     
     if (!is_radial) {
         GradientStop stop0 = GetGradientStop(input, u, 0u);
@@ -285,11 +330,32 @@ float4 fillPatternGradient(thread FragmentInput& input, constant Uniforms& u) {
         float2 V = p1 - p0;
         float t = dot(input.TexCoord - p0, V) / dot(V, V);
         t = saturate(t);
-        return mix(stop0.color, stop1.color, t);
+        col = mix(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
+        if (num_stops > 2u) {
+            GradientStop stop2 = GetGradientStop(input, u, 2u);
+            col = mix(col, stop2.color, ramp(stop1.percent, stop2.percent, t));
+            if (num_stops > 3u) {
+                GradientStop stop3 = GetGradientStop(input, u, 3u);
+                col = mix(col, stop3.color, ramp(stop2.percent, stop3.percent, t));
+                if (num_stops > 4u) {
+                    GradientStop stop4 = GetGradientStop(input, u, 4u);
+                    col = mix(col, stop4.color, ramp(stop3.percent, stop4.percent, t));
+                    if (num_stops > 5u) {
+                        GradientStop stop5 = GetGradientStop(input, u, 5u);
+                        col = mix(col, stop5.color, ramp(stop4.percent, stop5.percent, t));
+                        if (num_stops > 6u) {
+                            GradientStop stop6 = GetGradientStop(input, u, 6u);
+                            col = mix(col, stop6.color, ramp(stop5.percent, stop6.percent, t));
+                        }
+                    }
+                }
+            }
+        }
     } else {
         // TODO: Handle radial gradients
-        return input.Color;
     }
+    
+    return float4(col.rgb * col.a, col.a);
 }
 
 float stroke(float d, float s, float a) {
@@ -328,7 +394,7 @@ float supersample(thread texture2d<half>& tex, float2 uv) {
 
 float4 fillSDF(thread FragmentInput& input, thread texture2d<half>& tex) {
     float a = supersample(tex, input.TexCoord);
-    return float4(input.Color.rgb * a, a);
+    return input.Color * a;
 }
 
 float samp_stroke(thread texture2d<half>& tex, float2 uv, float w, float m, float max_d) {
@@ -358,7 +424,7 @@ float4 fillStrokeSDF(thread FragmentInput& input, thread texture2d<half>& tex) {
 #endif
     
     alpha = 1.0 - alpha;
-    return float4(input.Color.rgb * alpha, alpha);
+    return input.Color * alpha;
 }
 
 void Unpack(float4 x, thread float4& a, thread float4& b) {
@@ -476,13 +542,13 @@ float4 fillBoxDecorations(thread FragmentInput& input) {
     
     float4 color_top, color_right;
     Unpack(input.Data4, color_top, color_right);
-    color_top /= 255.0f;
-    color_right /= 255.0f;
+    color_top /= 65534.0f;
+    color_right /= 65534.0f;
     
     float4 color_bottom, color_left;
     Unpack(input.Data5, color_bottom, color_left);
-    color_bottom /= 255.0f;
-    color_left /= 255.0f;
+    color_bottom /= 65534.0f;
+    color_left /= 65534.0f;
     
     float width = AA_WIDTH;
     
@@ -535,22 +601,25 @@ float4 fillRoundedRect(thread FragmentInput& input, constant Uniforms& u) {
 
 float4 fillBoxShadow(thread FragmentInput& input) {
     float2 p = input.ObjectCoord;
-    float inset = bool(input.Data0.y)? -1.0 : 1.0;
+    bool inset = bool(uint(input.Data0.y + 0.5));
     float radius = input.Data0.z;
     float2 origin = input.Data1.xy;
     float2 size = input.Data1.zw;
     float2 clip_origin = input.Data4.xy;
     float2 clip_size = input.Data4.zw;
     
-    float clip = inset * sdRoundRect(p - clip_origin, clip_size, input.Data5, input.Data6);
+    float sdClip = sdRoundRect(p - clip_origin, clip_size, input.Data5, input.Data6);
+    float sdRect = sdRoundRect(p - origin, size, input.Data2, input.Data3);
+    
+    float clip = inset ? -sdRect : sdClip;
+    float d = inset ? -sdClip : sdRect;
     
     if (clip < 0.0) {
         return float4(0.0, 0.0, 0.0, 0.0);
     }
     
-    float d = inset * sdRoundRect(p - origin, size, input.Data2, input.Data3);
     float alpha = radius >= 1.0? pow(antialias(-d, radius * 1.2, 0.0), 2.2) * 2.5 / pow(radius, 0.04) :
-    antialias(-d, AA_WIDTH, 1.0);
+    antialias(-d, AA_WIDTH, inset ? -1.0 : 1.0);
     alpha = clamp(alpha, 0.0, 1.0) * input.Color.a;
     return float4(input.Color.rgb * alpha, alpha);
 }
@@ -629,48 +698,66 @@ float3 blendLuminosity(float3 src, float3 dest) {
 }
 
 float4 fillBlend(thread FragmentInput& input, thread texture2d<half>& tex0, thread texture2d<half>& tex1) {
-    const uint BlendMode_Normal = 1u;
-    const uint BlendMode_Multiply = 2u;
-    const uint BlendMode_Screen = 3u;
-    const uint BlendMode_Darken = 4u;
-    const uint BlendMode_Lighten = 5u;
-    const uint BlendMode_Overlay = 6u;
-    const uint BlendMode_ColorDodge = 7u;
-    const uint BlendMode_ColorBurn = 8u;
-    const uint BlendMode_HardLight = 9u;
-    const uint BlendMode_SoftLight = 10u;
-    const uint BlendMode_Difference = 11u;
-    const uint BlendMode_Exclusion = 12u;
-    const uint BlendMode_Hue = 13u;
-    const uint BlendMode_Saturation = 14u;
-    const uint BlendMode_Color = 15u;
-    const uint BlendMode_Luminosity = 16u;
-    const uint BlendMode_PlusDarker = 17u;
-    const uint BlendMode_PlusLighter = 18u;
+    const uint BlendOp_Clear = 0u;
+    const uint BlendOp_Source = 1u;
+    const uint BlendOp_Over = 2u;
+    const uint BlendOp_In = 3u;
+    const uint BlendOp_Out = 4u;
+    const uint BlendOp_Atop = 5u;
+    const uint BlendOp_DestOver = 6u;
+    const uint BlendOp_DestIn = 7u;
+    const uint BlendOp_DestOut = 8u;
+    const uint BlendOp_DestAtop = 9u;
+    const uint BlendOp_XOR = 10u;
+    const uint BlendOp_Darken = 11u;
+    const uint BlendOp_Add = 12u;
+    const uint BlendOp_Difference = 13u;
+    const uint BlendOp_Multiply = 14u;
+    const uint BlendOp_Screen = 15u;
+    const uint BlendOp_Overlay = 16u;
+    const uint BlendOp_Lighten = 17u;
+    const uint BlendOp_ColorDodge = 18u;
+    const uint BlendOp_ColorBurn = 19u;
+    const uint BlendOp_HardLight = 20u;
+    const uint BlendOp_SoftLight = 21u;
+    const uint BlendOp_Exclusion = 22u;
+    const uint BlendOp_Hue = 23u;
+    const uint BlendOp_Saturation = 24u;
+    const uint BlendOp_Color = 25u;
+    const uint BlendOp_Luminosity = 26u;
     
     float4 src = fillImage(input, tex0);
     float4 dest = float4(tex1.sample(texSampler, input.ObjectCoord));
     
-    switch(uint(input.Data0.y))
+    switch(uint(input.Data0.y + 0.5))
     {
-        case BlendMode_Normal: return src;
-        case BlendMode_Multiply: return float4(src.rgb * dest.rgb * src.a, dest.a * src.a);
-        case BlendMode_Screen: return float4((1.0 - ((1.0 - dest.rgb) * (1.0 - src.rgb))) * src.a, dest.a * src.a);
-        case BlendMode_Darken: return float4(min(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Lighten: return float4(max(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Overlay: return float4(blendOverlay(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_ColorDodge: return float4(blendColorDodge(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_ColorBurn: return float4(blendColorBurn(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_HardLight: return float4(blendOverlay(dest.rgb, src.rgb) * src.a, dest.a * src.a);
-        case BlendMode_SoftLight: return float4(blendSoftLight(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Difference: return float4(abs(dest.rgb - src.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Exclusion: return float4((dest.rgb + src.rgb - 2.0 * dest.rgb * src.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Hue: return float4(blendHue(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Saturation: return float4(blendSaturation(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Color: return float4(blendColor(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_Luminosity: return float4(blendLuminosity(src.rgb, dest.rgb) * src.a, dest.a * src.a);
-        case BlendMode_PlusDarker: return src;
-        case BlendMode_PlusLighter: return src;
+        case BlendOp_Clear: return float4(0.0, 0.0, 0.0, 0.0);
+        case BlendOp_Source: return src;
+        case BlendOp_Over: return src + dest * (1.0 - src.a);
+        case BlendOp_In: return src * dest.a;
+        case BlendOp_Out: return src * (1.0 - dest.a);
+        case BlendOp_Atop: return src * dest.a + dest * (1.0 - src.a);
+        case BlendOp_DestOver: return src * (1.0 - dest.a) + dest;
+        case BlendOp_DestIn: return dest * src.a;
+        case BlendOp_DestOut: return dest * (1.0 - src.a);
+        case BlendOp_DestAtop: return src * (1.0 - dest.a) + dest * src.a;
+        case BlendOp_XOR: return saturate(src * (1.0 - dest.a) + dest * (1.0 - src.a));
+        case BlendOp_Darken: return float4(min(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Add: return saturate(src + dest);
+        case BlendOp_Difference: return float4(abs(dest.rgb - src.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Multiply: return float4(src.rgb * dest.rgb * src.a, dest.a * src.a);
+        case BlendOp_Screen: return float4((1.0 - ((1.0 - dest.rgb) * (1.0 - src.rgb))) * src.a, dest.a * src.a);
+        case BlendOp_Overlay: return float4(blendOverlay(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Lighten: return float4(max(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_ColorDodge: return float4(blendColorDodge(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_ColorBurn: return float4(blendColorBurn(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_HardLight: return float4(blendOverlay(dest.rgb, src.rgb) * src.a, dest.a * src.a);
+        case BlendOp_SoftLight: return float4(blendSoftLight(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Exclusion: return float4((dest.rgb + src.rgb - 2.0 * dest.rgb * src.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Hue: return float4(blendHue(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Saturation: return float4(blendSaturation(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Color: return float4(blendColor(src.rgb, dest.rgb) * src.a, dest.a * src.a);
+        case BlendOp_Luminosity: return float4(blendLuminosity(src.rgb, dest.rgb) * src.a, dest.a * src.a);
     }
     
     return src;
@@ -680,6 +767,10 @@ float4 fillMask(thread FragmentInput& input, thread texture2d<half>& tex0, threa
     float4 col = fillImage(input, tex0);
     float alpha = float4(tex1.sample(texSampler, input.ObjectCoord)).a;
     return float4(col.rgb * alpha, col.a * alpha);
+}
+        
+float4 fillGlyph(thread FragmentInput& input, thread texture2d<half>& tex) {
+    return float(tex.sample(texSampler, input.TexCoord).a) * input.Color;
 }
 
 //float4 GetCol(float4x4 m, uint i) { return float4(m[0][i], m[1][i], m[2][i], m[3][i]); }
@@ -693,7 +784,7 @@ void applyClip(float2 objCoord, constant Uniforms& u, thread float4& outColor) {
         float2 size = data[0].zw;
         float4 radii_x, radii_y;
         Unpack(data[1], radii_x, radii_y);
-        bool inverse = bool(data[3].z);
+        bool inverse = bool(uint(data[3].z + 0.5));
         
         float2 p = objCoord;
         p = transformAffine(p, data[2].xy, data[2].zw, data[3].xy);
@@ -727,6 +818,7 @@ fragment float4 fragmentShader(FragmentInput input [[stage_in]],
     const uint FillType_Box_Shadow = 8u;
     const uint FillType_Blend = 9u;
     const uint FillType_Mask = 10u;
+    const uint FillType_Glyph = 11u;
     
     float4 outColor = input.Color;
     
@@ -743,6 +835,7 @@ fragment float4 fragmentShader(FragmentInput input [[stage_in]],
         case FillType_Box_Shadow: outColor = fillBoxShadow(input); break;
         case FillType_Blend: outColor = fillBlend(input, tex0, tex1); break;
         case FillType_Mask: outColor = fillMask(input, tex0, tex1); break;
+        case FillType_Glyph: outColor = fillGlyph(input, tex0); break;
     }
     
     applyClip(input.ObjectCoord, uniforms, outColor);

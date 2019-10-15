@@ -12,37 +12,43 @@ elseif (PORT MATCHES "UltralightWin")
     set(PLATFORM "win")
 endif ()
 
-set(ULTRALIGHTCORE_REV "06007e0")
-set(WEBCORE_REV "e903f47")
-set(ULTRALIGHT_REV "063c4d5")
+set(ULTRALIGHTCORE_REV "35816ac")
+set(WEBCORE_REV "3382307")
+set(ULTRALIGHT_REV "9e1e732")
 
 set(ULTRALIGHTCORE_DIR "${CMAKE_SOURCE_DIR}/deps/UltralightCore/")
 set(WEBCORE_DIR "${CMAKE_SOURCE_DIR}/deps/WebCore/")
 set(ULTRALIGHT_DIR "${CMAKE_SOURCE_DIR}/deps/Ultralight/")
 
-ExternalProject_Add(UltralightCoreBin
-  URL https://ultralightcore-bin.sfo2.cdn.digitaloceanspaces.com/ultralightcore-bin-${ULTRALIGHTCORE_REV}-${PLATFORM}-${ARCHITECTURE}.7z
-  SOURCE_DIR "${ULTRALIGHTCORE_DIR}"
-  BUILD_IN_SOURCE 1
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND ""
-  INSTALL_COMMAND ""
-)
+if(${USE_LOCAL_DEPS})
+  add_custom_target(UltralightCoreBin)
+  add_custom_target(WebCoreBin)
+  add_custom_target(UltralightBin)
+else ()
+    ExternalProject_Add(UltralightCoreBin
+      URL https://ultralightcore-bin.sfo2.cdn.digitaloceanspaces.com/ultralightcore-bin-${ULTRALIGHTCORE_REV}-${PLATFORM}-${ARCHITECTURE}.7z
+      SOURCE_DIR "${ULTRALIGHTCORE_DIR}"
+      BUILD_IN_SOURCE 1
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND ""
+    )
 
-ExternalProject_Add(WebCoreBin
-  URL https://webcore-bin.sfo2.cdn.digitaloceanspaces.com/webcore-bin-${WEBCORE_REV}-${PLATFORM}-${ARCHITECTURE}.7z
-  SOURCE_DIR "${WEBCORE_DIR}"
-  BUILD_IN_SOURCE 1
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND ""
-  INSTALL_COMMAND ""
-)
+    ExternalProject_Add(WebCoreBin
+      URL https://webcore-bin.sfo2.cdn.digitaloceanspaces.com/webcore-bin-${WEBCORE_REV}-${PLATFORM}-${ARCHITECTURE}.7z
+      SOURCE_DIR "${WEBCORE_DIR}"
+      BUILD_IN_SOURCE 1
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND ""
+    )
 
-ExternalProject_Add(UltralightBin
-  URL https://ultralight-bin.sfo2.cdn.digitaloceanspaces.com/ultralight-bin-${ULTRALIGHT_REV}-${PLATFORM}-${ARCHITECTURE}.7z
-  SOURCE_DIR "${ULTRALIGHT_DIR}"
-  BUILD_IN_SOURCE 1
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND ""
-  INSTALL_COMMAND ""
-)
+    ExternalProject_Add(UltralightBin
+      URL https://ultralight-bin.sfo2.cdn.digitaloceanspaces.com/ultralight-bin-${ULTRALIGHT_REV}-${PLATFORM}-${ARCHITECTURE}.7z
+      SOURCE_DIR "${ULTRALIGHT_DIR}"
+      BUILD_IN_SOURCE 1
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND ""
+    )
+endif ()

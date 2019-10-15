@@ -1,5 +1,6 @@
 #include "WindowGLFW.h"
 #include <AppCore/Monitor.h>
+#include <AppCore/App.h>
 #include "AppGLFW.h"
 #include <GLFW/glfw3.h>
 
@@ -145,20 +146,22 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
 }
 
 WindowGLFW::~WindowGLFW() {
-  glfwSetKeyCallback(window_, nullptr);
-  glfwSetCharCallback(window_, nullptr);
-  glfwSetCursorPosCallback(window_, nullptr);
-  glfwSetMouseButtonCallback(window_, nullptr);
-  glfwSetScrollCallback(window_, nullptr);
-  glfwSetWindowSizeCallback(window_, nullptr);
+  if (App::instance()) {
+    glfwSetKeyCallback(window_, nullptr);
+    glfwSetCharCallback(window_, nullptr);
+    glfwSetCursorPosCallback(window_, nullptr);
+    glfwSetMouseButtonCallback(window_, nullptr);
+    glfwSetScrollCallback(window_, nullptr);
+    glfwSetWindowSizeCallback(window_, nullptr);
 
-  glfwDestroyCursor(cursor_ibeam_);
-  glfwDestroyCursor(cursor_crosshair_);
-  glfwDestroyCursor(cursor_hand_);
-  glfwDestroyCursor(cursor_hresize_);
-  glfwDestroyCursor(cursor_vresize_);
+    glfwDestroyCursor(cursor_ibeam_);
+    glfwDestroyCursor(cursor_crosshair_);
+    glfwDestroyCursor(cursor_hand_);
+    glfwDestroyCursor(cursor_hresize_);
+    glfwDestroyCursor(cursor_vresize_);
 
-  glfwDestroyWindow(window_);
+    glfwDestroyWindow(window_);
+  }
 }
 
 uint32_t WindowGLFW::width() const {

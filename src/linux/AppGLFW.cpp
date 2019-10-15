@@ -20,7 +20,7 @@ static void GLFW_error_callback(int error, const char* description)
 
 namespace ultralight {
 
-AppGLFW::AppGLFW() {
+AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
   glfwSetErrorCallback(GLFW_error_callback);
 
   if (!glfwInit())
@@ -28,7 +28,6 @@ AppGLFW::AppGLFW() {
 
   main_monitor_.reset(new MonitorGLFW());
 
-  Config config;
   config.device_scale_hint = main_monitor_->scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
@@ -40,6 +39,7 @@ AppGLFW::AppGLFW() {
 }
 
 AppGLFW::~AppGLFW() {
+  window_ = nullptr;
   glfwTerminate();
 }
 
@@ -55,7 +55,7 @@ void AppGLFW::set_window(Ref<Window> window) {
   window_ = window;
   
   WindowGLFW* win = static_cast<WindowGLFW*>(window_.get());
-  gpu_context_.reset(new GPUContextGL(win->handle(), (float)win->scale(), true));
+  gpu_context_.reset(new GPUContextGL(win->handle(), (float)win->scale(), true, true));
   Platform::instance().set_gpu_driver(gpu_context_->driver());
   
   win->set_app_listener(this);
@@ -82,8 +82,6 @@ void AppGLFW::Run() {
     Update();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
-
-  glfwTerminate();
 }
 
 void AppGLFW::Quit() {
@@ -114,8 +112,8 @@ void AppGLFW::Update() {
 
 static App* g_app_instance = nullptr;
 
-Ref<App> App::Create() {
-  g_app_instance = new AppGLFW();
+Ref<App> App::Create(Settings settings, Config config) {
+  g_app_instance = new AppGLFW(settings, config);
   return AdoptRef(*g_app_instance);
 }
 

@@ -22,6 +22,8 @@ public:
   virtual void OnResize(uint32_t width, uint32_t height) override;
 
   // Inherited from App
+                   
+  virtual const Settings& settings() const override { return settings_; }
 
   virtual void set_listener(AppListener* listener) override { listener_ = listener; }
 
@@ -46,7 +48,7 @@ public:
   void Update();
 
 protected:
-  AppMac();
+  AppMac(Settings settings, Config config);
   virtual ~AppMac();
 
   friend class App;
@@ -54,10 +56,14 @@ protected:
   DISALLOW_COPY_AND_ASSIGN(AppMac);
 
   bool is_running_ = false;
+  Settings settings_;
   AppListener* listener_ = nullptr;
   RefPtr<Renderer> renderer_;
   RefPtr<Window> window_;
   MonitorMac main_monitor_;
+  bool config_force_repaint_ = false;
+  bool is_forcing_next_two_repaints_ = false;
+  int repaint_count_ = 0;
   std::unique_ptr<GPUContextMetal> gpu_context_;
   std::unique_ptr<FileSystemMac> file_system_;
 };

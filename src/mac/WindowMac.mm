@@ -188,11 +188,11 @@ void WindowMac::OnClose() {
 
 void WindowMac::OnResize(uint32_t width, uint32_t height) {
   [controller_ metalView].drawableSize = CGSizeMake(DeviceToPixels((int)width), DeviceToPixels((int)height));
-
-  if (listener_)
-    listener_->OnResize(width, height);
+    
   if (app_listener_)
     app_listener_->OnResize(width, height);
+  if (listener_)
+    listener_->OnResize(width, height);
 }
 
 MTKView* WindowMac::view() {

@@ -278,6 +278,7 @@ String16 FileSystemWin::GetPathByAppendingComponent(const String16& path, const 
     return String16();
 
   std::unique_ptr<Char16[]> buffer(new Char16[MAX_PATH]);
+  memset(buffer.get(), 0, MAX_PATH * sizeof(Char16));
   memcpy(buffer.get(), path.data(), path.length() * sizeof(Char16));
 
   if (!PathAppendW(buffer.get(), component.data()))
@@ -308,7 +309,11 @@ String16 FileSystemWin::GetFilenameFromPath(const String16& path) {
 }
 
 String16 FileSystemWin::GetDirectoryNameFromPath(const String16& path) {
+  if (path.empty())
+    return String16();
+
   std::unique_ptr<Char16[]> utf16(new Char16[path.length()]);
+  memset(utf16.get(), 0, path.length() * sizeof(Char16));
   memcpy(utf16.get(), path.data(), path.length() * sizeof(Char16));
   if (::PathRemoveFileSpecW(utf16.get()))
     return String16(utf16.get(), wcslen(utf16.get()));
@@ -464,6 +469,7 @@ bool FileSystemWin::CopyFile_(const String16& source, const String16& destinatio
 
 std::unique_ptr<WCHAR[]> FileSystemWin::GetRelative(const String16& path) {
   std::unique_ptr<WCHAR[]> relPath(new WCHAR[_MAX_PATH]);
+  memset(relPath.get(), 0, _MAX_PATH * sizeof(WCHAR));
   PathCombineW(relPath.get(), baseDir_.get(), path.data());
   return relPath;
 }

@@ -28,6 +28,10 @@ public:
   }
 
   virtual void Resize(uint32_t width, uint32_t height) override {
+    // Clamp each dimension to 2
+    width = width <= 2 ? 2 : width;
+    height = height <= 2 ? 2 : height;
+
     if (width == width_ && height == height_)
       return;
 
@@ -65,7 +69,7 @@ public:
 
       gpu_state_.viewport_width = (float) window_->width();
       gpu_state_.viewport_height = (float) window_->height();
-      gpu_state_.transform = ConvertAffineTo4x4(identity);
+      gpu_state_.transform = identity.GetMatrix4x4();
       gpu_state_.enable_blend = true;
       gpu_state_.enable_texturing = true;
       gpu_state_.shader_type = kShaderType_Fill;
@@ -230,6 +234,10 @@ protected:
 
 Ref<Overlay> Overlay::Create(Ref<Window> window, uint32_t width,
                              uint32_t height, int x, int y) {
+  // Clamp each dimension to 2
+  width = width <= 2 ? 2 : width;
+  height = height <= 2 ? 2 : height;
+
   return AdoptRef(*new OverlayImpl(window, width, height, x, y));
 }
 

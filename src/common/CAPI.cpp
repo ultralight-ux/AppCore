@@ -8,6 +8,13 @@ using namespace ultralight;
 // Undocumented functions from Ultralight's CAPI, each must be destroyed
 ULExport ULRenderer C_WrapRenderer(Ref<Renderer> renderer);
 ULExport ULView C_WrapView(Ref<View> view);
+#define ToULString(x) reinterpret_cast<ULString>(const_cast<ultralight::String*>(&x))
+#define ToString(x) (*reinterpret_cast<ultralight::String*>(x))
+
+struct C_Settings {
+  Settings val;
+};
+
 struct C_Config {
   Config val;
 };
@@ -74,10 +81,25 @@ struct C_Overlay {
   }
 };
 
+ULSettings ulCreateSettings() {
+  return new C_Settings();
+}
 
-ULApp ulCreateApp(ULConfig config) {
-  Platform::instance().set_config(config->val);
-  return new C_App{ App::Create() };
+void ulDestroySettings(ULSettings settings) {
+  delete settings;
+}
+
+void ulSettingsSetFileSystemPath(ULSettings settings, ULString path) {
+  settings->val.file_system_path = ToString(path).utf16();
+}
+
+void ulSettingsSetLoadShadersFromFileSystem(ULSettings settings, bool enabled) {
+  settings->val.load_shaders_from_file_system = enabled;
+}
+
+ULApp ulCreateApp(ULSettings settings, ULConfig config) {
+  return new C_App{ App::Create(settings ? settings->val : Settings(),
+                                config ? config->val : Config()) };
 }
 
 void ulDestroyApp(ULApp app) {

@@ -5,11 +5,12 @@
 
 namespace ultralight {
 
-GPUContextGL::GPUContextGL(GLFWwindow* window, float scale, bool enable_vsync) : window_(window) {
+GPUContextGL::GPUContextGL(GLFWwindow* window, float scale, bool enable_vsync, bool enable_msaa) : 
+  window_(window), scale_(scale), msaa_enabled_(enable_msaa) {
   glfwMakeContextCurrent(window_);
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
   glfwSwapInterval(enable_vsync ? 1 : 0);
-  driver_.reset(new ultralight::GPUDriverGL(scale));
+  driver_.reset(new ultralight::GPUDriverGL(this));
 }
 
 void GPUContextGL::PresentFrame() {

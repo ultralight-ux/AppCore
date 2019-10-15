@@ -280,7 +280,9 @@ static LONG toGDIFontWeight(LONG fontWeight)
   return FW_HEAVY;
 }
 
-static HFONT createGDIFont(const std::wstring& family, LONG desiredWeight, bool desiredItalic, int size, bool synthesizeItalic)
+uint32_t murmur3_32(const uint8_t* key, size_t len, uint32_t seed);
+
+static HFONT createGDIFont(const std::wstring& family, LONG desiredWeight, bool desiredItalic, int size, bool synthesizeItalic, uint32_t& logfont_hash)
 {
   HDC hdc = GetDC(0);
 
@@ -330,13 +332,24 @@ static HFONT createGDIFont(const std::wstring& family, LONG desiredWeight, bool 
 
   SaveDC(hdc);
   SelectObject(hdc, chosenFont);
-  TCHAR actualName[LF_FACESIZE];
-  GetTextFace(hdc, LF_FACESIZE, actualName);
+
+  struct FontDescription {
+    TCHAR actualName[LF_FACESIZE];
+    BYTE italic;
+    LONG weight;
+  } fontDescription;
+  
+  fontDescription.italic = matchData.m_chosen.lfItalic;
+  fontDescription.weight = matchData.m_chosen.lfWeight;
+  GetTextFace(hdc, LF_FACESIZE, fontDescription.actualName);
   RestoreDC(hdc, -1);
 
-  if (_tcsicmp(matchData.m_chosen.lfFaceName, actualName))
+  if (_tcsicmp(matchData.m_chosen.lfFaceName, fontDescription.actualName)) {
+    DeleteObject(chosenFont);
     return nullptr;
+  }
 
+  logfont_hash = murmur3_32((const uint8_t*)&(fontDescription), sizeof(FontDescription), 0xBEEF);
   return chosenFont;
 }
 
@@ -595,17 +608,20 @@ String16 FontLoaderWin::fallback_font_for_characters(const String16& characters,
 }
 
 Ref<Buffer> FontLoaderWin::Load(const String16& family, int weight, bool italic, float size) {
-  HFONT font = createGDIFont(family.data(), weight, italic, (int)size, false);
-  ultralight::Ref<ultralight::Buffer> data = GetFontData(font);
-
-  uint64_t hash = (uint64_t)murmur3_32((const uint8_t*)data->data(), data->size(), 0xBEEF);
+  uint32_t hash = 0;
+  HFONT font = createGDIFont(family.data(), weight, italic, (int)size, false, hash);
+  if (!font) 
+    return ultralight::Buffer::Create(nullptr, 0);
 
   auto i = fonts_.find(hash);
   if (i == fonts_.end()) {
+    ultralight::Ref<ultralight::Buffer> data = GetFontData(font);
+    DeleteObject(font);
     fonts_.insert({ hash, data });
     return data;
   }
   else {
+    DeleteObject(font);
     return *i->second.get();
   }
 }

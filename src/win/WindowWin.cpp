@@ -17,6 +17,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
   switch (message) {
   case WM_PAINT:
     hdc = BeginPaint(hWnd, &ps);
+    static_cast<AppWin*>(App::instance())->InvalidateWindow();
+    static_cast<AppWin*>(App::instance())->OnPaint();
     EndPaint(hWnd, &ps);
     break;
   case WM_DESTROY:
@@ -26,13 +28,20 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     WINDOWDATA()->is_resizing_modal = true;
     break;
   case WM_SIZE:
-    if (WINDOWDATA())
-      if (!WINDOWDATA()->is_resizing_modal)
-        WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
+  {
+    if (WINDOWDATA()) {
+      WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
+      // This would normally be called when the message loop is idle
+      // but during resize the window consumes all messages so we need
+      // to force paints during the operation.
+      static_cast<AppWin*>(App::instance())->OnPaint();
+    }
     break;
+  }
   case WM_EXITSIZEMOVE:
     WINDOWDATA()->is_resizing_modal = false;
     WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
+    static_cast<AppWin*>(App::instance())->OnPaint();
     break;
   case WM_KEYDOWN:
     WINDOW()->FireKeyEvent(KeyEvent(KeyEvent::kType_RawKeyDown, (uintptr_t)wParam, (intptr_t)lParam, false));
@@ -51,6 +60,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         WINDOWDATA()->cur_btn });
     break;
   case WM_LBUTTONDOWN:
+    SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Left;
     WINDOW()->FireMouseEvent(
       { MouseEvent::kType_MouseDown,
@@ -59,6 +69,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         WINDOWDATA()->cur_btn });
     break;
   case WM_MBUTTONDOWN:
+    SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Middle;
     WINDOW()->FireMouseEvent(
     { MouseEvent::kType_MouseDown,
@@ -67,6 +78,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
       WINDOWDATA()->cur_btn });
     break;
   case WM_RBUTTONDOWN:
+    SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Right;
     WINDOW()->FireMouseEvent(
     { MouseEvent::kType_MouseDown,
@@ -77,6 +89,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
   case WM_LBUTTONUP:
   case WM_MBUTTONUP:
   case WM_RBUTTONUP:
+    ReleaseCapture();
     WINDOW()->FireMouseEvent(
     { MouseEvent::kType_MouseUp,
       WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
@@ -160,7 +173,7 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height,
 
   // Create window
   RECT rc = { 0, 0, (LONG)DeviceToPixels(width), (LONG)DeviceToPixels(height) };
-  AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+  AdjustWindowRect(&rc, style, FALSE);
   hwnd_ = ::CreateWindowEx(NULL
     , class_name
     , _T("")

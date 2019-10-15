@@ -1,7 +1,7 @@
 #pragma once
 #import <MetalKit/MetalKit.h>
 #import <simd/simd.h>
-#import "../../../shaders/metal/ShaderTypes.h"
+#import "../../../shaders/metal/src/ShaderTypes.h"
 #include <Ultralight/platform/GPUDriver.h>
 #include <map>
 #include <vector>
@@ -82,8 +82,8 @@ public:
     void EndDrawing();
     
 protected:
-    // We triple-buffer vertex/index geometry buffers
-    static const NSUInteger RingBufferSize = 3;
+    // We double-buffer vertex/index geometry buffers
+    static const NSUInteger RingBufferSize = 1;
     
     template <typename T>
     class RingBuffer {
@@ -98,24 +98,32 @@ protected:
     
     void SetGPUState(const GPUState& state);
     
+    Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height);
+    
+    void ApplyScissor(const GPUState& state);
+    
     GPUContextMetal* context_;
     
     // The render command encoder only exists during rendering
     id<MTLRenderCommandEncoder> render_encoder_;
     uint32_t render_encoder_render_buffer_id_;
-    bool needs_render_buffer_clear_;
-    uint32_t render_buffer_clear_id_;
+    NSUInteger render_encoder_render_buffer_width_;
+    NSUInteger render_encoder_render_buffer_height_;
     
     uint32_t next_texture_id_ = 1;
     uint32_t next_render_buffer_id_ = 1; // 0 is reserved for screen
     uint32_t next_geometry_id_ = 1;
     
     struct Texture {
-        id<MTLTexture> texture;
-        int64_t owning_frame_id_ = 0;
+        id<MTLTexture> texture_;
+        id<MTLTexture> resolve_texture_;
+        bool needs_init_ = true;
     };
     
-    typedef std::map<uint32_t, RingBuffer<Texture>> TextureMap;
+    bool drawable_needs_flush_ = false;
+    
+    //typedef std::map<uint32_t, RingBuffer<Texture>> TextureMap;
+    typedef std::map<uint32_t, Texture> TextureMap;
     TextureMap textures_;
     
     typedef std::map<uint32_t, RenderBuffer> RenderBufferMap;
