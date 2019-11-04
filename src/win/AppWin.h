@@ -9,8 +9,13 @@
 
 namespace ultralight {
 
+#if defined(DRIVER_D3D11)
 class GPUContextD3D11;
 class GPUDriverD3D11;
+#elif defined(DRIVER_D3D12)
+class GPUContextD3D12;
+class GPUDriverD3D12;
+#endif
 class WindowsUtil;
 class MonitorWin;
 
@@ -72,8 +77,13 @@ protected:
   std::unique_ptr<MonitorWin> main_monitor_;
   std::unique_ptr<FontLoaderWin> font_loader_;
   std::unique_ptr<FileSystemWin> file_system_;
+#if defined(DRIVER_D3D11)
   std::unique_ptr<GPUContextD3D11> gpu_context_;
   std::unique_ptr<GPUDriverD3D11> gpu_driver_;
+#elif defined(DRIVER_D3D12)
+  std::unique_ptr<GPUContextD3D12> gpu_context_;
+  std::unique_ptr<GPUDriverD3D12> gpu_driver_;
+#endif
 };
 
 }  // namespace ultralight

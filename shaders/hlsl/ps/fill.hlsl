@@ -34,8 +34,6 @@ struct VS_OUTPUT
   float2 ScreenCoord : TEXCOORD2;
 };
 
-float OutColor;
-
 uint FillType(VS_OUTPUT input) { return uint(input.Data0.x + 0.5); }
 float4 TileRectUV() { return Vector[0]; }
 float2 TileSize() { return Vector[1].zw; }
@@ -374,10 +372,8 @@ void Unpack(float4 x, out float4 a, out float4 b) {
   b = floor(x - a * s);
 }
 
-float epsilon = AA_WIDTH;
-
 float antialias2(float d) {
-  return smoothstep(-epsilon, +epsilon, d);
+  return smoothstep(-AA_WIDTH, +AA_WIDTH, d);
 }
 
 // Returns two values:

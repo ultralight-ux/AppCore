@@ -1,3 +1,4 @@
+#if defined(DRIVER_D3D11)
 #include "GPUContextD3D11.h"
 #include <cassert>
 
@@ -318,3 +319,5 @@ UINT GPUContextD3D11::back_buffer_width() { return back_buffer_width_; }
 UINT GPUContextD3D11::back_buffer_height() { return back_buffer_height_; }
 
 }  // namespace ultralight
+
+#endif

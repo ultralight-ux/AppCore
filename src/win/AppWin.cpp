@@ -1,8 +1,13 @@
 #include "AppWin.h"
 #include <Windows.h>
 #include "WindowWin.h"
+#if defined(DRIVER_D3D11)
 #include "d3d11/GPUContextD3D11.h"
 #include "d3d11/GPUDriverD3D11.h"
+#elif defined(DRIVER_D3D12)
+#include "d3d12/GPUContextD3D12.h"
+#include "d3d12/GPUDriverD3D12.h"
+#endif
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/Config.h>
 #include <Shlwapi.h>
@@ -38,6 +43,9 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
 }
 
 AppWin::~AppWin() {
+  Platform::instance().set_gpu_driver(nullptr);
+  gpu_driver_.reset();
+  gpu_context_.reset();
 }
 
 void AppWin::OnClose() {
@@ -50,6 +58,7 @@ void AppWin::OnResize(uint32_t width, uint32_t height) {
 
 void AppWin::set_window(Ref<Window> window) {
   window_ = window;
+#if defined(DRIVER_D3D11)
   gpu_context_.reset(new GPUContextD3D11());
   WindowWin* win = static_cast<WindowWin*>(window_.get());
   if (!gpu_context_->Initialize(win->hwnd(), win->width(),
@@ -59,6 +68,17 @@ void AppWin::set_window(Ref<Window> window) {
   }
 
   gpu_driver_.reset(new GPUDriverD3D11(gpu_context_.get()));
+#elif defined(DRIVER_D3D12)
+  gpu_context_.reset(new GPUContextD3D12());
+  WindowWin* win = static_cast<WindowWin*>(window_.get());
+  if (!gpu_context_->Initialize(win->hwnd(), win->width(),
+	  win->height(), win->scale(), win->is_fullscreen(), true, true, 1)) {
+	  MessageBoxW(NULL, (LPCWSTR)L"Failed to initialize D3D12 context", (LPCWSTR)L"Notification", MB_OK);
+	  exit(-1);
+  }
+
+  gpu_driver_.reset(new GPUDriverD3D12(gpu_context_.get()));
+#endif
   Platform::instance().set_gpu_driver(gpu_driver_.get());
   win->set_app_listener(this);
 }

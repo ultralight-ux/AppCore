@@ -97,8 +97,16 @@ elseif (PORT MATCHES "UltralightWin")
 
     load_sources(AppCore_SOURCES "src/win")
     
+    if (${USE_D3D12})
+        add_definitions(-DDRIVER_D3D12)
+        link_libraries("d3d12.lib" "dxgi.lib" "d3dcompiler.lib")
+    else ()
+        add_definitions(-DDRIVER_D3D11)
+        link_libraries("d3d11.lib" "d3dcompiler.lib")
+    endif ()
+    
     add_definitions(-D_UNICODE -DUNICODE -DNOMINMAX)
-    link_libraries("Shlwapi.lib" "Usp10.lib" "d3d11.lib" "d3dcompiler.lib")
+    link_libraries("Shlwapi.lib" "Usp10.lib")
 endif ()
 
 link_libraries(UltralightCore WebCore Ultralight)
@@ -128,11 +136,10 @@ if(${BUILD_TESTS})
       # Tell MSVC to use main instead of WinMain for Windows subsystem executables
       set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
       
-      add_custom_target(CopyDLL ALL
+      add_custom_command(TARGET MiniBrowser POST_BUILD
           COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHTCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
           COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
           COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
-          DEPENDS MiniBrowser
       )
     endif()
 endif ()

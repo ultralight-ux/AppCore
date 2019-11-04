@@ -1,3 +1,4 @@
+#if defined(DRIVER_D3D11)
 #include "GPUDriverD3D11.h"
 #include "GPUContextD3D11.h"
 #include <directxcolors.h>
@@ -834,3 +835,5 @@ Matrix GPUDriverD3D11::ApplyProjection(const Matrix4x4& transform, float screen_
 }
 
 }  // namespace ultralight
+
+#endif

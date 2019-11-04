@@ -18,7 +18,7 @@ public:
     ///
     /// Create our Window with the Resizable window flag.
     ///
-    window_ = Window::Create(app_->main_monitor(), 600, 600, false,
+    window_ = Window::Create(app_->main_monitor(), 800, 600, false,
       kWindowFlags_Titled | kWindowFlags_Resizable);
 
     ///
@@ -42,7 +42,7 @@ public:
     ///
     /// Load a string of HTML into our overlay's View
     ///
-    overlay_->view()->LoadURL("https://google.com");
+    overlay_->view()->LoadURL("https://en.wikipedia.org");
 
     ///
     /// Register our MyApp instance as a WindowListener so we can handle the

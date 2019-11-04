@@ -1,3 +1,4 @@
+#if defined(DRIVER_D3D11)
 #pragma once
 #include <d3d11.h>
 #include <wrl/client.h>
@@ -70,3 +71,5 @@ private:
 };
 
 }  // namespace ultralight
+
+#endif
