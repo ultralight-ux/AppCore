@@ -1,8 +1,9 @@
 #import <MetalKit/MetalKit.h>
+#import <QuartzCore/CAMetalLayer.h>
 
 namespace ultralight { class WindowMac; }
 
-@interface ViewDelegate : NSObject<MTKViewDelegate>
+@interface ViewDelegate : NSObject<CALayerDelegate>
 
 - (nonnull instancetype)initWithWindow:(ultralight::WindowMac*)window;
 
@@ -21,6 +22,8 @@ namespace ultralight { class WindowMac; }
 - (void)keyEvent:(NSEvent*)event;
 
 - (void)textEvent:(id)string;
+
+- (void)resizeLayer:(NSSize)size;
 
 @end
 

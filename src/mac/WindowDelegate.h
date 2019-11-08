@@ -6,4 +6,6 @@ namespace ultralight { class WindowMac; }
 
 - (void)initWithWindow:(ultralight::WindowMac*)window;
 
+- (void)windowWillClose:(NSNotification *)notification;
+
 @end

@@ -50,7 +50,9 @@ public:
   
   void OnResize(uint32_t width, uint32_t height);
                       
-  MTKView* view();
+  void SetNeedsDisplay();
+                      
+  CAMetalLayer* layer();
 
 protected:
   WindowMac(Monitor* monitor, uint32_t width, uint32_t height,

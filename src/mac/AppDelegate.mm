@@ -1,7 +1,7 @@
 #import "AppDelegate.h"
+#include "AppMac.h"
 
 @interface AppDelegate ()
-
 @end
 
 @implementation AppDelegate
@@ -15,7 +15,7 @@
 }
 
 -(BOOL) applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)app {
-    return YES;
+  return YES;
 }
 
 @end

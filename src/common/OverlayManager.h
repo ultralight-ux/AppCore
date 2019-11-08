@@ -31,6 +31,8 @@ public:
   virtual void UnfocusOverlay(Overlay* overlay);
 
   virtual bool IsOverlayFocused(Overlay* overlay) const;
+    
+  virtual bool NeedsRepaint();
 
 protected:
   Overlay* HitTest(int x, int y);

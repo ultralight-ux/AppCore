@@ -7,25 +7,25 @@
 
 @implementation WindowDelegate
 {
-    ultralight::WindowMac* window_;
+  ultralight::WindowMac* window_;
 }
 
 - (void)initWithWindow:(ultralight::WindowMac*)window {
-    window_ = window;
+  window_ = window;
+}
+
+- (void)windowWillClose:(NSNotification *)notification {
+  window_->OnClose();
 }
 
 - (void)windowDidResize:(NSNotification *)notification {
-    NSWindow* window = [notification object];
-    window_->OnResize(window.frame.size.width, window.frame.size.height);
-    [window setViewsNeedDisplay:true];
 }
 
 - (void)windowWillStartLiveResize:(NSNotification *)notification {
-    
 }
 
 - (void)windowDidEndLiveResize:(NSNotification *)notification {
-    
+
 }
 
 @end

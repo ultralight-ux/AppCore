@@ -186,6 +186,10 @@ public:
     y_ = y;
     needs_update_ = true;
   }
+                        
+  virtual bool NeedsRepaint() override {
+    return needs_update_ || view_->needs_paint();
+  }
 
   REF_COUNTED_IMPL(OverlayImpl);
 

@@ -116,7 +116,7 @@ add_library(AppCore SHARED ${AppCore_SOURCES})
 add_dependencies(AppCore UltralightCoreBin WebCoreBin UltralightBin)
 
 if (PORT MATCHES "UltralightMac")
-    set_target_properties(AppCore PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework MetalKit")
+    set_target_properties(AppCore PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework QuartzCore -framework MetalKit")
     set_property (TARGET AppCore APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
 endif ()
 
@@ -128,7 +128,7 @@ if(${BUILD_TESTS})
     if (APPLE)
       # Enable High-DPI on macOS through our custom Info.plist template
       set_target_properties(MiniBrowser PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/tests/Info.plist.in") 
-      set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework MetalKit")
+      set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework QuartzCore -framework MetalKit")
       set_property (TARGET MiniBrowser APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
     endif()
 

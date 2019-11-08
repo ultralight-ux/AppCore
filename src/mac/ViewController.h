@@ -3,9 +3,13 @@
 
 namespace ultralight { class WindowMac; }
 
+@interface MTLView : NSView
+- (CAMetalLayer*)metalLayer;
+@end
+
 @interface ViewController : NSViewController
 
 - (void)initWithWindow:(ultralight::WindowMac*)window frame:(NSRect)rect;
-- (MTKView*)metalView;
+- (MTLView*)metalView;
 
 @end

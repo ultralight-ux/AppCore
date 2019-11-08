@@ -8,11 +8,37 @@
 #import "metal/GPUDriverMetal.h"
 #include "FileSystemMac.h"
 
+@interface UpdateTimer : NSObject
+@property NSTimer *timer;
+- (id)init;
+- (void)onTick:(NSTimer *)aTimer;
+@end
+
+// Run update timer at 120 FPS
+@implementation UpdateTimer
+- (id)init {
+  id newInstance = [super init];
+  if (newInstance) {
+    _timer = [NSTimer scheduledTimerWithTimeInterval:(1.0/120.0)
+                                              target:self
+                                            selector:@selector(onTick:)
+                                            userInfo:nil
+                                             repeats:YES];
+  }
+  
+  return newInstance;
+}
+
+-(void)onTick:(NSTimer *)aTimer {
+  static_cast<ultralight::AppMac*>(ultralight::App::instance())->Update();
+}
+@end
+
 namespace ultralight {
 
 AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   [NSApplication sharedApplication];
-    
+  
   AppDelegate *appDelegate = [[AppDelegate alloc] init];
   [NSApp setDelegate:appDelegate];
 
@@ -24,8 +50,6 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   Platform::instance().set_file_system(file_system_.get());
 
   renderer_ = Renderer::Create();
-    
-  config_force_repaint_ = config.force_repaint;
 }
 
 AppMac::~AppMac() {
@@ -37,13 +61,6 @@ void AppMac::OnClose() {
 void AppMac::OnResize(uint32_t width, uint32_t height) {
   if (gpu_context_) {
     gpu_context_->Resize((int)width, (int)height);
-
-    // When we resize the MTKView on macOS it seems to invalidate all of our
-    // render buffers (the front and back buffers). Handle this condition by
-    // forcing two full repaints after resize.
-    const_cast<Config&>(Platform::instance().config()).force_repaint = true;
-    is_forcing_next_two_repaints_ = true;
-    repaint_count_ = 0;
   }
 }
 
@@ -55,7 +72,7 @@ void AppMac::set_window(Ref<Window> window) {
   // Only enable MSAA if our DPI scale is <= 1.5x
   bool enable_msaa = win->scale() <= 1.5;
     
-  gpu_context_.reset(new GPUContextMetal(win->view(), win->width(), win->height(), win->scale(), win->is_fullscreen(), true, enable_msaa));
+  gpu_context_.reset(new GPUContextMetal(win->layer().device, win->width(), win->height(), win->scale(), win->is_fullscreen(), true, enable_msaa));
   Platform::instance().set_gpu_driver(gpu_context_->driver());
   win->set_app_listener(this);
 }
@@ -78,8 +95,11 @@ void AppMac::Run() {
 
   if (is_running_)
     return;
-    
+
+  is_running_ = true;
+  UpdateTimer* timer = [[UpdateTimer alloc] init];
   [NSApp run];
+  is_running_ = false;
 }
 
 void AppMac::Quit() {
@@ -91,6 +111,23 @@ void AppMac::Update() {
     listener_->OnUpdate();
 
   renderer()->Update();
+  if(window() && static_cast<WindowMac*>(window_.get())->NeedsRepaint())
+      static_cast<WindowMac*>(window_.get())->SetNeedsDisplay();
+}
+    
+void AppMac::OnPaint(CAMetalLayer* layer) {
+  if (!gpu_context_)
+    return;
+
+  if (listener_)
+    listener_->OnUpdate();
+
+  renderer()->Update();
+
+  if (!static_cast<WindowMac*>(window_.get())->NeedsRepaint())
+    return;
+  
+  gpu_context_->set_current_drawable([layer nextDrawable]);
 
   gpu_context_->driver()->BeginSynchronize();
   renderer_->Render();
@@ -100,17 +137,9 @@ void AppMac::Update() {
     gpu_context_->BeginDrawing();
     gpu_context_->driver()->DrawCommandList();
     if (window_)
-	    static_cast<WindowMac*>(window_.get())->Draw();
+      static_cast<WindowMac*>(window_.get())->Draw();
     gpu_context_->EndDrawing();
     gpu_context_->PresentFrame();
-  }
-    
-  if (is_forcing_next_two_repaints_) {
-    repaint_count_++;
-    if (repaint_count_ == 2) {
-      const_cast<Config&>(Platform::instance().config()).force_repaint = config_force_repaint_;
-      is_forcing_next_two_repaints_ = false;
-    }
   }
 }
 

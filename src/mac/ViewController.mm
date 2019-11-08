@@ -1,177 +1,229 @@
 #import "ViewController.h"
 #import <MetalKit/MetalKit.h>
 #import "ViewDelegate.h"
+#import "WindowMac.h"
+#import <Cocoa/Cocoa.h>
+#import <QuartzCore/CAMetalLayer.h>
+#import <Metal/Metal.h>
+#import <dispatch/dispatch.h>
 
-@interface CustomMTKView : MTKView
+@implementation MTLView
+{
+  float initialScale;
+}
 
-@end
+- (id)initWithFrame:(NSRect)frame initialScale:(float)scale
+{
+  if (!(self = [super initWithFrame:frame])) {
+    return self;
+  }
+  
+  initialScale = scale;
+  
+  // We want to be backed by a CAMetalLayer.
+  self.wantsLayer = YES;
+  self.layerContentsRedrawPolicy = NSViewLayerContentsRedrawOnSetNeedsDisplay;
+  self.layerContentsPlacement = NSViewLayerContentsPlacementTopLeft;
+  
+  return self;
+}
 
-@implementation CustomMTKView
+- (CALayer*)makeBackingLayer
+{
+  CAMetalLayer* metalLayer = [CAMetalLayer layer];
+  metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+  metalLayer.device = MTLCreateSystemDefaultDevice();
+  metalLayer.allowsNextDrawableTimeout = false;
+  metalLayer.autoresizingMask = kCALayerHeightSizable | kCALayerWidthSizable;
+  metalLayer.needsDisplayOnBoundsChange = YES;
+  metalLayer.contentsScale = initialScale;
+    
+  return metalLayer;
+}
+
+- (CAMetalLayer*)metalLayer
+{
+  return (CAMetalLayer*)self.layer;
+}
+
+- (void)setDelegate:(ViewDelegate*)delegate
+{
+  self.metalLayer.delegate = delegate;
+}
+
+- (void)setFrameSize:(NSSize)newSize
+{
+  [super setFrameSize:newSize];
+  if (self.window)
+    self.metalLayer.contentsScale = self.window.backingScaleFactor;
+  newSize.width *= self.metalLayer.contentsScale;
+  newSize.height *= self.metalLayer.contentsScale;
+  self.metalLayer.drawableSize = newSize;
+  [self viewDidChangeBackingProperties];
+  [(ViewDelegate*)self.metalLayer.delegate resizeLayer:newSize];
+}
+
+- (void)viewDidChangeBackingProperties
+{
+  // TODO: handle change in contentsScale/backingScaleFactor here.
+}
 
 - (BOOL)acceptsFirstResponder {
-    return YES;
+  return YES;
 }
 
 @end
 
 @implementation ViewController
 {
-    ultralight::WindowMac* _window;
-    NSRect _initialFrame;
-    ViewDelegate *_delegate;
+  ultralight::WindowMac* _window;
+  NSRect _initialFrame;
+  float _initialScale;
+  ViewDelegate *_delegate;
 }
 
 - (void)initWithWindow:(ultralight::WindowMac*)window frame:(NSRect)rect
 {
-    _window = window;
-    _initialFrame = rect;
+  _window = window;
+  _initialFrame = rect;
+  _initialScale = window->scale();
 }
 
-- (MTKView*)metalView
+- (MTLView*)metalView
 {
-    return (MTKView *)self.view;
+  return (MTLView*)self.view;
 }
 
 - (void)loadView
 {
-    MTKView* view = [[CustomMTKView alloc] initWithFrame:_initialFrame device:MTLCreateSystemDefaultDevice()];
-    
-    [view setClearColor:MTLClearColorMake(0, 0, 0, 1)];
-    [view setColorPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB];
-    [view setDepthStencilPixelFormat:MTLPixelFormatDepth32Float];
-    [view setAutoResizeDrawable:false];
-    [view setSampleCount:1];
-    [view setPresentsWithTransaction:true];
-    
-    [self setView:view];
+  MTLView* view = [[MTLView alloc] initWithFrame:_initialFrame
+                                    initialScale:_initialScale];
+  [self setView:view];
 }
 
 - (void)viewDidLayout
 {
-    NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
-                                    initWithRect:self.view.bounds
-                                    options:NSTrackingMouseMoved | NSTrackingActiveAlways
-                                    owner:self userInfo:nil];
-    [self.view addTrackingArea:trackingArea];
+  NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
+                                  initWithRect:self.view.bounds
+                                  options:NSTrackingMouseMoved | NSTrackingActiveAlways
+                                  owner:self userInfo:nil];
+  [self.view addTrackingArea:trackingArea];
 }
 
 - (void)viewDidLoad
 {
-    [super viewDidLoad];
-    
-    if(![self metalView].device)
-    {
-        NSLog(@"Metal is not supported on this device");
-        return;
-    }
-    
-    _delegate = [[ViewDelegate alloc] initWithWindow:_window];
-    
-    if(!_delegate)
-    {
-        NSLog(@"Application failed initialization");
-        return;
-    }
-    
-    // Initialize our delegate with the view size
-    [_delegate mtkView:[self metalView] drawableSizeWillChange:[self metalView].drawableSize];
-    
-    [self metalView].delegate = _delegate;
-    
-    NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
-                                    initWithRect:self.view.bounds
-                                    options:NSTrackingMouseMoved | NSTrackingActiveAlways
-                                    owner:self userInfo:nil];
-    [self.view addTrackingArea:trackingArea];
+  [super viewDidLoad];
+
+  if (!self.metalView.metalLayer.device)
+  {
+    NSLog(@"Metal is not supported on this device");
+    return;
+  }
+
+  _delegate = [[ViewDelegate alloc] initWithWindow:_window];
+
+  if (!_delegate)
+  {
+    NSLog(@"Application failed initialization");
+    return;
+  }
+
+  [(MTLView*)self.view setDelegate:_delegate];
+
+  NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
+                                  initWithRect:self.view.bounds
+                                  options:NSTrackingMouseMoved | NSTrackingActiveAlways
+                                  owner:self userInfo:nil];
+  [self.view addTrackingArea:trackingArea];
 }
 
 - (void)scrollWheel:(NSEvent *)event
 {
-    NSPoint eventLocation = [event locationInWindow];
-    NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
-    point.y = self.view.bounds.size.height - point.y;
-    
-    [_delegate scrollWheel:[event deltaY] * 8 mouseX:point.x mouseY:point.y];
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+  
+  [_delegate scrollWheel:[event deltaY] * 8 mouseX:point.x mouseY:point.y];
 }
 
 - (void)mouseMoved:(NSEvent *)event
 {
-    NSPoint eventLocation = [event locationInWindow];
-    NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
-    point.y = self.view.bounds.size.height - point.y;
-    
-    [_delegate mouseMoved:point.x mouseY:point.y];
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+  
+  [_delegate mouseMoved:point.x mouseY:point.y];
 }
 
 - (void)mouseDragged:(NSEvent *)event
 {
-    NSPoint eventLocation = [event locationInWindow];
-    NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
-    point.y = self.view.bounds.size.height - point.y;
-    
-    [_delegate mouseMoved:point.x mouseY:point.y];
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+  
+  [_delegate mouseMoved:point.x mouseY:point.y];
 }
 
 - (void)mouseDown:(NSEvent *)event
 {
-    NSPoint eventLocation = [event locationInWindow];
-    NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
-    point.y = self.view.bounds.size.height - point.y;
-    
-    [_delegate leftMouseDown:point.x mouseY:point.y];
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+  
+  [_delegate leftMouseDown:point.x mouseY:point.y];
 }
 
 - (void)mouseUp:(NSEvent *)event
 {
-    NSPoint eventLocation = [event locationInWindow];
-    NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
-    point.y = self.view.bounds.size.height - point.y;
-    
-    [_delegate leftMouseUp:point.x mouseY:point.y];
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+  
+  [_delegate leftMouseUp:point.x mouseY:point.y];
 }
 
 - (void)rightMouseDown:(NSEvent *)event
 {
-    NSPoint eventLocation = [event locationInWindow];
-    NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
-    point.y = self.view.bounds.size.height - point.y;
-    
-    [_delegate rightMouseDown:point.x mouseY:point.y];
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+  
+  [_delegate rightMouseDown:point.x mouseY:point.y];
 }
 
 - (void)rightMouseUp:(NSEvent *)event
 {
-    NSPoint eventLocation = [event locationInWindow];
-    NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
-    point.y = self.view.bounds.size.height - point.y;
-    
-    [_delegate rightMouseUp:point.x mouseY:point.y];
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+  
+  [_delegate rightMouseUp:point.x mouseY:point.y];
 }
 
 - (void)keyUp:(NSEvent *)event
 {
-    [_delegate keyEvent:event];
+  [_delegate keyEvent:event];
 }
 
 - (void)keyDown:(NSEvent *)event
 {
-    [_delegate keyEvent:event];
-    [self interpretKeyEvents:[NSArray arrayWithObject:event]];
+  [_delegate keyEvent:event];
+  [self interpretKeyEvents:[NSArray arrayWithObject:event]];
 }
 
 - (void)insertText:(id)string {
-    [_delegate textEvent:string];
+  [_delegate textEvent:string];
 }
 
 - (void) deleteBackward: (id) sender {
 }
 
 - (void) insertNewline: (id) sender {
-    [self insertText: @"\r"];
+  [self insertText: @"\r"];
 }
 
 - (void) insertTab: (id) sender {
-    [self insertText: @"\t"];
+  [self insertText: @"\t"];
 }
 
 - (void) moveLeft: (id) sender {
@@ -187,11 +239,8 @@
 }
 
 - (void)setRepresentedObject:(id)representedObject {
-    [super setRepresentedObject:representedObject];
-    
-    // Update the view, if already loaded.
+  [super setRepresentedObject:representedObject];
 }
-
 
 @end
 

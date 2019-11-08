@@ -128,6 +128,12 @@ public:
   ///
   virtual void Resize(uint32_t width, uint32_t height) = 0;
 
+  ///
+  /// Whether or not this Overlay needs repaint (either it has moved, resized,
+  /// or the internal View needs repaint).
+  ///
+  virtual bool NeedsRepaint() = 0;
+
 protected:
   virtual ~Overlay();
   virtual void Draw() = 0;

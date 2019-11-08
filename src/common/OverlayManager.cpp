@@ -84,6 +84,14 @@ void OverlayManager::UnfocusOverlay(Overlay* overlay) {
 bool OverlayManager::IsOverlayFocused(Overlay* overlay) const {
   return focused_overlay_ == overlay;
 }
+    
+bool OverlayManager::NeedsRepaint() {
+  for (auto& i : overlays_)
+    if (i->NeedsRepaint())
+      return true;
+    
+  return false;
+}
 
 Overlay* OverlayManager::HitTest(int x, int y) {
   for (auto& i : overlays_) {
