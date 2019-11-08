@@ -5,7 +5,7 @@ rm -f metal_shader
 rm -f obj.air
 
 # Compile metal shader to intermediate IR (air)
-xcrun -sdk macosx metal -c ../src/Shaders.metal -o obj.air
+xcrun -sdk macosx metal -std=osx-metal1.2 -c ../src/Shaders.metal -o obj.air
 
 # Archive air file into metallib format
 xcrun -sdk macosx metallib obj.air -o metal_shader
