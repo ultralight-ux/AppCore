@@ -727,8 +727,8 @@ void GPUDriverGL::SetUniformMatrix4fv(const char* name, size_t count, const floa
 }
 
 void GPUDriverGL::SetViewport(float width, float height) {
-  glViewport(0, 0, static_cast<GLsizei>(width * context_->scale()),
-                   static_cast<GLsizei>(height * context_->scale()));
+  glViewport(0, 0, static_cast<GLsizei>(round(width * context_->scale())),
+                   static_cast<GLsizei>(round(height * context_->scale())));
 }
 
 Matrix GPUDriverGL::ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height, bool flip_y) {

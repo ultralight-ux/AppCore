@@ -255,46 +255,50 @@ float ramp(in float inMin, in float inMax, in float val)
 float4 fillPatternGradient(VS_OUTPUT input) {
   float num_stops = Gradient_NumStops(input);
   bool is_radial = Gradient_IsRadial(input);
-  float r0 = Gradient_R0(input);
-  float r1 = Gradient_R1(input);
   float2 p0 = Gradient_P0(input);
   float2 p1 = Gradient_P1(input);
   float4 out_Color = float4(0.0, 0.0, 0.0, 0.0);
 
-  if (!is_radial) {
-    GradientStop stop0 = GetGradientStop(input, 0u);
-    GradientStop stop1 = GetGradientStop(input, 1u);
-
+  float t = 0.0;
+  if (is_radial) {
+    float r0 = p1.x;
+	float r1 = p1.y;
+    t = distance(input.TexCoord, p0);
+	float rDelta = r1 - r0;
+	t = saturate((t / rDelta) - (r0 / rDelta));
+  } else {
     float2 V = p1 - p0;
-    float t = dot(input.TexCoord - p0, V) / dot(V, V);
-    out_Color = lerp(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
-    if (num_stops > 2) {
-      GradientStop stop2 = GetGradientStop(input, 2u);
-      out_Color = lerp(out_Color, stop2.color, ramp(stop1.percent, stop2.percent, t));
-      if (num_stops > 3) {
-        GradientStop stop3 = GetGradientStop(input, 3u);
-        out_Color = lerp(out_Color, stop3.color, ramp(stop2.percent, stop3.percent, t));
-        if (num_stops > 4) {
-          GradientStop stop4 = GetGradientStop(input, 4u);
-          out_Color = lerp(out_Color, stop4.color, ramp(stop3.percent, stop4.percent, t));
-          if (num_stops > 5) {
-            GradientStop stop5 = GetGradientStop(input, 5u);
-            out_Color = lerp(out_Color, stop5.color, ramp(stop4.percent, stop5.percent, t));
-            if (num_stops > 6) {
-              GradientStop stop6 = GetGradientStop(input, 6u);
-              out_Color = lerp(out_Color, stop6.color, ramp(stop5.percent, stop6.percent, t));
-            }
+    t = saturate(dot(input.TexCoord - p0, V) / dot(V, V));
+  }
+
+  GradientStop stop0 = GetGradientStop(input, 0u);
+  GradientStop stop1 = GetGradientStop(input, 1u);
+
+  out_Color = lerp(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
+  if (num_stops > 2) {
+    GradientStop stop2 = GetGradientStop(input, 2u);
+    out_Color = lerp(out_Color, stop2.color, ramp(stop1.percent, stop2.percent, t));
+    if (num_stops > 3) {
+      GradientStop stop3 = GetGradientStop(input, 3u);
+      out_Color = lerp(out_Color, stop3.color, ramp(stop2.percent, stop3.percent, t));
+      if (num_stops > 4) {
+        GradientStop stop4 = GetGradientStop(input, 4u);
+        out_Color = lerp(out_Color, stop4.color, ramp(stop3.percent, stop4.percent, t));
+        if (num_stops > 5) {
+          GradientStop stop5 = GetGradientStop(input, 5u);
+          out_Color = lerp(out_Color, stop5.color, ramp(stop4.percent, stop5.percent, t));
+          if (num_stops > 6) {
+            GradientStop stop6 = GetGradientStop(input, 6u);
+            out_Color = lerp(out_Color, stop6.color, ramp(stop5.percent, stop6.percent, t));
           }
         }
       }
     }
-  } else {
-    // TODO Radial Gradients
   }
 
   // Add gradient noise to reduce banding (+4/-4 gradations)
-  out_Color += (8.0/255.0) * gradientNoise(input.Position.xy) - (4.0/255.0);
-  return float4(out_Color.rgb * out_Color.a, out_Color.a);
+  //out_Color += (8.0/255.0) * gradientNoise(input.Position.xy) - (4.0/255.0);
+  return float4(out_Color.rgb, out_Color.a);
 }
 
 float stroke(float d, float s, float a) {
@@ -475,8 +479,6 @@ float sdRoundBox(in float2 p, in float2 b, in float r)
 }
 
 float4 fillBoxDecorations(VS_OUTPUT input) {
-//return float4(0.3, 0.0, 0.0, 0.3);
-
   float2 outer_size = input.Data0.zw;
   float2 inner_offset = input.Data1.xy;
   float2 inner_size = input.Data1.zw;
@@ -489,13 +491,13 @@ float4 fillBoxDecorations(VS_OUTPUT input) {
 
   float4 color_top, color_right;
   Unpack(input.Data4, color_top, color_right);
-  color_top /= 65534.0f;
-  color_right /= 65534.0f;
+  color_top /= 16384.0f;
+  color_right /= 16384.0f;
 
   float4 color_bottom, color_left;
   Unpack(input.Data5, color_bottom, color_left);
-  color_bottom /= 65534.0f;
-  color_left /= 65534.0f;
+  color_bottom /= 16384.0f;
+  color_left /= 16384.0f;
 
   float width = AA_WIDTH;
 

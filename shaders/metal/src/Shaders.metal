@@ -316,46 +316,49 @@ float ramp(float inMin, float inMax, float val)
 float4 fillPatternGradient(thread FragmentInput& input, constant Uniforms& u) {
     uint num_stops = Gradient_NumStops(input);
     bool is_radial = Gradient_IsRadial(input);
-    float r0 = Gradient_R0(input);
-    float r1 = Gradient_R1(input);
     float2 p0 = Gradient_P0(input);
     float2 p1 = Gradient_P1(input);
     
     float4 col = input.Color;
-    
-    if (!is_radial) {
-        GradientStop stop0 = GetGradientStop(input, u, 0u);
-        GradientStop stop1 = GetGradientStop(input, u, 1u);
-        
+
+    float t = 0.0;
+    if (is_radial) {
+        float r0 = p1.x;
+	    float r1 = p1.y;
+        t = distance(input.TexCoord, p0);
+	    float rDelta = r1 - r0;
+	    t = saturate((t / rDelta) - (r0 / rDelta));
+    } else {
         float2 V = p1 - p0;
-        float t = dot(input.TexCoord - p0, V) / dot(V, V);
-        t = saturate(t);
-        col = mix(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
-        if (num_stops > 2u) {
-            GradientStop stop2 = GetGradientStop(input, u, 2u);
-            col = mix(col, stop2.color, ramp(stop1.percent, stop2.percent, t));
-            if (num_stops > 3u) {
-                GradientStop stop3 = GetGradientStop(input, u, 3u);
-                col = mix(col, stop3.color, ramp(stop2.percent, stop3.percent, t));
-                if (num_stops > 4u) {
-                    GradientStop stop4 = GetGradientStop(input, u, 4u);
-                    col = mix(col, stop4.color, ramp(stop3.percent, stop4.percent, t));
-                    if (num_stops > 5u) {
-                        GradientStop stop5 = GetGradientStop(input, u, 5u);
-                        col = mix(col, stop5.color, ramp(stop4.percent, stop5.percent, t));
-                        if (num_stops > 6u) {
-                            GradientStop stop6 = GetGradientStop(input, u, 6u);
-                            col = mix(col, stop6.color, ramp(stop5.percent, stop6.percent, t));
-                        }
+        t = saturate(dot(input.TexCoord - p0, V) / dot(V, V));
+    }
+
+    GradientStop stop0 = GetGradientStop(input, u, 0u);
+    GradientStop stop1 = GetGradientStop(input, u, 1u);
+    
+    col = mix(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
+    if (num_stops > 2u) {
+        GradientStop stop2 = GetGradientStop(input, u, 2u);
+        col = mix(col, stop2.color, ramp(stop1.percent, stop2.percent, t));
+        if (num_stops > 3u) {
+            GradientStop stop3 = GetGradientStop(input, u, 3u);
+            col = mix(col, stop3.color, ramp(stop2.percent, stop3.percent, t));
+            if (num_stops > 4u) {
+                GradientStop stop4 = GetGradientStop(input, u, 4u);
+                col = mix(col, stop4.color, ramp(stop3.percent, stop4.percent, t));
+                if (num_stops > 5u) {
+                    GradientStop stop5 = GetGradientStop(input, u, 5u);
+                    col = mix(col, stop5.color, ramp(stop4.percent, stop5.percent, t));
+                    if (num_stops > 6u) {
+                        GradientStop stop6 = GetGradientStop(input, u, 6u);
+                        col = mix(col, stop6.color, ramp(stop5.percent, stop6.percent, t));
                     }
                 }
             }
         }
-    } else {
-        // TODO: Handle radial gradients
     }
-    
-    return float4(col.rgb * col.a, col.a);
+
+    return float4(col.rgb, col.a);
 }
 
 float stroke(float d, float s, float a) {
@@ -542,13 +545,13 @@ float4 fillBoxDecorations(thread FragmentInput& input) {
     
     float4 color_top, color_right;
     Unpack(input.Data4, color_top, color_right);
-    color_top /= 65534.0f;
-    color_right /= 65534.0f;
+    color_top /= 16384.0f;
+    color_right /= 16384.0f;
     
     float4 color_bottom, color_left;
     Unpack(input.Data5, color_bottom, color_left);
-    color_bottom /= 65534.0f;
-    color_left /= 65534.0f;
+    color_bottom /= 16384.0f;
+    color_left /= 16384.0f;
     
     float width = AA_WIDTH;
     

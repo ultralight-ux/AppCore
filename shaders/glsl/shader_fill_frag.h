@@ -235,39 +235,44 @@ float ramp(in float inMin, in float inMax, in float val)
 void fillPatternGradient() {
   int num_stops = int(Gradient_NumStops());
   bool is_radial = Gradient_IsRadial();
-  float r0 = Gradient_R0();
-  float r1 = Gradient_R1();
   vec2 p0 = Gradient_P0();
   vec2 p1 = Gradient_P1();
 
-  if (!is_radial) {
+  float t = 0.0;
+  if (is_radial) {
+    float r0 = p1.x;
+    float r1 = p1.y;
+    t = distance(ex_TexCoord, p0);
+    float rDelta = r1 - r0;
+    t = clamp((t / rDelta) - (r0 / rDelta), 0.0, 1.0);
+  } else {
     vec2 V = p1 - p0;
-    float t = dot(ex_TexCoord - p0, V) / dot(V, V);
-    GradientStop stop0 = GetGradientStop(0u);
-    GradientStop stop1 = GetGradientStop(1u);
-    out_Color = mix(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
-    if (num_stops > 2) {
-      GradientStop stop2 = GetGradientStop(2u);
-      out_Color = mix(out_Color, stop2.color, ramp(stop1.percent, stop2.percent, t));
-      if (num_stops > 3) {
-        GradientStop stop3 = GetGradientStop(3u);
-        out_Color = mix(out_Color, stop3.color, ramp(stop2.percent, stop3.percent, t));
-        if (num_stops > 4) {
-          GradientStop stop4 = GetGradientStop(4u);
-          out_Color = mix(out_Color, stop4.color, ramp(stop3.percent, stop4.percent, t));
-          if (num_stops > 5) {
-            GradientStop stop5 = GetGradientStop(5u);
-            out_Color = mix(out_Color, stop5.color, ramp(stop4.percent, stop5.percent, t));
-            if (num_stops > 6) {
-              GradientStop stop6 = GetGradientStop(6u);
-              out_Color = mix(out_Color, stop6.color, ramp(stop5.percent, stop6.percent, t));
-            }
+    t = clamp(dot(ex_TexCoord - p0, V) / dot(V, V), 0.0, 1.0);
+  }
+
+  GradientStop stop0 = GetGradientStop(0u);
+  GradientStop stop1 = GetGradientStop(1u);
+
+  out_Color = mix(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
+  if (num_stops > 2) {
+    GradientStop stop2 = GetGradientStop(2u);
+    out_Color = mix(out_Color, stop2.color, ramp(stop1.percent, stop2.percent, t));
+    if (num_stops > 3) {
+      GradientStop stop3 = GetGradientStop(3u);
+      out_Color = mix(out_Color, stop3.color, ramp(stop2.percent, stop3.percent, t));
+      if (num_stops > 4) {
+        GradientStop stop4 = GetGradientStop(4u);
+        out_Color = mix(out_Color, stop4.color, ramp(stop3.percent, stop4.percent, t));
+        if (num_stops > 5) {
+          GradientStop stop5 = GetGradientStop(5u);
+          out_Color = mix(out_Color, stop5.color, ramp(stop4.percent, stop5.percent, t));
+          if (num_stops > 6) {
+            GradientStop stop6 = GetGradientStop(6u);
+            out_Color = mix(out_Color, stop6.color, ramp(stop5.percent, stop6.percent, t));
           }
         }
       }
     }
-  } else {
-    // TODO Radial Gradients
   }
   
   // Add gradient noise to reduce banding (+4/-4 gradations)
@@ -470,13 +475,13 @@ void fillBoxDecorations() {
 
   vec4 color_top, color_right;
   Unpack(ex_Data4, color_top, color_right);
-  color_top /= 65534.0f;
-  color_right /= 65534.0f;
+  color_top /= 16384.0f;
+  color_right /= 16384.0f;
 
   vec4 color_bottom, color_left;
   Unpack(ex_Data5, color_bottom, color_left);
-  color_bottom /= 65534.0f;
-  color_left /= 65534.0f;
+  color_bottom /= 16384.0f;
+  color_left /= 16384.0f;
 
   float width = AA_WIDTH;
 

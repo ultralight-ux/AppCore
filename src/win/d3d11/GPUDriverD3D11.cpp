@@ -790,8 +790,8 @@ ComPtr<ID3D11Buffer> GPUDriverD3D11::GetConstantBuffer() {
 void GPUDriverD3D11::SetViewport(float width, float height) {
   D3D11_VIEWPORT vp;
   ZeroMemory(&vp, sizeof(vp));
-  vp.Width = width * (float)context_->scale();
-  vp.Height = height * (float)context_->scale();
+  vp.Width = round(width * (float)context_->scale());
+  vp.Height = round(height * (float)context_->scale());
   vp.MinDepth = 0.0f;
   vp.MaxDepth = 1.0f;
   vp.TopLeftX = 0;
