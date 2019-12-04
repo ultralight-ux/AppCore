@@ -36,9 +36,11 @@ JSString::~JSString() {
 }
 
 JSString& JSString::operator=(const JSString& other) {
-  JSStringRelease(instance_);
-  instance_ = other.instance_;
-  JSStringRetain(instance_);
+  if (instance_ != other.instance_) {
+    JSStringRelease(instance_);
+    instance_ = other.instance_;
+    JSStringRetain(instance_);
+  }
 
   return *this;
 }
@@ -134,10 +136,12 @@ JSValue::~JSValue() {
 }
 
 JSValue& JSValue::operator=(const JSValue& other) {
-  JSValueUnprotect(ctx_, instance_);
-  ctx_ = other.ctx_;
-  instance_ = other.instance_;
-  JSValueProtect(ctx_, instance_);
+  if (instance_ != other.instance_) {
+    JSValueUnprotect(ctx_, instance_);
+    ctx_ = other.ctx_;
+    instance_ = other.instance_;
+    JSValueProtect(ctx_, instance_);
+  }
 
   return *this;
 }
@@ -440,10 +444,12 @@ JSArray::~JSArray() {
 }
 
 JSArray& JSArray::operator=(const JSArray& other) {
-  JSValueUnprotect(ctx_, instance_);
-  ctx_ = other.ctx_;
-  instance_ = other.instance_;
-  JSValueProtect(ctx_, instance_);
+  if (instance_ != other.instance_) {
+    JSValueUnprotect(ctx_, instance_);
+    ctx_ = other.ctx_;
+    instance_ = other.instance_;
+    JSValueProtect(ctx_, instance_);
+  }
 
   return *this;
 }
@@ -519,10 +525,12 @@ JSObject::~JSObject() {
 }
 
 JSObject& JSObject::operator=(const JSObject& other) {
-  JSValueUnprotect(ctx_, instance_);
-  ctx_ = other.ctx_;
-  instance_ = other.instance_;
-  JSValueProtect(ctx_, instance_);
+  if (instance_ != other.instance_) {
+    JSValueUnprotect(ctx_, instance_);
+    ctx_ = other.ctx_;
+    instance_ = other.instance_;
+    JSValueProtect(ctx_, instance_);
+  }
 
   return *this;
 }
@@ -558,11 +566,13 @@ JSFunction::~JSFunction() {
 }
 
 JSFunction& JSFunction::operator=(const JSFunction& other) {
-  if (instance_)
-    JSValueUnprotect(ctx_, instance_);
-  ctx_ = other.ctx_;
-  instance_ = other.instance_;
-  JSValueProtect(ctx_, instance_);
+  if (instance_ != other.instance_) {
+    if (instance_)
+      JSValueUnprotect(ctx_, instance_);
+    ctx_ = other.ctx_;
+    instance_ = other.instance_;
+    JSValueProtect(ctx_, instance_);
+  }
 
   return *this;
 }
