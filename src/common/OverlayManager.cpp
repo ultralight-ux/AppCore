@@ -52,17 +52,21 @@ void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
 
   hovered_overlay_ = HitTest(evt.x, evt.y);
 
-  if (hovered_overlay_) {
-    if (evt.type == ultralight::MouseEvent::kType_MouseDown && evt.button == MouseEvent::kButton_Left) {
+  if (hovered_overlay_ && evt.type == ultralight::MouseEvent::kType_MouseDown 
+    && evt.button == MouseEvent::kButton_Left) {
       focused_overlay_ = hovered_overlay_;
       is_dragging_ = true;
-    }
+  }
+
+  for (auto& i : overlays_) {
+    if (i->is_hidden())
+      continue;
 
     MouseEvent rel_evt = evt;
-    rel_evt.x -= hovered_overlay_->x();
-    rel_evt.y -= hovered_overlay_->y();
+    rel_evt.x -= i->x();
+    rel_evt.y -= i->y();
 
-    hovered_overlay_->view()->FireMouseEvent(rel_evt);
+    i->view()->FireMouseEvent(rel_evt);
   }
 }
 
