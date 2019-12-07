@@ -68,11 +68,8 @@ void AppMac::set_window(Ref<Window> window) {
   window_ = window;
     
   WindowMac* win = static_cast<WindowMac*>(window_.get());
-  
-  // Only enable MSAA if our DPI scale is <= 1.5x
-  bool enable_msaa = win->scale() <= 1.5;
     
-  gpu_context_.reset(new GPUContextMetal(win->layer().device, win->width(), win->height(), win->scale(), win->is_fullscreen(), true, enable_msaa));
+  gpu_context_.reset(new GPUContextMetal(win->layer().device, win->width(), win->height(), win->scale(), win->is_fullscreen(), true, true));
   Platform::instance().set_gpu_driver(gpu_context_->driver());
   win->set_app_listener(this);
 }

@@ -26,7 +26,8 @@ class GPUContextMetal {
   
   virtual ~GPUContextMetal();
   
-  void set_current_drawable(id<CAMetalDrawable> drawable) { current_drawable_ = drawable; }
+  void set_current_drawable(id<CAMetalDrawable> drawable);
+  
   id<CAMetalDrawable> current_drawable() { return current_drawable_; }
 
   // Inherited from GPUContext

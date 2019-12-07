@@ -81,6 +81,8 @@ class GPUDriverMetal : public GPUDriver {
   
   void EndDrawing();
   
+  void set_drawable_needs_flush(bool val) { drawable_needs_flush_ = val; }
+  
 protected:
   void SetGPUState(const GPUState& state);
   

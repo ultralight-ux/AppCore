@@ -96,6 +96,11 @@ GPUContextMetal::GPUContextMetal(id<MTLDevice> device, int screen_width, int scr
 }
     
 GPUContextMetal::~GPUContextMetal() {}
+  
+void GPUContextMetal::set_current_drawable(id<CAMetalDrawable> drawable) {
+  current_drawable_ = drawable;
+  driver_->set_drawable_needs_flush(true);
+}
 
 void GPUContextMetal::BeginDrawing() {
   // We may have uncommitted command buffers from UpdateTextureResource calls when synchronizing textures
