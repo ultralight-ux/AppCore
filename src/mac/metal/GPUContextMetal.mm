@@ -41,7 +41,9 @@ GPUContextMetal::GPUContextMetal(id<MTLDevice> device, int screen_width, int scr
   set_screen_size(screen_width, screen_height);
   set_scale(screen_scale);
   
-  fence_ = dispatch_semaphore_create(FrameCount);
+  // Only allow FrameCount - 1 number of frames in-flight-- testing on MacBook Pros older than 2016 shows corruption
+  // if we use semaphore == FrameCount. 
+  fence_ = dispatch_semaphore_create(FrameCount - 1);
   
   // Load all the shader files with a .metal file extension in the project
   //id<MTLLibrary> defaultLibrary = [device_ newDefaultLibrary];

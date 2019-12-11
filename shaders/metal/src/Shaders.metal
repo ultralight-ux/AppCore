@@ -89,13 +89,15 @@ float4 sRGBToLinear(float4 val) { return float4(val.xyz * (val.xyz * (val.xyz * 
 // Vertex function
 vertex FragmentInput
 vertexShader(uint vertexID [[vertex_id]],
-             constant Vertex *vertices [[buffer(VertexIndex_Vertices)]],
+             device Vertex *vertices [[buffer(VertexIndex_Vertices)]],
              constant Uniforms &uniforms [[buffer(VertexIndex_Uniforms)]])
 {
     FragmentInput out;
     
     out.ObjectCoord = vertices[vertexID].ObjCoord;
+    //out.ObjectCoord = float2(vertexID, vertexID);
     out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
+    //out.Position = float4(vertices[vertexID].Position.xy, 0.0, 1.0);
     out.Color = sRGBToLinear(float4(vertices[vertexID].Color) / 255.0f);
     out.TexCoord = vertices[vertexID].TexCoord;
     out.Data0 = vertices[vertexID].Data0;
@@ -111,7 +113,7 @@ vertexShader(uint vertexID [[vertex_id]],
 
 vertex PathFragmentInput
 pathVertexShader(uint vertexID [[vertex_id]],
-             constant PathVertex *vertices [[buffer(VertexIndex_Vertices)]],
+             device PathVertex *vertices [[buffer(VertexIndex_Vertices)]],
              constant Uniforms &uniforms [[buffer(VertexIndex_Uniforms)]])
 {
     PathFragmentInput out;

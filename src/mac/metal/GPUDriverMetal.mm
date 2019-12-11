@@ -15,7 +15,6 @@ void GPUDriverMetal::EndSynchronize() {}
 
 void GPUDriverMetal::CreateTexture(uint32_t texture_id,
                                    Ref<Bitmap> bitmap) {
-  NSLog(@"Tex [%d %d]", bitmap->width(), bitmap->height());
   MTLPixelFormat format;
   if (bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB) {
     format = MTLPixelFormatBGRA8Unorm_sRGB;

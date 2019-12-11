@@ -14,12 +14,12 @@
 - (void)onTick:(NSTimer *)aTimer;
 @end
 
-// Run update timer at 120 FPS
+// Run update timer at 60 FPS
 @implementation UpdateTimer
 - (id)init {
   id newInstance = [super init];
   if (newInstance) {
-    _timer = [NSTimer scheduledTimerWithTimeInterval:(1.0/120.0)
+    _timer = [NSTimer scheduledTimerWithTimeInterval:(1.0/60.0)
                                               target:self
                                             selector:@selector(onTick:)
                                             userInfo:nil
