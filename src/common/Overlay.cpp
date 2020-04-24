@@ -195,7 +195,7 @@ public:
 
 protected:
   OverlayImpl(Ref<Window> window, uint32_t width, uint32_t height, int x, int y) :
-    window_(window), view_(App::instance()->renderer()->CreateView(width, height, false)),
+    window_(window), view_(App::instance()->renderer()->CreateView(width, height, false, nullptr)),
     width_(width), height_(height), x_(x), y_(y), needs_update_(true),
     driver_(Platform::instance().gpu_driver()) {
     window_->overlay_manager()->Add(this);

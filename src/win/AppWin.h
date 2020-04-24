@@ -4,6 +4,7 @@
 #include "RefCountedImpl.h"
 #include "FontLoaderWin.h"
 #include "FileSystemWin.h"
+#include "FileLogger.h"
 #include <vector>
 #include <memory>
 
@@ -84,6 +85,7 @@ protected:
   std::unique_ptr<GPUContextD3D12> gpu_context_;
   std::unique_ptr<GPUDriverD3D12> gpu_driver_;
 #endif
+  std::unique_ptr<FileLogger> logger_;
 };
 
 }  // namespace ultralight

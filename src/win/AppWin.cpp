@@ -10,9 +10,14 @@
 #endif
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/Config.h>
+#include <Ultralight/platform/Logger.h>
+#include <Ultralight/private/util/Debug.h>
 #include <Shlwapi.h>
 #include "WindowsUtil.h"
 #include "MonitorWin.h"
+#include <fstream>
+#include <sstream>
+#include <algorithm>
 
 namespace ultralight {
 
@@ -22,24 +27,45 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
 
   main_monitor_.reset(new MonitorWin(windows_util_.get()));
 
-  config.device_scale_hint = main_monitor_->scale();
+  HMODULE hModule = GetModuleHandleW(NULL);
+  WCHAR module_path[MAX_PATH];
+  GetModuleFileNameW(hModule, module_path, MAX_PATH);
+  PathRemoveFileSpecW(module_path);
+
+  WCHAR log_path[MAX_PATH];
+  PathCombineW(log_path, module_path, L"ultralight.log");
+
+  logger_.reset(new FileLogger(String16(log_path, lstrlenW(log_path))));
+  Platform::instance().set_logger(logger_.get());
+
+  WCHAR resource_path[MAX_PATH];
+  PathCombineW(resource_path, module_path, L"resources");
+  WCHAR cache_path[MAX_PATH];
+  PathCombineW(cache_path, module_path, L"cache");
+
+  config.resource_path = String16(resource_path, lstrlenW(resource_path));
+  config.cache_path = String16(cache_path, lstrlenW(cache_path));
+  config.device_scale = main_monitor_->scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
 
   font_loader_.reset(new FontLoaderWin());
   Platform::instance().set_font_loader(font_loader_.get());
 
-  HMODULE hModule = GetModuleHandleW(NULL);
-  WCHAR path[MAX_PATH];
-  GetModuleFileNameW(hModule, path, MAX_PATH);
-  PathRemoveFileSpecW(path);
+  std::wstring fs_str = settings.file_system_path.utf16().data();
+  std::replace(fs_str.begin(), fs_str.end(), L'/', L'\\');
 
-  PathAppendW(path, settings_.file_system_path.utf16().data());
+  WCHAR file_system_path[MAX_PATH];
+  PathCombineW(file_system_path, module_path, fs_str.data());
 
-  file_system_.reset(new FileSystemWin(path));
+  file_system_.reset(new FileSystemWin(file_system_path));
   Platform::instance().set_file_system(file_system_.get());
 
   renderer_ = Renderer::Create();
+
+  std::ostringstream info;
+  info << "File system base directory resolved to: " << String(file_system_path, lstrlenW(file_system_path)).utf8().data();
+  UL_LOG_INFO(info.str().c_str());
 }
 
 AppWin::~AppWin() {
