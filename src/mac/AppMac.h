@@ -3,6 +3,7 @@
 #include <AppCore/Window.h>
 #include "RefCountedImpl.h"
 #include "MonitorMac.h"
+#include "FileLogger.h"
 #include <memory>
 #import <QuartzCore/CAMetalLayer.h>
 
@@ -11,6 +12,7 @@ namespace ultralight {
 class AppMac;
 class GPUContextMetal;
 class FileSystemMac;
+class FontLoaderMac;
     
 class AppMac : public App,
                public RefCountedImpl<AppMac>,
@@ -66,6 +68,8 @@ protected:
   MonitorMac main_monitor_;
   std::unique_ptr<GPUContextMetal> gpu_context_;
   std::unique_ptr<FileSystemMac> file_system_;
+  std::unique_ptr<FontLoaderMac> font_loader_;
+  std::unique_ptr<FileLogger> logger_;
 };
     
     

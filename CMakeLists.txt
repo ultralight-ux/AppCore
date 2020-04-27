@@ -126,13 +126,13 @@ if (PORT MATCHES "UltralightMac")
 endif ()
 
 if(${BUILD_TESTS})
-    add_executable(MiniBrowser WIN32 MACOSX_BUNDLE "tests/MiniBrowser.cpp" ${AppCore_SOURCES})
+    add_executable(MiniBrowser WIN32 MACOSX_BUNDLE "tests/MiniBrowser/MiniBrowser.cpp" ${AppCore_SOURCES})
     
     add_dependencies(MiniBrowser UltralightCoreBin WebCoreBin UltralightBin)
 
     if (APPLE)
       # Enable High-DPI on macOS through our custom Info.plist template
-      set_target_properties(MiniBrowser PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/tests/Info.plist.in") 
+      set_target_properties(MiniBrowser PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniBrowser/Info.plist.in") 
       set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework QuartzCore -framework MetalKit")
       set_property (TARGET MiniBrowser APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
     endif()
@@ -147,6 +147,28 @@ if(${BUILD_TESTS})
           COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
       )
     endif()
+
+    if (APPLE)
+      set(RESOURCES_PATH "$<TARGET_FILE_DIR:MiniBrowser>/../Resources") 
+    else ()
+      set(RESOURCES_PATH "$<TARGET_FILE_DIR:MiniBrowser>") 
+    endif ()
+
+    # Copy assets to assets path
+    add_custom_command(TARGET MiniBrowser POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniBrowser/assets/" "${RESOURCES_PATH}/assets/"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${RESOURCES_PATH}/resources/")
+
+    if (APPLE)
+        add_custom_command(TARGET MiniBrowser POST_BUILD 
+            COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.dylib" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libWebCore.dylib" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/lib/libicudata.dylib" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/lib/libicui18n.dylib" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/lib/libicuuc.dylib" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.dylib" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/" $<TARGET_FILE:MiniBrowser>)
+    endif ()
 endif ()
 
 include(CreateSDK.cmake)

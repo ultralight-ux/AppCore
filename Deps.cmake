@@ -14,7 +14,7 @@ endif ()
 
 set(ULTRALIGHTCORE_REV "c02042ec")
 set(WEBCORE_REV "2d3d12ae")
-set(ULTRALIGHT_REV "01adb12c")
+set(ULTRALIGHT_REV "91bcdcfd")
 
 set(ULTRALIGHTCORE_DIR "${CMAKE_SOURCE_DIR}/deps/UltralightCore/")
 set(WEBCORE_DIR "${CMAKE_SOURCE_DIR}/deps/WebCore/")
@@ -26,7 +26,7 @@ if(${USE_LOCAL_DEPS})
   add_custom_target(UltralightBin)
 else ()
     ExternalProject_Add(UltralightCoreBin
-      URL https://ultralightcore-bin.sfo2.cdn.digitaloceanspaces.com/ultralightcore-bin-${ULTRALIGHTCORE_REV}-${PLATFORM}-${ARCHITECTURE}.7z
+      URL https://ultralightcore-bin.sfo2.digitaloceanspaces.com/ultralightcore-bin-${ULTRALIGHTCORE_REV}-${PLATFORM}-${ARCHITECTURE}.7z
       SOURCE_DIR "${ULTRALIGHTCORE_DIR}"
       BUILD_IN_SOURCE 1
       CONFIGURE_COMMAND ""
@@ -35,7 +35,7 @@ else ()
     )
 
     ExternalProject_Add(WebCoreBin
-      URL https://webcore-bin.sfo2.cdn.digitaloceanspaces.com/webcore-bin-${WEBCORE_REV}-${PLATFORM}-${ARCHITECTURE}.7z
+      URL https://webcore-bin.sfo2.digitaloceanspaces.com/webcore-bin-${WEBCORE_REV}-${PLATFORM}-${ARCHITECTURE}.7z
       SOURCE_DIR "${WEBCORE_DIR}"
       BUILD_IN_SOURCE 1
       CONFIGURE_COMMAND ""
@@ -44,7 +44,7 @@ else ()
     )
 
     ExternalProject_Add(UltralightBin
-      URL https://ultralight-bin.sfo2.cdn.digitaloceanspaces.com/ultralight-bin-${ULTRALIGHT_REV}-${PLATFORM}-${ARCHITECTURE}.7z
+      URL https://ultralight-bin.sfo2.digitaloceanspaces.com/ultralight-bin-${ULTRALIGHT_REV}-${PLATFORM}-${ARCHITECTURE}.7z
       SOURCE_DIR "${ULTRALIGHT_DIR}"
       BUILD_IN_SOURCE 1
       CONFIGURE_COMMAND ""

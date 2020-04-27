@@ -43,20 +43,33 @@ public:
 ///
 struct AExport Settings {
   ///
+  /// The name of the developer of this app.
+  ///
+  /// This is used to generate a unique path to store local application data
+  /// on the user's machine.
+  ///
+  String developer_name = "MyCompany";
+
+  ///
+  /// The name of this app.
+  ///
+  /// This is used to generate a unique path to store local application data
+  /// on the user's machine.
+  ///
+  String app_name = "MyApp";
+
+  ///
   /// The root file path for our file system. You should set this to the
   /// relative path where all of your app data is.
   ///
   /// This will be used to resolve all file URLs, eg file:///page.html
   ///
-  /// @note  By default, on macOS we use the app bundle's @resource_path,
-  ///        on all other platforms we use the "./assets/" directory relative
-  ///        to the executable's directory.
+  /// @note  This relative path is resolved using the following logic:
+  ///         - Windows: relative to the executable path
+  ///         - Linux:   relative to the executable path
+  ///         - macOS:   relative to YourApp.app/Contents/Resources/
   ///
-#ifdef __APPLE__
-  String file_system_path = "@resource_path";
-#else
   String file_system_path = "./assets/";
-#endif
 
   ///
   /// Whether or not we should load and compile shaders from the file system

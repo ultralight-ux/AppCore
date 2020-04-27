@@ -7,6 +7,12 @@
 #import "metal/GPUContextMetal.h"
 #import "metal/GPUDriverMetal.h"
 #include "FileSystemMac.h"
+#include "FontLoaderMac.h"
+#include <vector>
+#include <CoreFoundation/CFString.h>
+#include <iostream>
+#include <Ultralight/private/util/Debug.h>
+#include <Ultralight/private/PlatformFileSystem.h>
 
 @interface UpdateTimer : NSObject
 @property NSTimer *timer;
@@ -36,18 +42,67 @@
 
 namespace ultralight {
 
+static String16 ToString16(CFStringRef str) {
+    if (!str)
+        return String16();
+    CFIndex size = CFStringGetLength(str);
+    std::vector<Char16> buffer(size);
+    CFStringGetCharacters(str, CFRangeMake(0, size), (UniChar*)buffer.data());
+    return String16(buffer.data(), size);
+}
+
+static String16 GetSystemCachePath() {
+  NSArray* paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+  NSString* cacheDir = [paths objectAtIndex:0];
+  return ToString16((__bridge CFStringRef)cacheDir);
+}
+
+static String16 GetBundleResourcePath() {
+  return ToString16((__bridge CFStringRef)[[NSBundle mainBundle] resourcePath]);
+}
+
 AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   [NSApplication sharedApplication];
   
   AppDelegate *appDelegate = [[AppDelegate alloc] init];
   [NSApp setDelegate:appDelegate];
 
-  config.device_scale_hint = main_monitor_.scale();
+  // Generate cache path
+  String cache_path = GetSystemCachePath();
+  String cache_dirname = "com." + settings_.developer_name + "." +
+    settings_.app_name;
+  cache_path = PlatformFileSystem::AppendPath(cache_path, cache_dirname);
+  PlatformFileSystem::MakeAllDirectories(cache_path);
+
+  String log_path = PlatformFileSystem::AppendPath(cache_path,
+                                                   "ultralight.log");
+  
+  logger_.reset(new FileLogger(log_path));
+  Platform::instance().set_logger(logger_.get());
+
+  // Determine resources path
+  String bundle_resource_path = GetBundleResourcePath();
+  String resource_path = PlatformFileSystem::AppendPath(bundle_resource_path, "resources/");
+
+  config.cache_path = cache_path.utf16();
+  config.resource_path = resource_path.utf16();
+  config.device_scale = main_monitor_.scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
 
-  file_system_.reset(new FileSystemMac(settings_.file_system_path.utf16()));
+  // Determine file system path
+  String file_system_path = PlatformFileSystem::AppendPath(bundle_resource_path, settings_.file_system_path.utf16());
+
+  file_system_.reset(new FileSystemMac(file_system_path.utf16()));
   Platform::instance().set_file_system(file_system_.get());
+  
+  std::ostringstream info;
+  info << "File system base directory resolved to: " <<
+    file_system_path.utf8().data();
+  UL_LOG_INFO(info.str().c_str());
+
+  font_loader_.reset(new FontLoaderMac());
+  Platform::instance().set_font_loader(font_loader_.get());
 
   renderer_ = Renderer::Create();
 }
@@ -69,7 +124,9 @@ void AppMac::set_window(Ref<Window> window) {
     
   WindowMac* win = static_cast<WindowMac*>(window_.get());
     
-  gpu_context_.reset(new GPUContextMetal(win->layer().device, win->width(), win->height(), win->scale(), win->is_fullscreen(), true, true));
+  gpu_context_.reset(new GPUContextMetal(win->layer().device, win->width(),
+                                         win->height(), win->scale(),
+                                         win->is_fullscreen(), true, true));
   Platform::instance().set_gpu_driver(gpu_context_->driver());
   win->set_app_listener(this);
 }
