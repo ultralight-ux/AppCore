@@ -126,6 +126,12 @@ if (PORT MATCHES "UltralightMac")
 endif ()
 
 if(${BUILD_TESTS})
+    if (PORT MATCHES "UltralightLinux")
+        SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+        SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+        SET(CMAKE_INSTALL_RPATH "$\{ORIGIN\}")
+    endif ()
+
     add_executable(MiniBrowser WIN32 MACOSX_BUNDLE "tests/MiniBrowser/MiniBrowser.cpp" ${AppCore_SOURCES})
     
     add_dependencies(MiniBrowser UltralightCoreBin WebCoreBin UltralightBin)
@@ -168,6 +174,19 @@ if(${BUILD_TESTS})
             COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/lib/libicuuc.dylib" $<TARGET_FILE_DIR:MiniBrowser>
             COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.dylib" $<TARGET_FILE_DIR:MiniBrowser>
             COMMAND ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/" $<TARGET_FILE:MiniBrowser>)
+    endif ()
+
+    if (PORT MATCHES "UltralightLinux")
+        set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "-Wl,-rpath-link,${WEBCORE_DIR}/lib/ -lfontconfig")
+
+        add_custom_command(TARGET MiniBrowser POST_BUILD 
+            COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.so" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libWebCore.so" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/lib/libicudata.so" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/lib/libicui18n.so" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/lib/libicuuc.so" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.so" $<TARGET_FILE_DIR:MiniBrowser>)
+            
     endif ()
 endif ()
 

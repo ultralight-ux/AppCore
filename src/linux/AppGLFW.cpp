@@ -6,14 +6,38 @@
 #include <GLFW/glfw3.h>
 #include "WindowGLFW.h"
 #include "FileSystemBasic.h"
+#include "FontLoaderLinux.h"
+#include "FileLogger.h"
+#include <Ultralight/private/util/Debug.h>
+#include <Ultralight/private/PlatformFileSystem.h>
 #include <thread>
 #include <chrono>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <libgen.h>
+#include <iostream>
 
 extern "C" {
 
-static void GLFW_error_callback(int error, const char* description)
-{
+static void GLFW_error_callback(int error, const char* description) {
   fprintf(stderr, "GLFW Error: %s\n", description);
+}
+
+static const char* GetHomeDirectory() {
+  const char* result;
+  if (!(result = getenv("HOME")))
+    result = getpwuid(getuid())->pw_dir;
+  return result;
+}
+
+static const char* GetExecutableDirectory() {
+  static char exe_path[PATH_MAX];
+  ssize_t count = readlink("/proc/self/exe", exe_path, PATH_MAX);
+  const char* result = "";
+  if (count != -1)
+    result = dirname(exe_path);
+  return result;
 }
 
 }
@@ -21,6 +45,29 @@ static void GLFW_error_callback(int error, const char* description)
 namespace ultralight {
 
 AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
+  // Generate cache path
+  String cache_path = GetHomeDirectory();
+  cache_path = PlatformFileSystem::AppendPath(cache_path, ".cache");
+  String cache_dirname = settings_.developer_name + "-" +
+    settings_.app_name;
+  cache_path = PlatformFileSystem::AppendPath(cache_path, cache_dirname);
+  PlatformFileSystem::MakeAllDirectories(cache_path);
+
+  String log_path = PlatformFileSystem::AppendPath(cache_path,
+                                                   "ultralight.log");
+
+  std::cout << log_path.utf8().data() << std::endl;
+
+  logger_.reset(new FileLogger(log_path));
+  Platform::instance().set_logger(logger_.get());
+
+  // Determine resources path
+  String executable_path = GetExecutableDirectory();
+  String resource_path = PlatformFileSystem::AppendPath(executable_path, "resources/");
+
+  config.cache_path = cache_path.utf16();
+  config.resource_path = resource_path.utf16();
+
   glfwSetErrorCallback(GLFW_error_callback);
 
   if (!glfwInit())
@@ -28,12 +75,24 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
 
   main_monitor_.reset(new MonitorGLFW());
 
-  config.device_scale_hint = main_monitor_->scale();
+  config.device_scale = main_monitor_->scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
 
-  file_system_.reset(new FileSystemBasic("assets/"));
+  // Determine file system path
+  String file_system_path = PlatformFileSystem::AppendPath(executable_path, 
+    settings_.file_system_path.utf16());
+
+  file_system_.reset(new FileSystemBasic(file_system_path.utf8().data()));
   Platform::instance().set_file_system(file_system_.get());
+
+  std::ostringstream info;
+  info << "File system base directory resolved to: " <<
+    file_system_path.utf8().data();
+  UL_LOG_INFO(info.str().c_str());
+
+  font_loader_.reset(new FontLoaderLinux());
+  Platform::instance().set_font_loader(font_loader_.get());
 
   renderer_ = Renderer::Create();
 }
