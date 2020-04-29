@@ -12,7 +12,9 @@
 #include <Ultralight/platform/Config.h>
 #include <Ultralight/platform/Logger.h>
 #include <Ultralight/private/util/Debug.h>
+#include <Ultralight/private/PlatformFileSystem.h>
 #include <Shlwapi.h>
+#include <ShlObj.h>
 #include "WindowsUtil.h"
 #include "MonitorWin.h"
 #include <fstream>
@@ -21,30 +23,46 @@
 
 namespace ultralight {
 
+static String GetModulePath() {
+  HMODULE hModule = GetModuleHandleW(NULL);
+  WCHAR module_path[MAX_PATH];
+  GetModuleFileNameW(hModule, module_path, MAX_PATH);
+  PathRemoveFileSpecW(module_path);
+  return String16(module_path, lstrlenW(module_path));
+}
+
+static String GetRoamingAppDataPath() {
+  PWSTR appDataPath = NULL;
+  SHGetKnownFolderPath(FOLDERID_RoamingAppData, NULL, NULL, &appDataPath);
+  String result = String16(appDataPath, lstrlenW(appDataPath));
+  ::CoTaskMemFree(static_cast<void*>(appDataPath));
+  return result;
+}
+
 AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   windows_util_.reset(new WindowsUtil());
   windows_util_->EnableDPIAwareness();
 
   main_monitor_.reset(new MonitorWin(windows_util_.get()));
 
-  HMODULE hModule = GetModuleHandleW(NULL);
-  WCHAR module_path[MAX_PATH];
-  GetModuleFileNameW(hModule, module_path, MAX_PATH);
-  PathRemoveFileSpecW(module_path);
+  // Generate cache path
+  String cache_path = GetRoamingAppDataPath();
+  cache_path = PlatformFileSystem::AppendPath(cache_path, settings_.developer_name);
+  cache_path = PlatformFileSystem::AppendPath(cache_path, settings_.app_name);
+  PlatformFileSystem::MakeAllDirectories(cache_path);
 
-  WCHAR log_path[MAX_PATH];
-  PathCombineW(log_path, module_path, L"ultralight.log");
+  String log_path = PlatformFileSystem::AppendPath(cache_path, "ultralight.log");
 
-  logger_.reset(new FileLogger(String16(log_path, lstrlenW(log_path))));
+  logger_.reset(new FileLogger(log_path));
   Platform::instance().set_logger(logger_.get());
 
-  WCHAR resource_path[MAX_PATH];
-  PathCombineW(resource_path, module_path, L"resources");
-  WCHAR cache_path[MAX_PATH];
-  PathCombineW(cache_path, module_path, L"cache");
+  // Get module path
+  String module_path = GetModulePath();
 
-  config.resource_path = String16(resource_path, lstrlenW(resource_path));
-  config.cache_path = String16(cache_path, lstrlenW(cache_path));
+  String resource_path = PlatformFileSystem::AppendPath(module_path, "resources");
+  
+  config.resource_path = resource_path.utf16();
+  config.cache_path = cache_path.utf16();
   config.device_scale = main_monitor_->scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
@@ -52,19 +70,21 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   font_loader_.reset(new FontLoaderWin());
   Platform::instance().set_font_loader(font_loader_.get());
 
+  // Replace forward slashes with backslashes for proper path
+  // resolution on Windows
   std::wstring fs_str = settings.file_system_path.utf16().data();
   std::replace(fs_str.begin(), fs_str.end(), L'/', L'\\');
 
-  WCHAR file_system_path[MAX_PATH];
-  PathCombineW(file_system_path, module_path, fs_str.data());
+  String file_system_path = PlatformFileSystem::AppendPath(module_path,
+    String16(fs_str.data(), fs_str.length()));
 
-  file_system_.reset(new FileSystemWin(file_system_path));
+  file_system_.reset(new FileSystemWin(file_system_path.utf16().data()));
   Platform::instance().set_file_system(file_system_.get());
 
   renderer_ = Renderer::Create();
 
   std::ostringstream info;
-  info << "File system base directory resolved to: " << String(file_system_path, lstrlenW(file_system_path)).utf8().data();
+  info << "File system base directory resolved to: " << file_system_path.utf8().data();
   UL_LOG_INFO(info.str().c_str());
 }
 
