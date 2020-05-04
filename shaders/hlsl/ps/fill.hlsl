@@ -177,11 +177,7 @@ float sdRoundRect(float2 p, float2 size, float4 rx, float4 ry) {
 }
 
 float4 fillSolid(VS_OUTPUT input) {
-  float2 size = input.Data1.xy;
-  float2 p = input.TexCoord * size;
-  float alpha_x = min(antialias(p.x, AA_WIDTH, 1.0), 1.0 - antialias(p.x, AA_WIDTH, size.x - 1));
-  float alpha_y = min(antialias(p.y, AA_WIDTH, 1.0), 1.0 - antialias(p.y, AA_WIDTH, size.y - 1));
-  float alpha = min(alpha_x, alpha_y) * input.Color.a;
+  float alpha = input.Color.a;
   return float4(input.Color.rgb * alpha, alpha);
 }
 
@@ -568,8 +564,9 @@ float4 fillBoxShadow(VS_OUTPUT input) {
     return float4(0.0, 0.0, 0.0, 0.0);
   }
 
-  float alpha = radius >= 1.0? pow(antialias(-d, radius * 1.2, 0.0), 2.2) * 2.5 / pow(radius, 0.04) :
+  float alpha = radius >= 1.0? pow(antialias(-d, radius * 2 + 0.2, 0.0), 1.9) * 3.3 / pow(radius * 1.2, 0.15) :
                                antialias(-d, AA_WIDTH, inset ? -1.0 : 1.0);
+
   alpha = clamp(alpha, 0.0, 1.0) * input.Color.a;
   return float4(input.Color.rgb * alpha, alpha);
 }
