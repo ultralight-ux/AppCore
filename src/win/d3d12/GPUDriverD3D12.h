@@ -2,10 +2,10 @@
 #pragma once
 #include <d3d12.h>
 #include <wrl/client.h>
-#include <Ultralight/platform/GPUDriver.h>
 #include <map>
 #include <vector>
 #include <memory>
+#include "GPUDriverImpl.h"
 #include "D3D12MemAlloc.h"
 #include "GPUContextD3D12.h"
 
@@ -18,16 +18,12 @@ class GPUContextD3D12;
 /**
  * GPUDriver implementation for Direct3D 12.
  */
-class GPUDriverD3D12 : public GPUDriver {
+class GPUDriverD3D12 : public GPUDriverImpl {
 public:
   GPUDriverD3D12(GPUContextD3D12* context);
   virtual ~GPUDriverD3D12();
 
-  virtual void BeginSynchronize() override;
-
-  virtual void EndSynchronize() override;
-
-  virtual uint32_t NextTextureId() override;
+  // Inherited from GPUDriver:
 
   virtual void CreateTexture(uint32_t texture_id,
     Ref<Bitmap> bitmap) override;
@@ -35,23 +31,12 @@ public:
   virtual void UpdateTexture(uint32_t texture_id,
     Ref<Bitmap> bitmap) override;
 
-  virtual void BindTexture(uint8_t texture_unit,
-    uint32_t texture_id) override;
-
   virtual void DestroyTexture(uint32_t texture_id) override;
-
-  virtual uint32_t NextRenderBufferId() override;
 
   virtual void CreateRenderBuffer(uint32_t render_buffer_id,
     const RenderBuffer& buffer) override;
 
-  virtual void BindRenderBuffer(uint32_t render_buffer_id) override;
-
-  virtual void ClearRenderBuffer(uint32_t render_buffer_id) override;
-
   virtual void DestroyRenderBuffer(uint32_t render_buffer_id) override;
-
-  virtual uint32_t NextGeometryId() override;
 
   virtual void CreateGeometry(uint32_t geometry_id,
     const VertexBuffer& vertices,
@@ -61,22 +46,27 @@ public:
     const VertexBuffer& vertices,
     const IndexBuffer& indices) override;
 
+  virtual void DestroyGeometry(uint32_t geometry_id) override;
+
+  // Inherited from GPUDriverImpl:
+
+  virtual const char* name() override { return "Direct3D 12"; }
+
+  virtual void BeginDrawing() override {}
+
+  virtual void EndDrawing() override {}
+
+  virtual void BindTexture(uint8_t texture_unit,
+    uint32_t texture_id) override;
+
+  virtual void BindRenderBuffer(uint32_t render_buffer_id) override;
+
+  virtual void ClearRenderBuffer(uint32_t render_buffer_id) override;
+
   virtual void DrawGeometry(uint32_t geometry_id,
     uint32_t indices_count,
     uint32_t indices_offset,
     const GPUState& state) override;
-
-  virtual void DestroyGeometry(uint32_t geometry_id) override;
-
-  virtual void UpdateCommandList(const CommandList& list) override;
-
-  virtual bool HasCommandsPending() override;
-
-  virtual void DrawCommandList() override;
-
-  // Public Methods
-
-  int batch_count() const { return batch_count_; }
 
 protected:
   void BindGeometry(uint32_t id);
@@ -87,9 +77,6 @@ protected:
 
   GPUContextD3D12* context_;
 
-  uint32_t next_texture_id_ = 1;
-  uint32_t next_render_buffer_id_ = 1; // render buffer id 0 is reserved for default render target view.
-  uint32_t next_geometry_id_ = 1;
   DescriptorHandle* cbv0_ = nullptr;
   DescriptorHandle* srv0_ = nullptr;
   DescriptorHandle* srv1_ = nullptr;
@@ -133,8 +120,6 @@ protected:
 
   typedef std::map<uint32_t, RenderTargetEntry> RenderTargetMap;
   RenderTargetMap render_targets_;
-  std::vector<Command> command_list_;
-  int batch_count_;
 };
 
 }  // namespace ultralight

@@ -220,13 +220,13 @@ WindowWin::~WindowWin() {
 uint32_t WindowWin::width() const {
   RECT rc;
   ::GetClientRect(hwnd_, &rc);
-  return (uint32_t)PixelsToDevice(rc.right - rc.left);
+  return rc.right - rc.left;
 }
 
 uint32_t WindowWin::height() const {
   RECT rc;
   ::GetClientRect(hwnd_, &rc);
-  return (uint32_t)PixelsToDevice(rc.bottom - rc.top);
+  return rc.bottom - rc.top;
 }
 
 double WindowWin::scale() const {

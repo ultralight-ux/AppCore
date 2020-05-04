@@ -31,15 +31,15 @@ public:
   /// @param  window  The window to create the Overlay in. (we currently only
   ///                 support one window per application)
   ///
-  /// @param  width   The width in device coordinates.
+  /// @param  width   The width in pixels.
   ///
-  /// @param  height  The height in device coordinates.
+  /// @param  height  The height in pixels.
   ///
   /// @param  x       The x-position (offset from the left of the Window), in
-  ///                 device coordinates.
+  ///                 pixels.
   ///
   /// @param  y       The y-position (offset from the top of the Window), in
-  ///                 device coordinates.
+  ///                 pixels.
   ///
   static Ref<Overlay> Create(Ref<Window> window, uint32_t width,
                              uint32_t height, int x, int y);
@@ -53,10 +53,10 @@ public:
   /// @param  view    The View to wrap (will use its width and height).
   ///
   /// @param  x       The x-position (offset from the left of the Window), in
-  ///                 device coordinates.
+  ///                 pixels.
   ///
   /// @param  y       The y-position (offset from the top of the Window), in
-  ///                 device coordinates.
+  ///                 pixels.
   ///
   static Ref<Overlay> Create(Ref<Window> window, Ref<View> view, int x, int y);
 
@@ -66,24 +66,22 @@ public:
   virtual ultralight::Ref<ultralight::View> view() = 0;
 
   ///
-  /// Get the width (in device coordinates).
+  /// Get the width (in pixels).
   ///
   virtual uint32_t width() const = 0;
 
   ///
-  /// Get the height (in device coordinates).
+  /// Get the height (in pixels).
   ///
   virtual uint32_t height() const = 0;
   
   ///
-  /// Get the x-position (offset from the left of the Window), in device
-  /// coordinates.
+  /// Get the x-position (offset from the left of the Window), in pixels.
   ///
   virtual int x() const = 0;
 
   ///
-  /// Get the y-position (offset from the top of the Window), in device
-  /// coordinates.
+  /// Get the y-position (offset from the top of the Window), in pixels.
   ///
   virtual int y() const = 0;
 
@@ -118,13 +116,13 @@ public:
   virtual void Unfocus() = 0;
 
   ///
-  /// Move the overlay to a new position (in device coordinates).
+  /// Move the overlay to a new position (in pixels).
   ///
   virtual void MoveTo(int x, int y) = 0;
 
   ///
   /// Resize the overlay (and underlying View), dimensions should be
-  /// specified in device coordinates.
+  /// specified in pixels.
   ///
   virtual void Resize(uint32_t width, uint32_t height) = 0;
 

@@ -112,14 +112,6 @@ GPUDriverD3D12::~GPUDriverD3D12() {
     DestroyRenderBuffer(render_targets_.begin()->first);
 }
 
-void GPUDriverD3D12::BeginSynchronize() {
-}
-
-void GPUDriverD3D12::EndSynchronize() {
-}
-
-uint32_t GPUDriverD3D12::NextTextureId() { return next_texture_id_++; }
-
 void GPUDriverD3D12::CreateTexture(uint32_t texture_id,
   Ref<Bitmap> bitmap) {
   auto i = textures_.find(texture_id);
@@ -236,64 +228,6 @@ void GPUDriverD3D12::UpdateTexture(uint32_t texture_id,
   UpdateTextureResource(entry.texture->GetResource(), bitmap, false);
 }
 
-void GPUDriverD3D12::BindTexture(uint8_t texture_unit,
-  uint32_t texture_id) {
-  auto i = textures_.find(texture_id);
-  if (i == textures_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D12::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
-    return;
-  }
-
-  if (i->second.is_bound_render_target) {
-    // Signal the resource that we are transitioning it for use in shader
-    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(i->second.texture->GetResource(),
-      D3D12_RESOURCE_STATE_RENDER_TARGET,
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0);
-    context_->command_list()->ResourceBarrier(1, &barrier);
-    i->second.is_bound_render_target = false;
-  }
-
-  if (i->second.is_msaa_render_target) {
-    // Signal both resources that we are transitioning into MSAA resolve operation
-    {
-      D3D12_RESOURCE_BARRIER barriers[2] = {
-          CD3DX12_RESOURCE_BARRIER::Transition(i->second.texture->GetResource(),
-              D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RESOLVE_SOURCE),
-          CD3DX12_RESOURCE_BARRIER::Transition(i->second.resolve_texture->GetResource(),
-              D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RESOLVE_DEST)
-      };
-      context_->command_list()->ResourceBarrier(2, barriers);
-    }
-
-    context_->command_list()->ResolveSubresource(i->second.resolve_texture->GetResource(), 0, i->second.texture->GetResource(), 0, DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
-    i->second.needs_resolve = false;
-
-    // Signal both resources that we are transitioning for use in shader
-    {
-      D3D12_RESOURCE_BARRIER barriers[2] = {
-          CD3DX12_RESOURCE_BARRIER::Transition(i->second.texture->GetResource(),
-              D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE),
-          CD3DX12_RESOURCE_BARRIER::Transition(i->second.resolve_texture->GetResource(),
-              D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
-      };
-      context_->command_list()->ResourceBarrier(2, barriers);
-    }
-  }
-
-  DescriptorHandle* texture_handle = nullptr;
-  if (i->second.is_msaa_render_target)
-    texture_handle = &i->second.resolve_texture_srv_handle;
-  else
-    texture_handle = &i->second.texture_srv_handle;
-
-  // Cache handle so we can bind to descriptor table later in DrawGeometry
-  if (texture_unit == 0)
-    srv0_ = texture_handle;
-  else
-    srv1_ = texture_handle;
-}
-
 void GPUDriverD3D12::DestroyTexture(uint32_t texture_id) {
   auto i = textures_.find(texture_id);
   if (i == textures_.end())
@@ -305,8 +239,6 @@ void GPUDriverD3D12::DestroyTexture(uint32_t texture_id) {
   context_->ReleaseWhenFrameComplete(std::move(i->second.resolve_texture_srv_handle));
   textures_.erase(i);
 }
-
-uint32_t GPUDriverD3D12::NextRenderBufferId() { return next_render_buffer_id_++; }
 
 void GPUDriverD3D12::CreateRenderBuffer(uint32_t render_buffer_id,
   const RenderBuffer& buffer) {
@@ -335,102 +267,6 @@ void GPUDriverD3D12::CreateRenderBuffer(uint32_t render_buffer_id,
   context_->device()->CreateRenderTargetView(tex_entry->second.texture->GetResource(), nullptr, render_target_entry.rtv_handle.cpu_handle());
   render_target_entry.render_target_texture_id = buffer.texture_id;
 }
-
-void GPUDriverD3D12::BindRenderBuffer(uint32_t render_buffer_id) {
-  D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = { 0 };
-  UINT sample_count = 1;
-  if (render_buffer_id == 0) {
-    rtv_handle = context_->current_rtv();
-    context_->set_render_target_format(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
-  }
-  else {
-    auto i = render_targets_.find(render_buffer_id);
-    if (i == render_targets_.end()) {
-      MessageBoxW(nullptr,
-        L"GPUDriverD3D12::BindRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
-      return;
-    }
-
-    rtv_handle = i->second.rtv_handle.cpu_handle();
-    context_->set_render_target_format(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
-
-    // We need to transition the resource state to a render target
-    auto tex_entry = textures_.find(i->second.render_target_texture_id);
-    if (tex_entry == textures_.end()) {
-      MessageBoxW(nullptr,
-        L"GPUDriverD3D12::BindRenderBuffer, texture id doesn't exist.", L"Error", MB_OK);
-      return;
-    }
-
-    // Signal the resource that we are transitioning it for use as a render target
-    if (!tex_entry->second.is_bound_render_target) {
-      auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(tex_entry->second.texture->GetResource(),
-        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, 0);
-      context_->command_list()->ResourceBarrier(1, &barrier);
-      tex_entry->second.is_bound_render_target = true;
-    }
-
-#if ENABLE_MSAA
-    if (tex_entry->second.is_msaa_render_target) {
-      tex_entry->second.needs_resolve = true;
-      sample_count = 4;
-    }
-#endif
-  }
-
-  context_->set_sample_count(sample_count);
-  context_->command_list()->OMSetRenderTargets(1, &rtv_handle, false, nullptr);
-}
-
-void GPUDriverD3D12::ClearRenderBuffer(uint32_t render_buffer_id) {
-  float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-  if (render_buffer_id == 0) {
-    context_->command_list()->ClearRenderTargetView(context_->current_rtv(), color, 0, nullptr);
-    return;
-  }
-
-  auto i = render_targets_.find(render_buffer_id);
-  if (i == render_targets_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D12::ClearRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
-    return;
-  }
-
-  // We need to transition the resource state to a render target
-  auto tex_entry = textures_.find(i->second.render_target_texture_id);
-  if (tex_entry == textures_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D12::BindRenderBuffer, texture id doesn't exist.", L"Error", MB_OK);
-    return;
-  }
-
-  // Signal the resource that we are transitioning it for use as a render target
-  if (!tex_entry->second.is_bound_render_target) {
-    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(tex_entry->second.texture->GetResource(),
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, 0);
-    context_->command_list()->ResourceBarrier(1, &barrier);
-    tex_entry->second.is_bound_render_target = true;
-  }
-
-#if ENABLE_MSAA
-  if (tex_entry->second.is_msaa_render_target)
-    tex_entry->second.needs_resolve = true;
-#endif
-
-  context_->command_list()->ClearRenderTargetView(i->second.rtv_handle.cpu_handle(), color, 0, nullptr);
-}
-
-void GPUDriverD3D12::DestroyRenderBuffer(uint32_t render_buffer_id) {
-  auto i = render_targets_.find(render_buffer_id);
-  if (i == render_targets_.end())
-    return;
-
-  context_->ReleaseWhenFrameComplete(std::move(i->second.rtv_handle));
-  render_targets_.erase(i);
-}
-
-uint32_t GPUDriverD3D12::NextGeometryId() { return next_geometry_id_++; }
 
 void GPUDriverD3D12::CreateGeometry(uint32_t geometry_id,
   const VertexBuffer& vertices,
@@ -548,6 +384,179 @@ void GPUDriverD3D12::UpdateGeometry(uint32_t geometry_id,
   }
 }
 
+void GPUDriverD3D12::DestroyGeometry(uint32_t geometry_id) {
+  auto i = geometry_.find(geometry_id);
+  if (i == geometry_.end())
+    return;
+
+  for (UINT id = 0; id < GPUContextD3D12::FrameCount; ++id) {
+    GeometryEntry::Frame& frame = i->second.frames[id];
+    if (frame.vertex_buffer) {
+      context_->ReleaseWhenFrameComplete(std::move(frame.vertex_buffer));
+      context_->ReleaseWhenFrameComplete(std::move(frame.index_buffer));
+    }
+  }
+
+  geometry_.erase(i);
+}
+
+// Inherited from GPUDriverImpl:
+
+
+void GPUDriverD3D12::BindTexture(uint8_t texture_unit,
+  uint32_t texture_id) {
+  auto i = textures_.find(texture_id);
+  if (i == textures_.end()) {
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D12::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
+    return;
+  }
+
+  if (i->second.is_bound_render_target) {
+    // Signal the resource that we are transitioning it for use in shader
+    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(i->second.texture->GetResource(),
+      D3D12_RESOURCE_STATE_RENDER_TARGET,
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0);
+    context_->command_list()->ResourceBarrier(1, &barrier);
+    i->second.is_bound_render_target = false;
+  }
+
+  if (i->second.is_msaa_render_target) {
+    // Signal both resources that we are transitioning into MSAA resolve operation
+    {
+      D3D12_RESOURCE_BARRIER barriers[2] = {
+          CD3DX12_RESOURCE_BARRIER::Transition(i->second.texture->GetResource(),
+              D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RESOLVE_SOURCE),
+          CD3DX12_RESOURCE_BARRIER::Transition(i->second.resolve_texture->GetResource(),
+              D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RESOLVE_DEST)
+      };
+      context_->command_list()->ResourceBarrier(2, barriers);
+    }
+
+    context_->command_list()->ResolveSubresource(i->second.resolve_texture->GetResource(), 0, i->second.texture->GetResource(), 0, DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
+    i->second.needs_resolve = false;
+
+    // Signal both resources that we are transitioning for use in shader
+    {
+      D3D12_RESOURCE_BARRIER barriers[2] = {
+          CD3DX12_RESOURCE_BARRIER::Transition(i->second.texture->GetResource(),
+              D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE),
+          CD3DX12_RESOURCE_BARRIER::Transition(i->second.resolve_texture->GetResource(),
+              D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
+      };
+      context_->command_list()->ResourceBarrier(2, barriers);
+    }
+  }
+
+  DescriptorHandle* texture_handle = nullptr;
+  if (i->second.is_msaa_render_target)
+    texture_handle = &i->second.resolve_texture_srv_handle;
+  else
+    texture_handle = &i->second.texture_srv_handle;
+
+  // Cache handle so we can bind to descriptor table later in DrawGeometry
+  if (texture_unit == 0)
+    srv0_ = texture_handle;
+  else
+    srv1_ = texture_handle;
+}
+
+
+void GPUDriverD3D12::BindRenderBuffer(uint32_t render_buffer_id) {
+  D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = { 0 };
+  UINT sample_count = 1;
+  if (render_buffer_id == 0) {
+    rtv_handle = context_->current_rtv();
+    context_->set_render_target_format(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+  }
+  else {
+    auto i = render_targets_.find(render_buffer_id);
+    if (i == render_targets_.end()) {
+      MessageBoxW(nullptr,
+        L"GPUDriverD3D12::BindRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
+      return;
+    }
+
+    rtv_handle = i->second.rtv_handle.cpu_handle();
+    context_->set_render_target_format(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
+
+    // We need to transition the resource state to a render target
+    auto tex_entry = textures_.find(i->second.render_target_texture_id);
+    if (tex_entry == textures_.end()) {
+      MessageBoxW(nullptr,
+        L"GPUDriverD3D12::BindRenderBuffer, texture id doesn't exist.", L"Error", MB_OK);
+      return;
+    }
+
+    // Signal the resource that we are transitioning it for use as a render target
+    if (!tex_entry->second.is_bound_render_target) {
+      auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(tex_entry->second.texture->GetResource(),
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, 0);
+      context_->command_list()->ResourceBarrier(1, &barrier);
+      tex_entry->second.is_bound_render_target = true;
+    }
+
+#if ENABLE_MSAA
+    if (tex_entry->second.is_msaa_render_target) {
+      tex_entry->second.needs_resolve = true;
+      sample_count = 4;
+    }
+#endif
+  }
+
+  context_->set_sample_count(sample_count);
+  context_->command_list()->OMSetRenderTargets(1, &rtv_handle, false, nullptr);
+}
+
+void GPUDriverD3D12::ClearRenderBuffer(uint32_t render_buffer_id) {
+  float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+  if (render_buffer_id == 0) {
+    context_->command_list()->ClearRenderTargetView(context_->current_rtv(), color, 0, nullptr);
+    return;
+  }
+
+  auto i = render_targets_.find(render_buffer_id);
+  if (i == render_targets_.end()) {
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D12::ClearRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
+    return;
+  }
+
+  // We need to transition the resource state to a render target
+  auto tex_entry = textures_.find(i->second.render_target_texture_id);
+  if (tex_entry == textures_.end()) {
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D12::BindRenderBuffer, texture id doesn't exist.", L"Error", MB_OK);
+    return;
+  }
+
+  // Signal the resource that we are transitioning it for use as a render target
+  if (!tex_entry->second.is_bound_render_target) {
+    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(tex_entry->second.texture->GetResource(),
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, 0);
+    context_->command_list()->ResourceBarrier(1, &barrier);
+    tex_entry->second.is_bound_render_target = true;
+  }
+
+#if ENABLE_MSAA
+  if (tex_entry->second.is_msaa_render_target)
+    tex_entry->second.needs_resolve = true;
+#endif
+
+  context_->command_list()->ClearRenderTargetView(i->second.rtv_handle.cpu_handle(), color, 0, nullptr);
+}
+
+void GPUDriverD3D12::DestroyRenderBuffer(uint32_t render_buffer_id) {
+  auto i = render_targets_.find(render_buffer_id);
+  if (i == render_targets_.end())
+    return;
+
+  context_->ReleaseWhenFrameComplete(std::move(i->second.rtv_handle));
+  render_targets_.erase(i);
+}
+
+
 void GPUDriverD3D12::DrawGeometry(uint32_t geometry_id,
   uint32_t indices_count,
   uint32_t indices_offset,
@@ -558,7 +567,7 @@ void GPUDriverD3D12::DrawGeometry(uint32_t geometry_id,
 
   BindRenderBuffer(state.render_buffer_id);
 
-  SetViewport(state.viewport_width, state.viewport_height);
+  SetViewport((float)state.viewport_width, (float)state.viewport_height);
 
   if (state.texture_1_id)
     BindTexture(0, state.texture_1_id);
@@ -576,18 +585,18 @@ void GPUDriverD3D12::DrawGeometry(uint32_t geometry_id,
 
   if (state.enable_scissor) {
     CD3DX12_RECT scissor_rect(
-      (LONG)(state.scissor_rect.left * context_->scale()),
-      (LONG)(state.scissor_rect.top * context_->scale()),
-      (LONG)(state.scissor_rect.right * context_->scale()),
-      (LONG)(state.scissor_rect.bottom * context_->scale()));
+      (LONG)(state.scissor_rect.left),
+      (LONG)(state.scissor_rect.top),
+      (LONG)(state.scissor_rect.right),
+      (LONG)(state.scissor_rect.bottom));
     context_->command_list()->RSSetScissorRects(1, &scissor_rect);
   }
   else {
     CD3DX12_RECT scissor_rect(
       (LONG)(0),
       (LONG)(0),
-      (LONG)(state.viewport_width * context_->scale()),
-      (LONG)(state.viewport_height * context_->scale()));
+      (LONG)(state.viewport_width),
+      (LONG)(state.viewport_height));
     context_->command_list()->RSSetScissorRects(1, &scissor_rect);
   }
 
@@ -599,49 +608,7 @@ void GPUDriverD3D12::DrawGeometry(uint32_t geometry_id,
   batch_count_++;
 }
 
-void GPUDriverD3D12::DestroyGeometry(uint32_t geometry_id) {
-  //return;
-  auto i = geometry_.find(geometry_id);
-  if (i == geometry_.end())
-    return;
-
-  for (UINT id = 0; id < GPUContextD3D12::FrameCount; ++id) {
-    GeometryEntry::Frame& frame = i->second.frames[id];
-    if (frame.vertex_buffer) {
-      context_->ReleaseWhenFrameComplete(std::move(frame.vertex_buffer));
-      context_->ReleaseWhenFrameComplete(std::move(frame.index_buffer));
-    }
-  }
-
-  geometry_.erase(i);
-}
-
-void GPUDriverD3D12::UpdateCommandList(const CommandList& list) {
-  if (list.size) {
-    command_list_.resize(list.size);
-    memcpy(&command_list_[0], list.commands, sizeof(Command) * list.size);
-  }
-}
-
-bool GPUDriverD3D12::HasCommandsPending() {
-  return !command_list_.empty();
-}
-
-void GPUDriverD3D12::DrawCommandList() {
-  if (command_list_.empty())
-    return;
-
-  batch_count_ = 0;
-
-  for (auto& cmd : command_list_) {
-    if (cmd.command_type == kCommandType_DrawGeometry)
-      DrawGeometry(cmd.geometry_id, cmd.indices_count, cmd.indices_offset, cmd.gpu_state);
-    else if (cmd.command_type == kCommandType_ClearRenderBuffer)
-      ClearRenderBuffer(cmd.gpu_state.render_buffer_id);
-  }
-
-  command_list_.clear();
-}
+// Protected methods:
 
 void GPUDriverD3D12::BindGeometry(uint32_t id) {
   auto i = geometry_.find(id);
@@ -656,15 +623,15 @@ void GPUDriverD3D12::BindGeometry(uint32_t id) {
 }
 
 void GPUDriverD3D12::SetViewport(float width, float height) {
-  CD3DX12_VIEWPORT viewport(0.0f, 0.0f, width * (float)context_->scale(), height * (float)context_->scale());
+  CD3DX12_VIEWPORT viewport(0.0f, 0.0f, width, height);
   context_->command_list()->RSSetViewports(1, &viewport);
 }
 
 void GPUDriverD3D12::UpdateConstantBuffer(const GPUState& state) {
-  Matrix model_view_projection = ApplyProjection(state.transform, state.viewport_width, state.viewport_height);
+  Matrix model_view_projection = ApplyProjection(state.transform, (float)state.viewport_width, (float)state.viewport_height);
 
   Uniforms uniforms;
-  uniforms.State = { 0.0, state.viewport_width, state.viewport_height, (float)context_->scale() };
+  uniforms.State = { state.enable_snap ? 1.0f : 0.0f, (float)state.viewport_width, (float)state.viewport_height, (float)context_->scale() };
   uniforms.Transform = DirectX::XMMATRIX(model_view_projection.GetMatrix4x4().data);
   uniforms.Scalar4[0] =
   { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2], state.uniform_scalar[3] };

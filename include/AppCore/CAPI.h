@@ -62,9 +62,12 @@ ACExport void ulDestroySettings(ULSettings settings);
 ///
 /// This will be used to resolve all file URLs, eg file:///page.html
 ///
-/// @note  By default, on macOS we use the app bundle's @resource_path,
-///        on all other platforms we use the "./assets/" directory relative
-///        to the executable's directory.
+/// @note  The default path is "./assets/"
+///        
+///        This relative path is resolved using the following logic:
+///         - Windows: relative to the executable path
+///         - Linux:   relative to the executable path
+///         - macOS:   relative to YourApp.app/Contents/Resources/
 ///
 ACExport void ulSettingsSetFileSystemPath(ULSettings settings, ULString path);
 
@@ -160,12 +163,12 @@ ACExport void ulAppQuit(ULApp app);
 ACExport double ulMonitorGetScale(ULMonitor monitor);
 
 ///
-/// Get the width of the monitor (in device coordinates).
+/// Get the width of the monitor (in pixels).
 ///
 ACExport unsigned int ulMonitorGetWidth(ULMonitor monitor);
 
 ///
-/// Get the height of the monitor (in device coordinates).
+/// Get the height of the monitor (in pixels).
 ///
 ACExport unsigned int ulMonitorGetHeight(ULMonitor monitor);
 
@@ -206,19 +209,19 @@ typedef void
 
 ///
 /// Set a callback to be notified when a window resizes
-/// (parameters are passed back in device coordinates).
+/// (parameters are passed back in pixels).
 ///
 ACExport void ulWindowSetResizeCallback(ULWindow window,
                                         ULResizeCallback callback,
                                         void* user_data);
 
 ///
-/// Get window width (in device coordinates).
+/// Get window width (in pixels).
 ///
 ACExport unsigned int ulWindowGetWidth(ULWindow window);
 
 ///
-/// Get window height (in device coordinates).
+/// Get window height (in pixels).
 ///
 ACExport unsigned int ulWindowGetHeight(ULWindow window);
 
@@ -268,10 +271,10 @@ ACExport int ulWindowPixelsToDevice(ULWindow window, int val);
 /// @param  height  The height in device coordinates.
 ///
 /// @param  x       The x-position (offset from the left of the Window), in
-///                 device coordinates.
+///                 pixels.
 ///
 /// @param  y       The y-position (offset from the top of the Window), in
-///                 device coordinates.
+///                 pixels.
 ///
 /// @note  Each Overlay is essentially a View and an on-screen quad. You should
 ///        create the Overlay then load content into the underlying View.
@@ -290,35 +293,33 @@ ACExport void ulDestroyOverlay(ULOverlay overlay);
 ACExport ULView ulOverlayGetView(ULOverlay overlay);
 
 ///
-/// Get the width (in device coordinates).
+/// Get the width (in pixels).
 ///
 ACExport unsigned int ulOverlayGetWidth(ULOverlay overlay);
 
 ///
-/// Get the height (in device coordinates).
+/// Get the height (in pixels).
 ///
 ACExport unsigned int ulOverlayGetHeight(ULOverlay overlay);
 
 ///
-/// Get the x-position (offset from the left of the Window), in device
-/// coordinates.
+/// Get the x-position (offset from the left of the Window), in pixels.
 ///
 ACExport int ulOverlayGetX(ULOverlay overlay);
 
 ///
-/// Get the y-position (offset from the top of the Window), in device
-/// coordinates.
+/// Get the y-position (offset from the top of the Window), in pixels.
 ///
 ACExport int ulOverlayGetY(ULOverlay overlay);
 
 ///
-/// Move the overlay to a new position (in device coordinates).
+/// Move the overlay to a new position (in pixels).
 ///
 ACExport void ulOverlayMoveTo(ULOverlay overlay, int x, int y);
 
 ///
 /// Resize the overlay (and underlying View), dimensions should be
-/// specified in device coordinates.
+/// specified in pixels.
 ///
 ACExport void ulOverlayResize(ULOverlay overlay, unsigned int width,
                               unsigned int height);

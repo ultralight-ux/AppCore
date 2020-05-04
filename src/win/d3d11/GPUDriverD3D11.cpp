@@ -105,19 +105,9 @@ HRESULT CompileShaderFromFile(const char* path, LPCSTR szEntryPoint,
 
 namespace ultralight {
 
-GPUDriverD3D11::GPUDriverD3D11(GPUContextD3D11* context) : context_(context) {
-}
+GPUDriverD3D11::GPUDriverD3D11(GPUContextD3D11* context) : context_(context) {}
 
-GPUDriverD3D11::~GPUDriverD3D11() {
-}
-
-void GPUDriverD3D11::BeginSynchronize() {
-}
-
-void GPUDriverD3D11::EndSynchronize() {
-}
-
-uint32_t GPUDriverD3D11::NextTextureId() { return next_texture_id_++; }
+GPUDriverD3D11::~GPUDriverD3D11() {}
 
 void GPUDriverD3D11::CreateTexture(uint32_t texture_id,
   Ref<Bitmap> bitmap) {
@@ -249,42 +239,12 @@ void GPUDriverD3D11::UpdateTexture(uint32_t texture_id,
   context_->immediate_context()->Unmap(entry.texture.Get(), 0);
 }
 
-void GPUDriverD3D11::BindTexture(uint8_t texture_unit,
-  uint32_t texture_id) {
-  auto i = textures_.find(texture_id);
-  if (i == textures_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D11::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
-    return;
-  }
-
-  auto& entry = i->second;
-
-  if (entry.is_msaa_render_target) {
-    if (entry.needs_resolve) {
-      context_->immediate_context()->ResolveSubresource(
-        entry.resolve_texture.Get(), 0, entry.texture.Get(), 0,
-        DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
-      entry.needs_resolve = false;
-    }
-
-    context_->immediate_context()->PSSetShaderResources(texture_unit, 1, 
-      entry.resolve_texture_srv.GetAddressOf());
-  }
-  else {
-    context_->immediate_context()->PSSetShaderResources(texture_unit, 1,
-      entry.texture_srv.GetAddressOf());
-  }
-}
-
 void GPUDriverD3D11::DestroyTexture(uint32_t texture_id) {
   auto i = textures_.find(texture_id);
   if (i != textures_.end()) {
     textures_.erase(i);
   }
 }
-
-uint32_t GPUDriverD3D11::NextRenderBufferId() { return next_render_buffer_id_++; }
 
 void GPUDriverD3D11::CreateRenderBuffer(uint32_t render_buffer_id,
   const RenderBuffer& buffer) {
@@ -329,79 +289,6 @@ void GPUDriverD3D11::CreateRenderBuffer(uint32_t render_buffer_id,
   }
 }
 
-void GPUDriverD3D11::BindRenderBuffer(uint32_t render_buffer_id) {
-  // Unbind any textures/shader resources to avoid warnings in case a render
-  // buffer that we would like to bind is already bound as an input texture.
-  ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-  context_->immediate_context()->PSSetShaderResources(0, 1, nullSRV);
-  context_->immediate_context()->PSSetShaderResources(1, 1, nullSRV);
-  context_->immediate_context()->PSSetShaderResources(2, 1, nullSRV);
-  
-  ID3D11RenderTargetView* target;
-  if (render_buffer_id == 0) {
-    target = context_->render_target_view();
-  } else {
-    auto i = render_targets_.find(render_buffer_id);
-    if (i == render_targets_.end()) {
-      MessageBoxW(nullptr,
-        L"GPUDriverD3D11::BindRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
-      return;
-    }
-
-    target = i->second.render_target_view.Get();
-
-#if ENABLE_MSAA
-    auto j = textures_.find(i->second.render_target_texture_id);
-    if (j == textures_.end()) {
-      MessageBoxW(nullptr,
-        L"GPUDriverD3D11::BindRenderBuffer, render target texture id doesn't exist.", L"Error", MB_OK);
-      return;
-    }
-
-    // Flag the MSAA render target texture for Resolve when we bind it to
-    // a shader for reading later.
-    if (j->second.is_msaa_render_target) {
-      j->second.needs_resolve = true;
-    }
-#endif
-  }
-
-  context_->immediate_context()->OMSetRenderTargets(1, &target, nullptr);
-}
-
-void GPUDriverD3D11::ClearRenderBuffer(uint32_t render_buffer_id) {
-  float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-  if (render_buffer_id == 0) {
-    context_->immediate_context()->ClearRenderTargetView(context_->render_target_view(), color);
-    return;
-  }
-
-  auto i = render_targets_.find(render_buffer_id);
-  if (i == render_targets_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D11::ClearRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
-    return;
-  }
-
-  context_->immediate_context()->ClearRenderTargetView(i->second.render_target_view.Get(), color);
-
-#if ENABLE_MSAA
-  auto j = textures_.find(i->second.render_target_texture_id);
-  if (j == textures_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D11::ClearRenderBuffer, render target texture id doesn't exist.", L"Error", MB_OK);
-    return;
-  }
-
-  // Flag the MSAA render target texture for Resolve when we bind it to
-  // a shader for reading later.
-  if (j->second.is_msaa_render_target) {
-    j->second.needs_resolve = true;
-  }
-#endif
-}
-
 void GPUDriverD3D11::DestroyRenderBuffer(uint32_t render_buffer_id) {
   auto i = render_targets_.find(render_buffer_id);
   if (i != render_targets_.end()) {
@@ -409,8 +296,6 @@ void GPUDriverD3D11::DestroyRenderBuffer(uint32_t render_buffer_id) {
     render_targets_.erase(i);
   }
 }
-
-uint32_t GPUDriverD3D11::NextGeometryId() { return next_geometry_id_++; }
 
 void GPUDriverD3D11::CreateGeometry(uint32_t geometry_id,
   const VertexBuffer& vertices,
@@ -482,6 +367,119 @@ void GPUDriverD3D11::UpdateGeometry(uint32_t geometry_id,
   context_->immediate_context()->Unmap(entry.indexBuffer.Get(), 0);
 }
 
+void GPUDriverD3D11::DestroyGeometry(uint32_t geometry_id) {
+  auto i = geometry_.find(geometry_id);
+  if (i != geometry_.end()) {
+    i->second.vertexBuffer.Reset();
+    i->second.indexBuffer.Reset();
+    geometry_.erase(i);
+  }
+}
+
+// Inherited from GPUDriverImpl
+
+void GPUDriverD3D11::BindTexture(uint8_t texture_unit,
+  uint32_t texture_id) {
+  auto i = textures_.find(texture_id);
+  if (i == textures_.end()) {
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D11::BindTexture, texture id doesn't exist.", L"Error", MB_OK);
+    return;
+  }
+
+  auto& entry = i->second;
+
+  if (entry.is_msaa_render_target) {
+    if (entry.needs_resolve) {
+      context_->immediate_context()->ResolveSubresource(
+        entry.resolve_texture.Get(), 0, entry.texture.Get(), 0,
+        DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
+      entry.needs_resolve = false;
+    }
+
+    context_->immediate_context()->PSSetShaderResources(texture_unit, 1,
+      entry.resolve_texture_srv.GetAddressOf());
+  }
+  else {
+    context_->immediate_context()->PSSetShaderResources(texture_unit, 1,
+      entry.texture_srv.GetAddressOf());
+  }
+}
+
+void GPUDriverD3D11::BindRenderBuffer(uint32_t render_buffer_id) {
+  // Unbind any textures/shader resources to avoid warnings in case a render
+  // buffer that we would like to bind is already bound as an input texture.
+  ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+  context_->immediate_context()->PSSetShaderResources(0, 1, nullSRV);
+  context_->immediate_context()->PSSetShaderResources(1, 1, nullSRV);
+  context_->immediate_context()->PSSetShaderResources(2, 1, nullSRV);
+
+  ID3D11RenderTargetView* target;
+  if (render_buffer_id == 0) {
+    target = context_->render_target_view();
+  }
+  else {
+    auto i = render_targets_.find(render_buffer_id);
+    if (i == render_targets_.end()) {
+      MessageBoxW(nullptr,
+        L"GPUDriverD3D11::BindRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
+      return;
+    }
+
+    target = i->second.render_target_view.Get();
+
+#if ENABLE_MSAA
+    auto j = textures_.find(i->second.render_target_texture_id);
+    if (j == textures_.end()) {
+      MessageBoxW(nullptr,
+        L"GPUDriverD3D11::BindRenderBuffer, render target texture id doesn't exist.", L"Error", MB_OK);
+      return;
+    }
+
+    // Flag the MSAA render target texture for Resolve when we bind it to
+    // a shader for reading later.
+    if (j->second.is_msaa_render_target) {
+      j->second.needs_resolve = true;
+    }
+#endif
+  }
+
+  context_->immediate_context()->OMSetRenderTargets(1, &target, nullptr);
+}
+
+void GPUDriverD3D11::ClearRenderBuffer(uint32_t render_buffer_id) {
+  float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+  if (render_buffer_id == 0) {
+    context_->immediate_context()->ClearRenderTargetView(context_->render_target_view(), color);
+    return;
+  }
+
+  auto i = render_targets_.find(render_buffer_id);
+  if (i == render_targets_.end()) {
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D11::ClearRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
+    return;
+  }
+
+  context_->immediate_context()->ClearRenderTargetView(i->second.render_target_view.Get(), color);
+
+#if ENABLE_MSAA
+  auto j = textures_.find(i->second.render_target_texture_id);
+  if (j == textures_.end()) {
+    MessageBoxW(nullptr,
+      L"GPUDriverD3D11::ClearRenderBuffer, render target texture id doesn't exist.", L"Error", MB_OK);
+    return;
+  }
+
+  // Flag the MSAA render target texture for Resolve when we bind it to
+  // a shader for reading later.
+  if (j->second.is_msaa_render_target) {
+    j->second.needs_resolve = true;
+  }
+#endif
+}
+
 void GPUDriverD3D11::DrawGeometry(uint32_t geometry_id,
   uint32_t indices_count,
   uint32_t indices_offset,
@@ -515,10 +513,10 @@ void GPUDriverD3D11::DrawGeometry(uint32_t geometry_id,
   if (state.enable_scissor) {
     context_->EnableScissor();
     D3D11_RECT scissor_rect = {
-      (LONG)(state.scissor_rect.left * context_->scale()),
-      (LONG)(state.scissor_rect.top * context_->scale()),
-      (LONG)(state.scissor_rect.right * context_->scale()),
-      (LONG)(state.scissor_rect.bottom * context_->scale()) };
+      (LONG)(state.scissor_rect.left),
+      (LONG)(state.scissor_rect.top),
+      (LONG)(state.scissor_rect.right),
+      (LONG)(state.scissor_rect.bottom) };
 
     immediate_ctx->RSSetScissorRects(1, &scissor_rect);
   }
@@ -530,38 +528,6 @@ void GPUDriverD3D11::DrawGeometry(uint32_t geometry_id,
   immediate_ctx->PSSetConstantBuffers(0, 1, constant_buffer_.GetAddressOf());
   immediate_ctx->DrawIndexed(indices_count, indices_offset, 0);
   batch_count_++;
-}
-
-void GPUDriverD3D11::DestroyGeometry(uint32_t geometry_id) {
-  auto i = geometry_.find(geometry_id);
-  if (i != geometry_.end()) {
-    i->second.vertexBuffer.Reset();
-    i->second.indexBuffer.Reset();
-    geometry_.erase(i);
-  }
-}
-
-void GPUDriverD3D11::UpdateCommandList(const CommandList& list) {
-  if (list.size) {
-    command_list_.resize(list.size);
-    memcpy(&command_list_[0], list.commands, sizeof(Command) * list.size);
-  }
-}
-
-void GPUDriverD3D11::DrawCommandList() {
-  if (command_list_.empty())
-    return;
-
-  batch_count_ = 0;
-
-  for (auto& cmd : command_list_) {
-    if ( cmd.command_type == kCommandType_DrawGeometry)
-      DrawGeometry(cmd.geometry_id, cmd.indices_count, cmd.indices_offset, cmd.gpu_state);
-    else if (cmd.command_type == kCommandType_ClearRenderBuffer)
-      ClearRenderBuffer(cmd.gpu_state.render_buffer_id);
-  }
-
-  command_list_.clear();
 }
 
 void GPUDriverD3D11::LoadVertexShader(const char* path, ID3D11VertexShader** ppVertexShader,
@@ -787,11 +753,11 @@ ComPtr<ID3D11Buffer> GPUDriverD3D11::GetConstantBuffer() {
   return constant_buffer_;
 }
 
-void GPUDriverD3D11::SetViewport(float width, float height) {
+void GPUDriverD3D11::SetViewport(uint32_t width, uint32_t height) {
   D3D11_VIEWPORT vp;
   ZeroMemory(&vp, sizeof(vp));
-  vp.Width = round(width * (float)context_->scale());
-  vp.Height = round(height * (float)context_->scale());
+  vp.Width = (float)width;
+  vp.Height = (float)height;
   vp.MinDepth = 0.0f;
   vp.MaxDepth = 1.0f;
   vp.TopLeftX = 0;
@@ -802,10 +768,13 @@ void GPUDriverD3D11::SetViewport(float width, float height) {
 void GPUDriverD3D11::UpdateConstantBuffer(const GPUState& state) {
   auto buffer = GetConstantBuffer();
 
-  Matrix model_view_projection = ApplyProjection(state.transform, state.viewport_width, state.viewport_height);
+  Matrix model_view_projection = ApplyProjection(state.transform, (float)state.viewport_width, (float)state.viewport_height);
+
+  float screen_width = (float)state.viewport_width;
+  float screen_height = (float)state.viewport_height;
 
   Uniforms uniforms;
-  uniforms.State = { 0.0, state.viewport_width, state.viewport_height, (float)context_->scale() };
+  uniforms.State = { state.enable_snap ? 1.0f : 0.0f, screen_width, screen_height, (float)context_->scale() };
   uniforms.Transform = DirectX::XMMATRIX(model_view_projection.GetMatrix4x4().data);
   uniforms.Scalar4[0] =
     { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2], state.uniform_scalar[3] };

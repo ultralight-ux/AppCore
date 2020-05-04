@@ -5,7 +5,7 @@
 #include <Ultralight/Buffer.h>
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/Config.h>
-#include <Ultralight/platform/GPUDriver.h>
+#include "GPUDriverImpl.h"
 #include "RefCountedImpl.h"
 #include "OverlayManager.h"
 #include <vector>
@@ -45,8 +45,8 @@ public:
     // Update these now since they were invalidated
     RenderTarget target = view_->render_target();
     gpu_state_.texture_1_id = target.texture_id;
-    gpu_state_.viewport_width = (float) window_->width();
-    gpu_state_.viewport_height = (float) window_->height();
+    gpu_state_.viewport_width = window_->width();
+    gpu_state_.viewport_height = window_->height();
   }
 
   void UpdateGeometry() {
@@ -67,8 +67,8 @@ public:
       Matrix identity;
       identity.SetIdentity();
 
-      gpu_state_.viewport_width = (float) window_->width();
-      gpu_state_.viewport_height = (float) window_->height();
+      gpu_state_.viewport_width = window_->width();
+      gpu_state_.viewport_height = window_->height();
       gpu_state_.transform = identity.GetMatrix4x4();
       gpu_state_.enable_blend = true;
       gpu_state_.enable_texturing = true;
@@ -197,14 +197,14 @@ protected:
   OverlayImpl(Ref<Window> window, uint32_t width, uint32_t height, int x, int y) :
     window_(window), view_(App::instance()->renderer()->CreateView(width, height, false, nullptr)),
     width_(width), height_(height), x_(x), y_(y), needs_update_(true),
-    driver_(Platform::instance().gpu_driver()) {
+    driver_((GPUDriverImpl*)Platform::instance().gpu_driver()) {
     window_->overlay_manager()->Add(this);
   }
 
   OverlayImpl(Ref<Window> window, Ref<View> view, int x, int y) :
     window_(window), view_(view), width_(view->width()),
     height_(view->height()), x_(x), y_(y), needs_update_(true),
-    driver_(Platform::instance().gpu_driver()) {
+    driver_((GPUDriverImpl*)Platform::instance().gpu_driver()) {
     window_->overlay_manager()->Add(this);
   }
 
@@ -224,7 +224,7 @@ protected:
   int y_;
   bool is_hidden_ = false;
   ultralight::Ref<ultralight::View> view_;
-  ultralight::GPUDriver* driver_;
+  ultralight::GPUDriverImpl* driver_;
   std::vector<ultralight::Vertex_2f_4ub_2f_2f_28f> vertices_;
   std::vector<ultralight::IndexType> indices_;
   bool needs_update_;

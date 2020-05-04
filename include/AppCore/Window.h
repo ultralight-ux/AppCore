@@ -36,9 +36,9 @@ public:
   ///
   /// Called when the Window is resized.
   ///
-  /// @param  width   The new width (in device coordinates).
+  /// @param  width   The new width (in pixels).
   ///
-  /// @param  height  The new height (in device coordinates).
+  /// @param  height  The new height (in pixels).
   ///
   virtual void OnResize(uint32_t width, uint32_t height) = 0;
 };
@@ -87,12 +87,12 @@ public:
   virtual WindowListener* listener() = 0;
 
   ///
-  /// Get the window width (in device coordinates).
+  /// Get the window width (in pixels).
   ///
   virtual uint32_t width() const = 0;
 
   ///
-  /// Get the window height (in device coordinates).
+  /// Get the window height (in pixels).
   ///
   virtual uint32_t height() const = 0;
 
