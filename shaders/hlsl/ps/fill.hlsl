@@ -177,8 +177,9 @@ float sdRoundRect(float2 p, float2 size, float4 rx, float4 ry) {
 }
 
 float4 fillSolid(VS_OUTPUT input) {
-  float alpha = input.Color.a;
-  return float4(input.Color.rgb * alpha, alpha);
+  //float alpha = input.Color.a;
+  //return float4(input.Color.rgb * alpha, alpha);
+  return input.Color;
 }
 
 float4 fillImageSuperSample(VS_OUTPUT input) {
@@ -749,6 +750,7 @@ float4 fillGlyph(VS_OUTPUT input) {
 
   // Transform from 2.2 Gamma to 1.8 Gamma (favored by Adobe and Apple)
   alpha = pow(alpha, 1.8 / 2.2);
+
   return float4(input.Color.rgb * alpha, alpha);
 }
 
