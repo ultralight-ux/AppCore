@@ -12,9 +12,9 @@ elseif (PORT MATCHES "UltralightWin")
     set(PLATFORM "win")
 endif ()
 
-set(ULTRALIGHTCORE_REV "cd3e9e53")
-set(WEBCORE_REV "8df31c2b")
-set(ULTRALIGHT_REV "129e7100")
+set(ULTRALIGHTCORE_REV "66cf9e25")
+set(WEBCORE_REV "7d0301e8")
+set(ULTRALIGHT_REV "471b30f6")
 
 set(ULTRALIGHTCORE_DIR "${CMAKE_SOURCE_DIR}/deps/UltralightCore/")
 set(WEBCORE_DIR "${CMAKE_SOURCE_DIR}/deps/WebCore/")
