@@ -4,7 +4,7 @@
 
 using namespace ultralight;
 
-class MyApp : public WindowListener {
+class MyApp : public WindowListener, public ViewListener {
   RefPtr<App> app_;
   RefPtr<Window> window_;
   RefPtr<Overlay> overlay_;
@@ -50,6 +50,12 @@ public:
     /// Window's OnResize event below.
     ///
     window_->set_listener(this);
+
+    ///
+    /// Register our MyApp instance as a ViewListener so we can handle the
+    /// View's OnChangeCursor event below.
+    ///
+    overlay_->view()->set_view_listener(this);
   }
 
   virtual ~MyApp() {}
@@ -67,6 +73,14 @@ public:
     /// Resize our Overlay to match the new Window dimensions.
     ///
     overlay_->Resize(width, height);
+  }
+
+  ///
+  /// Inherited from ViewListener
+  ///
+  virtual void OnChangeCursor(ultralight::View* caller,
+    Cursor cursor) {
+    window_->SetCursor(cursor);
   }
 
   void Run() {
