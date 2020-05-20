@@ -111,7 +111,7 @@ elseif (PORT MATCHES "UltralightWin")
     endif ()
     
     add_definitions(-D_UNICODE -DUNICODE -DNOMINMAX)
-    link_libraries("Shlwapi.lib" "Usp10.lib")
+    link_libraries("Shlwapi.lib" "Usp10.lib" "Dwrite.lib")
 endif ()
 
 link_libraries(UltralightCore WebCore Ultralight)
@@ -148,9 +148,12 @@ if(${BUILD_TESTS})
       set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
       
       add_custom_command(TARGET MiniBrowser POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHTCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
-          COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
-          COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
+          #COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHTCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
+          #COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
+          #COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
+          COMMAND xcopy /E /Q /D /Y $<1:"${ULTRALIGHTCORE_DIR}bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
+          COMMAND xcopy /E /Q /D /Y $<1:"${WEBCORE_DIR}bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
+          COMMAND xcopy /E /Q /D /Y $<1:"${ULTRALIGHT_DIR}bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
       )
     endif()
 
