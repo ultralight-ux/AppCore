@@ -4,6 +4,7 @@
 #include "RefCountedImpl.h"
 #include "FontLoaderWin.h"
 #include "FileSystemWin.h"
+#include "ClipboardWin.h"
 #include "FileLogger.h"
 #include <vector>
 #include <memory>
@@ -78,6 +79,7 @@ protected:
   std::unique_ptr<MonitorWin> main_monitor_;
   std::unique_ptr<FontLoaderWin> font_loader_;
   std::unique_ptr<FileSystemWin> file_system_;
+  std::unique_ptr<ClipboardWin> clipboard_;
 #if defined(DRIVER_D3D11)
   std::unique_ptr<GPUContextD3D11> gpu_context_;
   std::unique_ptr<GPUDriverD3D11> gpu_driver_;

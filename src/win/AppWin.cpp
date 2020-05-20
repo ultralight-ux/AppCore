@@ -56,6 +56,10 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   logger_.reset(new FileLogger(log_path));
   Platform::instance().set_logger(logger_.get());
 
+  std::ostringstream info;
+  info << "Writing log to: " << log_path.utf8().data() << std::endl;
+  OutputDebugStringA(info.str().c_str());
+
   // Get module path
   String module_path = GetModulePath();
 
@@ -81,9 +85,12 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   file_system_.reset(new FileSystemWin(file_system_path.utf16().data()));
   Platform::instance().set_file_system(file_system_.get());
 
+  clipboard_.reset(new ClipboardWin());
+  Platform::instance().set_clipboard(clipboard_.get());
+
   renderer_ = Renderer::Create();
 
-  std::ostringstream info;
+  info.clear();
   info << "File system base directory resolved to: " << file_system_path.utf8().data();
   UL_LOG_INFO(info.str().c_str());
 }
