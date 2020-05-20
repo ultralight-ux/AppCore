@@ -8,6 +8,7 @@
 #import "metal/GPUDriverMetal.h"
 #include "FileSystemMac.h"
 #include "FontLoaderMac.h"
+#include "ClipboardMac.h"
 #include <vector>
 #include <CoreFoundation/CFString.h>
 #include <iostream>
@@ -20,12 +21,12 @@
 - (void)onTick:(NSTimer *)aTimer;
 @end
 
-// Run update timer at 60 FPS
+// Run update timer at 120 FPS
 @implementation UpdateTimer
 - (id)init {
   id newInstance = [super init];
   if (newInstance) {
-    _timer = [NSTimer scheduledTimerWithTimeInterval:(1.0/60.0)
+    _timer = [NSTimer scheduledTimerWithTimeInterval:(1.0/120.0)
                                               target:self
                                             selector:@selector(onTick:)
                                             userInfo:nil
@@ -103,6 +104,9 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
 
   font_loader_.reset(new FontLoaderMac());
   Platform::instance().set_font_loader(font_loader_.get());
+  
+  clipboard_.reset(new ClipboardMac());
+  Platform::instance().set_clipboard(clipboard_.get());
 
   renderer_ = Renderer::Create();
 }

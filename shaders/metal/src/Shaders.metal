@@ -79,13 +79,26 @@ typedef struct
 } PathFragmentInput;
 
 // Uniform Accessor Functions
-float Time(constant Uniforms& u) { return u.State[0]; }
+bool SnapEnabled(constant Uniforms& u) { return bool(uint(u.State[0])); }
 float ScreenWidth(constant Uniforms& u) { return u.State[1]; }
 float ScreenHeight(constant Uniforms& u) { return u.State[2]; }
 float ScreenScale(constant Uniforms& u) { return u.State[3]; }
 float Scalar(constant Uniforms& u, uint i) { if (i < 4u) return u.Scalar4[0][i]; else return u.Scalar4[1][i - 4u]; }
 float4 sRGBToLinear(float4 val) { return float4(val.xyz * (val.xyz * (val.xyz * 0.305306011 + 0.682171111) + 0.012522878), val.w); }
 
+float4 SnapToScreen(float4 pos, constant Uniforms& u)
+{
+  pos.xy += 1.0;
+  pos.xy /= 2.0;
+  pos.xy *= float2(ScreenWidth(u), ScreenHeight(u));
+  pos.x = round(pos.x);
+  pos.y = round(pos.y);
+  pos.xy /= float2(ScreenWidth(u), ScreenHeight(u));
+  pos.xy *= 2.0;
+  pos.xy -= 1.0;
+  return pos;
+}
+    
 // Vertex function
 vertex FragmentInput
 vertexShader(uint vertexID [[vertex_id]],
@@ -95,9 +108,9 @@ vertexShader(uint vertexID [[vertex_id]],
     FragmentInput out;
     
     out.ObjectCoord = vertices[vertexID].ObjCoord;
-    //out.ObjectCoord = float2(vertexID, vertexID);
     out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
-    //out.Position = float4(vertices[vertexID].Position.xy, 0.0, 1.0);
+    if (SnapEnabled(uniforms))
+      out.Position = SnapToScreen(out.Position, uniforms);
     out.Color = sRGBToLinear(float4(vertices[vertexID].Color) / 255.0f);
     out.TexCoord = vertices[vertexID].TexCoord;
     out.Data0 = vertices[vertexID].Data0;
@@ -272,12 +285,7 @@ float sdRoundRect(float2 p, float2 size, float4 rx, float4 ry) {
 }
 
 float4 fillSolid(thread FragmentInput& input) {
-    float2 size = input.Data1.xy;
-    float2 p = input.TexCoord * size;
-    float alpha_x = min(antialias(p.x, AA_WIDTH, 1.0), 1.0 - antialias(p.x, AA_WIDTH, size.x - 1));
-    float alpha_y = min(antialias(p.y, AA_WIDTH, 1.0), 1.0 - antialias(p.y, AA_WIDTH, size.y - 1));
-    float alpha = min(alpha_x, alpha_y) * input.Color.a;
-    return float4(input.Color.rgb * alpha, alpha);
+    return input.Color;
 }
 
 float4 fillImage(thread FragmentInput& input, thread texture2d<half>& tex) {
@@ -587,8 +595,8 @@ float4 fillRoundedRect(thread FragmentInput& input, constant Uniforms& u) {
     float d = sdRoundRect(p, size, input.Data1, input.Data2);
     
     // Fill background
-    float alpha = antialias(-d, AA_WIDTH, 0.0) * input.Color.a;
-    float4 outColor = float4(input.Color.rgb * alpha, alpha);
+    float alpha = antialias(-d, AA_WIDTH, 0.0);
+    float4 outColor = input.Color * alpha;
     
     // Draw stroke
     float stroke_width = input.Data3.x;
@@ -596,8 +604,7 @@ float4 fillRoundedRect(thread FragmentInput& input, constant Uniforms& u) {
     
     if (stroke_width > 0.0) {
         alpha = innerStroke(stroke_width, d, AA_WIDTH);
-        alpha *= stroke_color.a;
-        float4 stroke = float4(stroke_color.rgb * alpha, alpha);
+        float4 stroke = stroke_color * alpha;
         outColor = blend(stroke, outColor);
     }
     
@@ -622,11 +629,11 @@ float4 fillBoxShadow(thread FragmentInput& input) {
     if (clip < 0.0) {
         return float4(0.0, 0.0, 0.0, 0.0);
     }
-    
-    float alpha = radius >= 1.0? pow(antialias(-d, radius * 1.2, 0.0), 2.2) * 2.5 / pow(radius, 0.04) :
-    antialias(-d, AA_WIDTH, inset ? -1.0 : 1.0);
-    alpha = clamp(alpha, 0.0, 1.0) * input.Color.a;
-    return float4(input.Color.rgb * alpha, alpha);
+  
+    float alpha = radius >= 1.0? pow(antialias(-d, radius * 2 + 0.2, 0.0), 1.9) * 2.3 / pow(radius * 1.2, 0.15) :
+      antialias(-d, AA_WIDTH, inset ? -1.0 : 1.0);
+    alpha = clamp(alpha, 0.0, 1.0);
+    return input.Color * alpha;
 }
 
 float3 blendOverlay(float3 src, float3 dest) {
@@ -771,11 +778,17 @@ float4 fillBlend(thread FragmentInput& input, thread texture2d<half>& tex0, thre
 float4 fillMask(thread FragmentInput& input, thread texture2d<half>& tex0, thread texture2d<half>& tex1) {
     float4 col = fillImage(input, tex0);
     float alpha = float4(tex1.sample(texSampler, input.ObjectCoord)).a;
-    return float4(col.rgb * alpha, col.a * alpha);
+    return col * alpha;
 }
         
 float4 fillGlyph(thread FragmentInput& input, thread texture2d<half>& tex) {
-    return float(tex.sample(texSampler, input.TexCoord).a) * input.Color;
+    float alpha = tex.sample(texSampler, input.TexCoord).a;
+  
+    // Transform from 2.2 Gamma to target Gamma
+    float gamma = input.Data0.y;
+    alpha = pow(alpha, gamma / 2.2);
+
+    return input.Color * alpha;
 }
 
 //float4 GetCol(float4x4 m, uint i) { return float4(m[0][i], m[1][i], m[2][i], m[3][i]); }
@@ -824,7 +837,7 @@ fragment float4 fragmentShader(FragmentInput input [[stage_in]],
     const uint FillType_Blend = 9u;
     const uint FillType_Mask = 10u;
     const uint FillType_Glyph = 11u;
-    
+
     float4 outColor = input.Color;
     
     switch (FillType(input))

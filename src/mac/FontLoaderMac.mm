@@ -23,7 +23,7 @@ static String16 ToString16(CFStringRef str) {
     return String16(buffer.data(), size);
 }
 
-String16 FontLoaderMac::fallback_font_for_characters(const String16& characters, int weight, bool italic, float size) const {
+String16 FontLoaderMac::fallback_font_for_characters(const String16& characters, int weight, bool italic) const {
     CFStringRef str = CFStringCreateWithCharacters(kCFAllocatorDefault, reinterpret_cast<const UniChar*>(characters.data()), characters.length());
     // Use Helvetica as our base font, go through its cascade list to find a system fallback that can display the given charachters
     CTFontRef font = CTFontCreateForString(CTFontCreateWithName(CFSTR("Helvetica"), 12.0, NULL), str, {0, (CFIndex)characters.length()});
@@ -98,41 +98,23 @@ static NSDictionary* createFontAttributes(NSString* family, int weight, bool ita
              (NSString*)kCTFontTraitsAttribute : traitsDictionary };
 }
 
-Ref<Buffer> FontLoaderMac::Load(const String16& family, int weight, bool italic, float size) {
+RefPtr<FontFile> FontLoaderMac::Load(const String16& family, int weight, bool italic) {
     String16 family_name = family;
     if (Equals(family_name, String16("-apple-system")))
         family_name = String16(".AppleSystemUIFont");
     
     CTFontDescriptorRef descriptor = CTFontDescriptorCreateWithAttributes(
-      (CFDictionaryRef)createFontAttributes(ToNSString(family_name), weight, italic, size));
+      (CFDictionaryRef)createFontAttributes(ToNSString(family_name), weight, italic, 12.0));
     CFURLRef url = (CFURLRef)CTFontDescriptorCopyAttribute(descriptor, kCTFontURLAttribute);
     
     if (!url)
-        return Buffer::Create(nullptr, 0);
+        return nullptr;
     
     NSString* fontPath = [NSString stringWithString:[(__bridge NSURL *)url path]];
     CFRelease(descriptor);
-    
-    FILE* fp = fopen([fontPath UTF8String], "rb");
-    if (fp) {
-        char *buffer;
-        long filelen;
-        
-        fseek(fp, 0, SEEK_END);          // Jump to the end of the file
-        filelen = ftell(fp);             // Get the current byte offset in the file
-        rewind(fp);                      // Jump back to the beginning of the file
-        
-        buffer = (char *)malloc((filelen+1)*sizeof(char)); // Enough memory for file + \0
-        fread(buffer, filelen, 1, fp); // Read in the entire file
-        fclose(fp); // Close the file
-        
-        auto result = Buffer::Create(buffer, filelen);
-        free(buffer);
-        
-        return result;
-    }
-    
-    return Buffer::Create(nullptr, 0);
+  
+    ultralight::String16 filepath([fontPath UTF8String]);
+    return FontFile::Create(filepath);
 }
 
 }  // namespace ultralight

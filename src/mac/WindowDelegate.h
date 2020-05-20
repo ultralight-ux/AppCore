@@ -8,4 +8,8 @@ namespace ultralight { class WindowMac; }
 
 - (void)windowWillClose:(NSNotification *)notification;
 
+- (void)windowDidBecomeKey:(NSNotification *)notification;
+
+- (void)windowDidResignKey:(NSNotification *)notification;
+
 @end

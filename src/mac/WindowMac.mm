@@ -25,6 +25,11 @@ WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
                                          styleMask:style
                                              backing:NSBackingStoreBuffered
                                                defer:NO];
+  
+  delegate_ = [[WindowDelegate alloc] init];
+  [delegate_ initWithWindow:this];
+  [window_ setDelegate:delegate_];
+  
   [window_ center];
   [window_ setBackgroundColor:[NSColor whiteColor]];
   [window_ makeKeyAndOrderFront:NSApp];
@@ -35,10 +40,6 @@ WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
   [controller_ initWithWindow:this frame:frame];
   [window_ setContentViewController:controller_];
     
-  delegate_ = [[WindowDelegate alloc] init];
-  [delegate_ initWithWindow:this];
-  [window_ setDelegate:delegate_];
-    
   // Move app to foreground
   ProcessSerialNumber psn = {0, kCurrentProcess};
   TransformProcessType(&psn, kProcessTransformToForegroundApplication);
@@ -48,11 +49,11 @@ WindowMac::~WindowMac() {
 }
 
 uint32_t WindowMac::width() const {
-  return PixelsToDevice((int)controller_.metalView.metalLayer.drawableSize.width);
+  return (uint32_t)controller_.metalView.metalLayer.drawableSize.width;
 }
 
 uint32_t WindowMac::height() const {
-  return PixelsToDevice((int)controller_.metalView.metalLayer.drawableSize.height);
+  return (uint32_t)controller_.metalView.metalLayer.drawableSize.height;
 }
 
 double WindowMac::scale() const {
@@ -64,6 +65,20 @@ void WindowMac::SetTitle(const char* title) {
 }
 
 void WindowMac::SetCursor(ultralight::Cursor cursor) {
+  switch (cursor) {
+    case ultralight::kCursor_Hand: {
+      [[NSCursor pointingHandCursor] set];
+      break;
+    }
+    case ultralight::kCursor_Pointer: {
+      [[NSCursor arrowCursor] set];
+      break;
+    }
+    case ultralight::kCursor_IBeam: {
+      [[NSCursor IBeamCursor] set];
+      break;
+    }
+  };
 }
 
 void WindowMac::Close() {

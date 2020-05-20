@@ -13,6 +13,7 @@ class AppMac;
 class GPUContextMetal;
 class FileSystemMac;
 class FontLoaderMac;
+class ClipboardMac;
     
 class AppMac : public App,
                public RefCountedImpl<AppMac>,
@@ -69,6 +70,7 @@ protected:
   std::unique_ptr<GPUContextMetal> gpu_context_;
   std::unique_ptr<FileSystemMac> file_system_;
   std::unique_ptr<FontLoaderMac> font_loader_;
+  std::unique_ptr<ClipboardMac> clipboard_;
   std::unique_ptr<FileLogger> logger_;
 };
     

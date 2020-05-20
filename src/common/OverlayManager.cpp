@@ -1,7 +1,6 @@
 #include "OverlayManager.h"
 #include <algorithm>
 #include <AppCore/Overlay.h>
-#include <Windows.h>
 
 namespace ultralight {
 
@@ -49,6 +48,8 @@ void OverlayManager::FireKeyEvent(const ultralight::KeyEvent& evt) {
 }
 
 void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
+
+  
   if (is_dragging_) {
     MouseEvent rel_evt = evt;
     rel_evt.x -= hovered_overlay_->x();
@@ -83,7 +84,7 @@ void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
     MouseEvent rel_evt = evt;
     rel_evt.x -= i->x();
     rel_evt.y -= i->y();
-
+    
     i->view()->FireMouseEvent(rel_evt);
   }
 }

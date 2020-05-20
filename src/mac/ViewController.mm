@@ -72,6 +72,15 @@
   return YES;
 }
 
+- (BOOL)performKeyEquivalent:(NSEvent *)event {
+  if ([[NSApp mainMenu] performKeyEquivalent:event])
+    return YES;
+  
+  // Suppress the "doonk" sound when keyboard shortcuts are used on NSView
+  [(ViewDelegate*)self.metalLayer.delegate keyEvent:event];
+  return YES;
+}
+
 @end
 
 @implementation ViewController

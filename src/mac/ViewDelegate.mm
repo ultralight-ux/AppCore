@@ -28,6 +28,8 @@ static inline ultralight::String toString(NSString* str) {
   if (self)
     _window = window;
   
+  _cur_button = ultralight::MouseEvent::kButton_None;
+  
   return self;
 }
 
@@ -40,31 +42,35 @@ static inline ultralight::String toString(NSString* str) {
 - (void)mouseMoved:(CGFloat)x mouseY:(CGFloat)y
 {
   _window->FireMouseEvent({ ultralight::MouseEvent::kType_MouseMoved,
-    (int)x, (int)y, ultralight::MouseEvent::kButton_None });
+    (int)x, (int)y, _cur_button });
 }
 
 - (void)leftMouseDown:(CGFloat)x mouseY:(CGFloat)y
 {
   _window->FireMouseEvent({ ultralight::MouseEvent::kType_MouseDown,
     (int)x, (int)y, ultralight::MouseEvent::kButton_Left });
+  _cur_button = ultralight::MouseEvent::kButton_Left;
 }
 
 - (void)leftMouseUp:(CGFloat)x mouseY:(CGFloat)y
 {
   _window->FireMouseEvent({ ultralight::MouseEvent::kType_MouseUp,
     (int)x, (int)y, ultralight::MouseEvent::kButton_Left });
+  _cur_button = ultralight::MouseEvent::kButton_None;
 }
 
 - (void)rightMouseDown:(CGFloat)x mouseY:(CGFloat)y
 {
   _window->FireMouseEvent({ ultralight::MouseEvent::kType_MouseDown,
     (int)x, (int)y, ultralight::MouseEvent::kButton_Right });
+  _cur_button = ultralight::MouseEvent::kButton_Right;
 }
 
 - (void)rightMouseUp:(CGFloat)x mouseY:(CGFloat)y
 {
   _window->FireMouseEvent({ ultralight::MouseEvent::kType_MouseUp,
     (int)x, (int)y, ultralight::MouseEvent::kButton_Right });
+  _cur_button = ultralight::MouseEvent::kButton_None;
 }
 
 - (void)scrollWheel:(CGFloat)deltaY mouseX:(CGFloat)x mouseY:(CGFloat)y
@@ -89,8 +95,7 @@ static inline ultralight::String toString(NSString* str) {
 
 - (void)resizeLayer:(NSSize)size
 {
-  _window->OnResize(_window->PixelsToDevice(size.width),
-                    _window->PixelsToDevice(size.height));
+  _window->OnResize(size.width, size.height);
 }
 
 @end

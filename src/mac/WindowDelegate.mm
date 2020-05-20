@@ -28,4 +28,12 @@
 
 }
 
+- (void)windowDidBecomeKey:(NSNotification *)notification {
+  window_->SetWindowFocused(true);
+}
+
+- (void)windowDidResignKey:(NSNotification *)notification {
+  window_->SetWindowFocused(false);
+}
+
 @end

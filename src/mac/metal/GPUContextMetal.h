@@ -2,6 +2,7 @@
 #import <MetalKit/MetalKit.h>
 #import <Ultralight/platform/GPUDriver.h>
 #import <Ultralight/platform/Config.h>
+#include "GPUDriverImpl.h"
 #include <memory>
 #include <map>
 
@@ -31,7 +32,7 @@ class GPUContextMetal {
   id<CAMetalDrawable> current_drawable() { return current_drawable_; }
 
   // Inherited from GPUContext
-  virtual ultralight::GPUDriver* driver() const { return (GPUDriver*)driver_.get(); }
+  virtual ultralight::GPUDriverImpl* driver() const { return (GPUDriverImpl*)driver_.get(); }
   
   virtual ultralight::FaceWinding face_winding() const {
     return ultralight::kFaceWinding_CounterClockwise;

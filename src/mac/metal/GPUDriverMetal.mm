@@ -7,10 +7,6 @@ GPUDriverMetal::GPUDriverMetal(GPUContextMetal* context) : context_(context) {}
 
 GPUDriverMetal::~GPUDriverMetal() {}
 
-void GPUDriverMetal::BeginSynchronize() {}
-
-void GPUDriverMetal::EndSynchronize() {}
-
 // Textures
 
 void GPUDriverMetal::CreateTexture(uint32_t texture_id,
@@ -91,29 +87,6 @@ void GPUDriverMetal::UpdateTexture(uint32_t texture_id,
   }
 }
 
-void GPUDriverMetal::BindTexture(uint8_t texture_unit,
-                                 uint32_t texture_id) {
-  auto i = textures_.find(texture_id);
-  if (i == textures_.end()) {
-      NSLog(@"Texture ID %d doesn't exist.", texture_id);
-      return;
-  }
-  
-  auto& texture = i->second;
-  
-  id<MTLTexture> tex;
-  // In case this texture is a MSAA render target, make sure that we
-  // select the resolve texture instead.
-  if (texture.resolve_texture_)
-    tex = texture.resolve_texture_;
-  else
-    tex = texture.texture_;
-  
-  if (render_encoder_)
-    [render_encoder_ setFragmentTexture:tex
-                                atIndex:texture_unit];
-}
-
 void GPUDriverMetal::DestroyTexture(uint32_t texture_id) {
   auto i = textures_.find(texture_id);
   if (i != textures_.end()) {
@@ -126,117 +99,6 @@ void GPUDriverMetal::DestroyTexture(uint32_t texture_id) {
 void GPUDriverMetal::CreateRenderBuffer(uint32_t render_buffer_id,
                                         const RenderBuffer& buffer) {
   render_buffers_[render_buffer_id] = buffer;
-}
-
-void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
-  if (render_encoder_ && render_encoder_render_buffer_id_ == render_buffer_id)
-    return;
-  
-  id<MTLTexture> texture, resolveTexture;
-  bool force_clear = false;
-  
-  if (render_buffer_id) {
-    auto i = render_buffers_.find(render_buffer_id);
-    if (i == render_buffers_.end())
-      return;
-  
-    auto renderBuffer = i->second;
-    auto j = textures_.find(renderBuffer.texture_id);
-    if (j == textures_.end())
-      return;
-  
-    texture = j->second.texture_;
-    resolveTexture = j->second.resolve_texture_;
-  
-    if (j->second.needs_init_) {
-      j->second.needs_init_ = false;
-      force_clear = true;
-    }
-  } else {
-    texture = context_->current_drawable().texture;
-    if (drawable_needs_flush_) {
-      drawable_needs_flush_ = false;
-      force_clear = true;
-    }
-  }
-  
-  if (render_encoder_) {
-    [render_encoder_ endEncoding];
-    render_encoder_ = nullptr;
-  }
-  
-  auto renderPassDescriptor = [MTLRenderPassDescriptor new];
-  renderPassDescriptor.colorAttachments[ 0 ].loadAction = force_clear ? MTLLoadActionClear : MTLLoadActionLoad;
-  renderPassDescriptor.colorAttachments[ 0 ].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
-  renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionStore;
-  renderPassDescriptor.colorAttachments[ 0 ].texture = texture;
-  renderPassDescriptor.colorAttachments[ 0 ].level = 0;
-  
-  if (render_buffer_id && context_->msaa_enabled()) {
-    renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionMultisampleResolve;
-    renderPassDescriptor.colorAttachments[ 0 ].resolveTexture = resolveTexture;
-  }
-  
-  render_encoder_ =
-  [context_->command_buffer() renderCommandEncoderWithDescriptor:renderPassDescriptor];
-  render_encoder_render_buffer_id_ = render_buffer_id;
-  render_encoder_render_buffer_width_ = texture.width;
-  render_encoder_render_buffer_height_ = texture.height;
-  render_encoder_.label = @"BindRenderBuffer";
-}
-
-void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id) {
-  id<MTLTexture> texture, resolveTexture;
-  MTLClearColor clearColor;
-  
-  if (render_buffer_id) {
-    auto i = render_buffers_.find(render_buffer_id);
-    if (i == render_buffers_.end())
-      return;
-  
-    auto renderBuffer = i->second;
-    auto j = textures_.find(renderBuffer.texture_id);
-    if (j == textures_.end())
-      return;
-
-    if (context_->msaa_enabled())
-      resolveTexture = j->second.resolve_texture_;
-
-    texture = j->second.texture_;
-
-    clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
-  } else {
-    texture = context_->current_drawable().texture;
-    clearColor = MTLClearColorMake(1.0, 1.0, 1.0, 1.0);
-  }
-  
-  if (render_encoder_) {
-    [render_encoder_ endEncoding];
-    render_encoder_ = nullptr;
-  }
-  
-  auto renderPassDescriptor = [MTLRenderPassDescriptor new];
-  renderPassDescriptor.colorAttachments[ 0 ].loadAction = MTLLoadActionClear;
-  renderPassDescriptor.colorAttachments[ 0 ].clearColor = clearColor;
-  renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionStore;
-  renderPassDescriptor.colorAttachments[ 0 ].texture = texture;
-  
-  if (render_buffer_id && context_->msaa_enabled()) {
-    renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionMultisampleResolve;
-    renderPassDescriptor.colorAttachments[ 0 ].resolveTexture = resolveTexture;
-  }
-  
-  render_encoder_ =
-  [context_->command_buffer() renderCommandEncoderWithDescriptor:renderPassDescriptor];
-  render_encoder_render_buffer_id_ = render_buffer_id;
-  render_encoder_render_buffer_width_ = texture.width;
-  render_encoder_render_buffer_height_ = texture.height;
-  render_encoder_.label = @"ClearRenderBuffer";
-  
-  if (render_encoder_) {
-    [render_encoder_ endEncoding];
-    render_encoder_ = nullptr;
-  }
 }
 
 void GPUDriverMetal::DestroyRenderBuffer(uint32_t render_buffer_id) {
@@ -309,6 +171,156 @@ simd_float4x4 ToFloat4x4(const ultralight::Matrix4x4& m) {
   return { X, Y, Z, W };
 }
 
+void GPUDriverMetal::DestroyGeometry(uint32_t geometry_id) {}
+  
+// Inherited from GPUDriverImpl:
+  
+void GPUDriverMetal::EndDrawing() { 
+  if (render_encoder_) {
+    [render_encoder_ endEncoding];
+    render_encoder_ = nullptr;
+  }
+  if (blit_encoder_) {
+    [blit_encoder_ endEncoding];
+    blit_encoder_ = nullptr;
+  }
+}
+  
+void GPUDriverMetal::BindTexture(uint8_t texture_unit,
+                                 uint32_t texture_id) {
+  auto i = textures_.find(texture_id);
+  if (i == textures_.end()) {
+    NSLog(@"Texture ID %d doesn't exist.", texture_id);
+    return;
+  }
+  
+  auto& texture = i->second;
+  
+  id<MTLTexture> tex;
+  // In case this texture is a MSAA render target, make sure that we
+  // select the resolve texture instead.
+  if (texture.resolve_texture_)
+    tex = texture.resolve_texture_;
+  else
+    tex = texture.texture_;
+  
+  if (render_encoder_)
+    [render_encoder_ setFragmentTexture:tex
+                                atIndex:texture_unit];
+}
+  
+void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
+  if (render_encoder_ && render_encoder_render_buffer_id_ == render_buffer_id)
+    return;
+  
+  id<MTLTexture> texture, resolveTexture;
+  bool force_clear = false;
+  
+  if (render_buffer_id) {
+    auto i = render_buffers_.find(render_buffer_id);
+    if (i == render_buffers_.end())
+      return;
+    
+    auto renderBuffer = i->second;
+    auto j = textures_.find(renderBuffer.texture_id);
+    if (j == textures_.end())
+      return;
+    
+    texture = j->second.texture_;
+    resolveTexture = j->second.resolve_texture_;
+    
+    if (j->second.needs_init_) {
+      j->second.needs_init_ = false;
+      force_clear = true;
+    }
+  } else {
+    texture = context_->current_drawable().texture;
+    if (drawable_needs_flush_) {
+      drawable_needs_flush_ = false;
+      force_clear = true;
+    }
+  }
+  
+  if (render_encoder_) {
+    [render_encoder_ endEncoding];
+    render_encoder_ = nullptr;
+  }
+  
+  auto renderPassDescriptor = [MTLRenderPassDescriptor new];
+  renderPassDescriptor.colorAttachments[ 0 ].loadAction = force_clear ? MTLLoadActionClear : MTLLoadActionLoad;
+  renderPassDescriptor.colorAttachments[ 0 ].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
+  renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionStore;
+  renderPassDescriptor.colorAttachments[ 0 ].texture = texture;
+  renderPassDescriptor.colorAttachments[ 0 ].level = 0;
+  
+  if (render_buffer_id && context_->msaa_enabled()) {
+    renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionMultisampleResolve;
+    renderPassDescriptor.colorAttachments[ 0 ].resolveTexture = resolveTexture;
+  }
+  
+  render_encoder_ =
+  [context_->command_buffer() renderCommandEncoderWithDescriptor:renderPassDescriptor];
+  render_encoder_render_buffer_id_ = render_buffer_id;
+  render_encoder_render_buffer_width_ = texture.width;
+  render_encoder_render_buffer_height_ = texture.height;
+  render_encoder_.label = @"BindRenderBuffer";
+}
+  
+
+void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id) {
+  id<MTLTexture> texture, resolveTexture;
+  MTLClearColor clearColor;
+  
+  if (render_buffer_id) {
+    auto i = render_buffers_.find(render_buffer_id);
+    if (i == render_buffers_.end())
+      return;
+    
+    auto renderBuffer = i->second;
+    auto j = textures_.find(renderBuffer.texture_id);
+    if (j == textures_.end())
+      return;
+    
+    if (context_->msaa_enabled())
+      resolveTexture = j->second.resolve_texture_;
+    
+    texture = j->second.texture_;
+    
+    clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
+  } else {
+    texture = context_->current_drawable().texture;
+    clearColor = MTLClearColorMake(1.0, 1.0, 1.0, 1.0);
+  }
+  
+  if (render_encoder_) {
+    [render_encoder_ endEncoding];
+    render_encoder_ = nullptr;
+  }
+  
+  auto renderPassDescriptor = [MTLRenderPassDescriptor new];
+  renderPassDescriptor.colorAttachments[ 0 ].loadAction = MTLLoadActionClear;
+  renderPassDescriptor.colorAttachments[ 0 ].clearColor = clearColor;
+  renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionStore;
+  renderPassDescriptor.colorAttachments[ 0 ].texture = texture;
+  
+  if (render_buffer_id && context_->msaa_enabled()) {
+    renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionMultisampleResolve;
+    renderPassDescriptor.colorAttachments[ 0 ].resolveTexture = resolveTexture;
+  }
+  
+  render_encoder_ =
+  [context_->command_buffer() renderCommandEncoderWithDescriptor:renderPassDescriptor];
+  render_encoder_render_buffer_id_ = render_buffer_id;
+  render_encoder_render_buffer_width_ = texture.width;
+  render_encoder_render_buffer_height_ = texture.height;
+  render_encoder_.label = @"ClearRenderBuffer";
+  
+  if (render_encoder_) {
+    [render_encoder_ endEncoding];
+    render_encoder_ = nullptr;
+  }
+}
+
 void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
                                   uint32_t indices_count,
                                   uint32_t indices_offset,
@@ -322,7 +334,7 @@ void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
   BindRenderBuffer(state.render_buffer_id);
   
   // Set the region of the drawable to which we'll draw.
-  [render_encoder_ setViewport:(MTLViewport){0.0, 0.0, state.viewport_width * context_->scale(), state.viewport_height * context_->scale(), -1.0, 1.0 }];
+  [render_encoder_ setViewport:(MTLViewport){0.0, 0.0, (float)state.viewport_width, (float)state.viewport_height, -1.0, 1.0 }];
   
   context_->set_pixel_format(MTLPixelFormatBGRA8Unorm_sRGB);
   context_->set_shader_type((ShaderType)state.shader_type);
@@ -360,44 +372,7 @@ void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
                        indexBufferOffset:indices_offset*sizeof(uint32_t)];
 }
 
-
-void GPUDriverMetal::DestroyGeometry(uint32_t geometry_id) {}
-
-// Command Queue
-
-void GPUDriverMetal::UpdateCommandList(const CommandList& list) {
-  if (list.size) {
-    command_list_.resize(list.size);
-    memcpy(&command_list_[0], list.commands, sizeof(Command) * list.size);
-  }
-}
-
-bool GPUDriverMetal::HasCommandsPending() { return !command_list_.empty(); }
-
-void GPUDriverMetal::DrawCommandList() {
-  if (command_list_.empty())
-    return;
-  
-  for (auto& cmd : command_list_) {
-    if ( cmd.command_type == kCommandType_DrawGeometry)
-      DrawGeometry(cmd.geometry_id, cmd.indices_count, cmd.indices_offset, cmd.gpu_state);
-    else if (cmd.command_type == kCommandType_ClearRenderBuffer)
-      ClearRenderBuffer(cmd.gpu_state.render_buffer_id);
-  }
-  
-  command_list_.clear();
-}
-
-void GPUDriverMetal::EndDrawing() {
-  if (render_encoder_) {
-    [render_encoder_ endEncoding];
-    render_encoder_ = nullptr;
-  }
-  if (blit_encoder_) {
-    [blit_encoder_ endEncoding];
-    blit_encoder_ = nullptr;
-  }
-}
+// Protected members:
 
 void GPUDriverMetal::SetGPUState(const GPUState& state) {
   uint32_t screen_width, screen_height;
@@ -451,10 +426,10 @@ void GPUDriverMetal::ApplyScissor(const GPUState& state) {
 
   if (state.enable_scissor) {
     MTLScissorRect r;
-    r.x = state.scissor_rect.left * context_->scale();
-    r.y = state.scissor_rect.top * context_->scale();
-    r.width = state.scissor_rect.width() * context_->scale();
-    r.height = state.scissor_rect.height() * context_->scale();
+    r.x = state.scissor_rect.left;
+    r.y = state.scissor_rect.top;
+    r.width = state.scissor_rect.width();
+    r.height = state.scissor_rect.height();
   
     // We have to clamp our scissor rect to render buffer dimensions otherwise Metal validation fails.
     if (r.x < render_encoder_render_buffer_width_ &&

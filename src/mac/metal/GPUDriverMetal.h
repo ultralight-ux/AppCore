@@ -2,7 +2,7 @@
 #import <MetalKit/MetalKit.h>
 #import <simd/simd.h>
 #import "../../../shaders/metal/src/ShaderTypes.h"
-#include <Ultralight/platform/GPUDriver.h>
+#include "GPUDriverImpl.h"
 #include <map>
 #include <vector>
 #import "GPUContextMetal.h"
@@ -11,75 +11,58 @@ namespace ultralight {
     
 class GPUContextMetal;
 
-class GPUDriverMetal : public GPUDriver {
+class GPUDriverMetal : public GPUDriverImpl {
  public:
   GPUDriverMetal(GPUContextMetal* context);
   virtual ~GPUDriverMetal();
   
-  // Synchronization
-  
-  virtual void BeginSynchronize();
-  
-  virtual void EndSynchronize();
-  
-  // Textures
-  
-  virtual uint32_t NextTextureId() { return next_texture_id_++; }
+  // Inherited from GPUDriver:
   
   virtual void CreateTexture(uint32_t texture_id,
-                             Ref<Bitmap> bitmap);
+                             Ref<Bitmap> bitmap) override;
   
   virtual void UpdateTexture(uint32_t texture_id,
-                             Ref<Bitmap> bitmap);
+                             Ref<Bitmap> bitmap) override;
   
-  virtual void BindTexture(uint8_t texture_unit,
-                           uint32_t texture_id);
-  
-  virtual void DestroyTexture(uint32_t texture_id);
-  
-  // Offscreen Rendering
-  
-  virtual uint32_t NextRenderBufferId() { return next_render_buffer_id_++; }
-  
+
+  virtual void DestroyTexture(uint32_t texture_id) override;
+
   virtual void CreateRenderBuffer(uint32_t render_buffer_id,
-                                  const RenderBuffer& buffer);
+                                  const RenderBuffer& buffer) override;
   
-  virtual void BindRenderBuffer(uint32_t render_buffer_id);
-  
-  virtual void ClearRenderBuffer(uint32_t render_buffer_id);
-  
-  virtual void DestroyRenderBuffer(uint32_t render_buffer_id);
-  
-  // Geometry
-  
-  virtual uint32_t NextGeometryId() { return next_geometry_id_++; }
+  virtual void DestroyRenderBuffer(uint32_t render_buffer_id) override;
   
   virtual void CreateGeometry(uint32_t geometry_id,
                               const VertexBuffer& vertices,
-                              const IndexBuffer& indices);
+                              const IndexBuffer& indices) override;
   
   virtual void UpdateGeometry(uint32_t geometry_id,
                               const VertexBuffer& buffer,
-                              const IndexBuffer& indices);
+                              const IndexBuffer& indices) override;
   
+  virtual void DestroyGeometry(uint32_t geometry_id) override;
+  
+  // Inherited from GPUDriverImpl:
+  
+  virtual const char* name() override { return "Metal"; }
+  
+  virtual void BeginDrawing() override {}
+  
+  virtual void EndDrawing() override;
+  
+  virtual void BindTexture(uint8_t texture_unit,
+                           uint32_t texture_id) override;
+  
+  virtual void BindRenderBuffer(uint32_t render_buffer_id) override;
+  
+  virtual void ClearRenderBuffer(uint32_t render_buffer_id) override;
   
   virtual void DrawGeometry(uint32_t geometry_id,
                             uint32_t indices_count,
                             uint32_t indices_offset,
-                            const GPUState& state);
+                            const GPUState& state) override;
   
-  
-  virtual void DestroyGeometry(uint32_t geometry_id);
-  
-  // Command Queue
-  
-  virtual void UpdateCommandList(const CommandList& queue);
-  
-  virtual bool HasCommandsPending();
-  
-  virtual void DrawCommandList();
-  
-  void EndDrawing();
+  // Public members:
   
   void set_drawable_needs_flush(bool val) { drawable_needs_flush_ = val; }
   
@@ -102,10 +85,6 @@ protected:
   
   // The blit command encoder only exists during rendering
   id<MTLBlitCommandEncoder> blit_encoder_;
-  
-  uint32_t next_texture_id_ = 1;
-  uint32_t next_render_buffer_id_ = 1; // 0 is reserved for screen
-  uint32_t next_geometry_id_ = 1;
   
   struct TextureEntry {
     id<MTLTexture> texture_;
@@ -132,8 +111,6 @@ protected:
   
   typedef std::map<uint32_t, GeometryEntry> GeometryMap;
   GeometryMap geometry_;
-  
-  std::vector<Command> command_list_;
 };
     
 } // namespace ultralight
