@@ -748,8 +748,9 @@ void applyClip(VS_OUTPUT input, inout float4 outColor) {
 float4 fillGlyph(VS_OUTPUT input) {
   float alpha = texture0.Sample(sampler0, input.TexCoord).a * input.Color.a;
 
-  // Transform from 2.2 Gamma to 1.8 Gamma (favored by Adobe and Apple)
-  alpha = pow(alpha, 1.8 / 2.2);
+  // Transform from 2.2 Gamma to target Gamma
+  float target_gamma = input.Data0.y;
+  alpha = pow(alpha, target_gamma / 2.2);
 
   return float4(input.Color.rgb * alpha, alpha);
 }
