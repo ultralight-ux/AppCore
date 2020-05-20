@@ -1,3 +1,4 @@
+#pragma once
 #include <Ultralight/platform/FileSystem.h>
 #include <Windows.h>
 #include <memory>

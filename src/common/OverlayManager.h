@@ -20,6 +20,8 @@ public:
 
   virtual void Draw();
 
+  virtual void SetWindowFocused(bool focused);
+
   virtual void FireKeyEvent(const ultralight::KeyEvent& evt);
 
   virtual void FireMouseEvent(const ultralight::MouseEvent& evt);
@@ -28,7 +30,7 @@ public:
 
   virtual void FocusOverlay(Overlay* overlay);
 
-  virtual void UnfocusOverlay(Overlay* overlay);
+  virtual void UnfocusAll();
 
   virtual bool IsOverlayFocused(Overlay* overlay) const;
     
@@ -41,6 +43,7 @@ protected:
   Overlay* focused_overlay_ = nullptr;
   Overlay* hovered_overlay_ = nullptr;
   bool is_dragging_ = false;
+  bool window_focused_ = false;
 };
 
 }  // namespace ultralight

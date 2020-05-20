@@ -178,7 +178,8 @@ public:
   }
 
   virtual void Unfocus() override {
-    window_->overlay_manager()->UnfocusOverlay((Overlay*)this);
+    if (has_focus())
+      window_->overlay_manager()->UnfocusAll();
   }
 
   virtual void MoveTo(int x, int y) override {

@@ -1,6 +1,7 @@
 #include "OverlayManager.h"
 #include <algorithm>
 #include <AppCore/Overlay.h>
+#include <Windows.h>
 
 namespace ultralight {
 
@@ -31,9 +32,20 @@ void OverlayManager::Draw() {
     i->Draw();
 }
 
+void OverlayManager::SetWindowFocused(bool focused) {
+  window_focused_ = focused;
+  if (focused_overlay_) {
+    if (window_focused_)
+      focused_overlay_->view()->Focus();
+    else
+      focused_overlay_->view()->Unfocus();
+  }
+}
+
 void OverlayManager::FireKeyEvent(const ultralight::KeyEvent& evt) {
-  if (focused_overlay_)
+  if (focused_overlay_) {
     focused_overlay_->view()->FireKeyEvent(evt);
+  }
 }
 
 void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
@@ -54,8 +66,14 @@ void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
 
   if (hovered_overlay_ && evt.type == ultralight::MouseEvent::kType_MouseDown 
     && evt.button == MouseEvent::kButton_Left) {
-      focused_overlay_ = hovered_overlay_;
-      is_dragging_ = true;
+    if (focused_overlay_)
+      focused_overlay_->view()->Unfocus();
+
+    focused_overlay_ = hovered_overlay_;
+
+    if (window_focused_)
+      focused_overlay_->view()->Focus();
+    is_dragging_ = true;
   }
 
   for (auto& i : overlays_) {
@@ -76,13 +94,22 @@ void OverlayManager::FireScrollEvent(const ultralight::ScrollEvent& evt) {
 }
 
 void OverlayManager::FocusOverlay(Overlay* overlay) {
-  if (!is_dragging_)
+  if (!is_dragging_) {
+    if (focused_overlay_)
+      focused_overlay_->view()->Unfocus();
+
     focused_overlay_ = overlay;
+    
+    if (window_focused_)
+      focused_overlay_->view()->Focus();
+  }
 }
 
-void OverlayManager::UnfocusOverlay(Overlay* overlay) {
-  if (focused_overlay_ == overlay)
-    focused_overlay_ = nullptr;
+void OverlayManager::UnfocusAll() {
+  if (focused_overlay_)
+    focused_overlay_->view()->Unfocus();
+
+  focused_overlay_ = nullptr;
 }
 
 bool OverlayManager::IsOverlayFocused(Overlay* overlay) const {

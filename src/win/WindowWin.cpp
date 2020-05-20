@@ -52,7 +52,15 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
   case WM_CHAR:
     WINDOW()->FireKeyEvent(KeyEvent(KeyEvent::kType_Char, (uintptr_t)wParam, (intptr_t)lParam, false));
     break;
+  case WM_MOUSELEAVE:
+    WINDOWDATA()->mouse_in_client = false;
+    break;
   case WM_MOUSEMOVE:
+    if (!WINDOWDATA()->mouse_in_client) {
+      // We need to manually set the cursor when mouse enters client area
+      WINDOWDATA()->mouse_in_client = true;
+      WINDOW()->SetCursor(ultralight::kCursor_Pointer);
+    }
     WINDOW()->FireMouseEvent(
       { MouseEvent::kType_MouseMoved,
         WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
@@ -100,6 +108,12 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
   case WM_MOUSEWHEEL:
     WINDOW()->FireScrollEvent(
       { ScrollEvent::kType_ScrollByPixel, 0, WINDOW()->PixelsToDevice(GET_WHEEL_DELTA_WPARAM(wParam)) });
+    break;
+  case WM_SETFOCUS:
+    WINDOW()->SetWindowFocused(true);
+    break;
+  case WM_KILLFOCUS:
+    WINDOW()->SetWindowFocused(false);
     break;
   default:
     return DefWindowProc(hWnd, message, wParam, lParam);
@@ -149,7 +163,7 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height,
   wcex.cbWndExtra = 0;
   wcex.hInstance = hInstance;
   wcex.hIcon = LoadIcon(hInstance, (LPCTSTR)IDI_APPLICATION);
-  wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+  wcex.hCursor = NULL;
   wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
   wcex.lpszMenuName = NULL;
   wcex.lpszClassName = class_name;
@@ -240,18 +254,15 @@ void WindowWin::SetTitle(const char* title) {
 void WindowWin::SetCursor(ultralight::Cursor cursor) {
   switch (cursor) {
   case ultralight::kCursor_Hand: {
-    if (cur_cursor_ != ultralight::kCursor_Hand)
-      ::SetCursor(cursor_hand_);
+    ::SetCursor(cursor_hand_);
     break;
   }
   case ultralight::kCursor_Pointer: {
-    if (cur_cursor_ != ultralight::kCursor_Pointer)
-      ::SetCursor(cursor_arrow_);
+    ::SetCursor(cursor_arrow_);
     break;
   }
   case ultralight::kCursor_IBeam: {
-    if (cur_cursor_ != ultralight::kCursor_IBeam)
-      ::SetCursor(cursor_ibeam_);
+    ::SetCursor(cursor_ibeam_);
     break;
   }
   };

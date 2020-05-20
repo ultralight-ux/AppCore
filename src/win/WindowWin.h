@@ -11,6 +11,7 @@ struct WindowData {
   class WindowWin* window;
   MouseEvent::Button cur_btn;
   bool is_resizing_modal;
+  bool mouse_in_client;
 };
 
 class WindowWin : public Window,
