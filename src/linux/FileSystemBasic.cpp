@@ -46,15 +46,6 @@ bool FileSystemBasic::FileExists(const String16& path) {
   return filestream.good();
 }
 
-bool FileSystemBasic::GetFileSize(const String16& path, int64_t& result) {
-  std::ifstream in(getRelative(path), std::ifstream::ate | std::ifstream::binary);
-  if (in.good()) {
-    result = static_cast<int64_t>(in.tellg());
-    return true;
-  }
-  return false;
-}
-
 bool FileSystemBasic::GetFileSize(FileHandle handle, int64_t& result) {
   auto i = open_files_.find(handle);
   if (i != open_files_.end()) {

@@ -180,12 +180,7 @@ float sdRoundRect(vec2 p, vec2 size, vec4 rx, vec4 ry) {
 }
 
 void fillSolid() {
-  vec2 size = ex_Data1.xy;
-  vec2 p = ex_TexCoord * size;
-  float alpha_x = min(antialias(p.x, AA_WIDTH, 1.0), 1.0 - antialias(p.x, AA_WIDTH, size.x - 1));
-  float alpha_y = min(antialias(p.y, AA_WIDTH, 1.0), 1.0 - antialias(p.y, AA_WIDTH, size.y - 1));
-  float alpha = min(alpha_x, alpha_y) * ex_Color.a;
-  out_Color = vec4(ex_Color.rgb * alpha, alpha);
+  out_Color = ex_Color;
 }
 
 void fillImage(vec2 uv) {
@@ -513,8 +508,8 @@ void fillRoundedRect() {
   float d = sdRoundRect(p, size, ex_Data1, ex_Data2);
 
   // Fill background
-  float alpha = antialias(-d, AA_WIDTH, 0.0) * ex_Color.a;
-  out_Color = vec4(ex_Color.rgb * alpha, alpha);
+  float alpha = antialias(-d, AA_WIDTH, 0.0);
+  out_Color = ex_Color * alpha;
 
   // Draw stroke
   float stroke_width = ex_Data3.x;
@@ -522,8 +517,7 @@ void fillRoundedRect() {
 
   if (stroke_width > 0.0) {
     alpha = innerStroke(stroke_width, d);
-    alpha *= stroke_color.a;
-    vec4 stroke = vec4(stroke_color.rgb * alpha, alpha);
+    vec4 stroke = stroke_color * alpha;
     out_Color = blend(stroke, out_Color);
   }
 }
@@ -549,7 +543,7 @@ void fillBoxShadow() {
     return;
   }
   
-  float alpha = radius >= 1.0? pow(antialias(-d, radius * 1.2, 0.0), 2.2) * 2.5 / pow(radius, 0.04) :
+  float alpha = radius >= 1.0? pow(antialias(-d, radius * 2 + 0.2, 0.0), 1.9) * 3.3 / pow(radius * 1.2, 0.15) :
                                antialias(-d, AA_WIDTH, inset ? -1.0 : 1.0);
   alpha = clamp(alpha, 0.0, 1.0) * ex_Color.a;
   out_Color = vec4(ex_Color.rgb * alpha, alpha);
@@ -707,14 +701,15 @@ void fillBlend() {
 void fillMask() {
   fillImage(ex_TexCoord);
   float alpha = texture(Texture2, ex_ObjectCoord).a;
-  out_Color = vec4(out_Color.rgb * alpha, out_Color.a * alpha);
+  out_Color *= alpha;
 }
 
 void fillGlyph(vec2 uv) {
   float alpha = texture(Texture1, uv).r;
 
-  // Transform from 2.2 Gamma to 1.8 Gamma (favored by Adobe and Apple)
-  alpha = pow(alpha, 1.8 / 2.2);
+  //  Transform from 2.2 Gamma to target Gamma
+  float gamma = ex_Data0.y;
+  alpha = pow(alpha, gamma / 2.2);
   out_Color = ex_Color * alpha;
 }
 

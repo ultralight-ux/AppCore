@@ -9,8 +9,8 @@ public:
     FontLoaderLinux();
     virtual ~FontLoaderLinux();
     virtual String16 fallback_font() const override;
-    virtual String16 fallback_font_for_characters(const String16& characters, int weight, bool italic, float size) const override;
-    virtual Ref<Buffer> Load(const String16& family, int weight, bool italic, float size) override;
+    virtual String16 fallback_font_for_characters(const String16& characters, int weight, bool italic) const override;
+    virtual RefPtr<FontFile> Load(const String16& family, int weight, bool italic) override;
 protected:
     std::map<uint64_t, RefPtr<Buffer>> fonts_;
 }; 

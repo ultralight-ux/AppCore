@@ -70,7 +70,7 @@ static int fontWeightToFontconfigWeight(int weight)
 
 String16 FontLoaderLinux::fallback_font() const { return "sans"; }
 
-String16 FontLoaderLinux::fallback_font_for_characters(const String16& characters, int weight, bool italic, float size) const {
+String16 FontLoaderLinux::fallback_font_for_characters(const String16& characters, int weight, bool italic) const {
   return fallback_font();
 }
 
@@ -336,34 +336,17 @@ FcUniquePtr<FcPattern> GetPatternForDescription(const std::string& family, int w
   return std::move(resultPattern);
 }
 
-Ref<Buffer> FontLoaderLinux::Load(const String16& family, int weight, bool italic, float size) {
-  FcUniquePtr<FcPattern> pattern = GetPatternForDescription(ToAscii(family), weight, italic, size);
+RefPtr<FontFile> FontLoaderLinux::Load(const String16& family, int weight, bool italic) {
+  FcUniquePtr<FcPattern> pattern = GetPatternForDescription(ToAscii(family), weight, italic, 12.0);
 
   if (pattern) {
     FcChar8* filepath = NULL;
-		if (FcPatternGetString(pattern.get(), FC_FILE, 0, &filepath) == FcResultMatch) {
-      FILE* fp = fopen((char*)filepath, "rb");
-      if (fp) {
-          char *buffer;
-          long filelen;
-          
-          fseek(fp, 0, SEEK_END);          // Jump to the end of the file
-          filelen = ftell(fp);             // Get the current byte offset in the file
-          rewind(fp);                      // Jump back to the beginning of the file
-          
-          buffer = (char *)malloc((filelen+1)*sizeof(char)); // Enough memory for file + \0
-          fread(buffer, filelen, 1, fp); // Read in the entire file
-          fclose(fp); // Close the file
-          
-          auto result = Buffer::Create(buffer, filelen);
-          free(buffer);
-          
-          return result;
-      }
+	if (FcPatternGetString(pattern.get(), FC_FILE, 0, &filepath) == FcResultMatch) {
+      return FontFile::Create(String16((const char*)filepath));
     }
   }
 
-  return Buffer::Create(nullptr, 0);
+  return nullptr;
 }
 
 }  // namespace ultralight

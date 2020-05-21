@@ -7,6 +7,7 @@
 #include "WindowGLFW.h"
 #include "FileSystemBasic.h"
 #include "FontLoaderLinux.h"
+#include "ClipboardGLFW.h"
 #include "FileLogger.h"
 #include <Ultralight/private/util/Debug.h>
 #include <Ultralight/private/PlatformFileSystem.h>
@@ -94,6 +95,9 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
   font_loader_.reset(new FontLoaderLinux());
   Platform::instance().set_font_loader(font_loader_.get());
 
+  clipboard_.reset(new ClipboardGLFW());
+  Platform::instance().set_clipboard(clipboard_.get());
+
   renderer_ = Renderer::Create();
 }
 
@@ -118,6 +122,8 @@ void AppGLFW::set_window(Ref<Window> window) {
   Platform::instance().set_gpu_driver(gpu_context_->driver());
   
   win->set_app_listener(this);
+
+  clipboard_->set_window(win->handle());
 }
 
 Monitor* AppGLFW::main_monitor() {
@@ -153,7 +159,7 @@ void AppGLFW::Update() {
 
   renderer()->Update();
 
-  GPUDriver* driver = gpu_context_->driver();
+  GPUDriverImpl* driver = gpu_context_->driver();
 
   driver->BeginSynchronize();
   renderer_->Render();

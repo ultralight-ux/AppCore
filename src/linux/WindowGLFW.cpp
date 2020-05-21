@@ -101,7 +101,13 @@ static void WindowGLFW_scroll_callback(GLFWwindow* window, double xoffset, doubl
 static void WindowGLFW_window_size_callback(GLFWwindow* window, int width, int height)
 {
   ultralight::WindowGLFW* win = static_cast<ultralight::WindowGLFW*>(glfwGetWindowUserPointer(window));
-  win->OnResize((uint32_t)win->PixelsToDevice(width), (uint32_t)win->PixelsToDevice(height));
+  win->OnResize((uint32_t)width, (uint32_t)height);
+}
+
+static void WindowGLFW_focus_callback(GLFWwindow* window, int focused)
+{
+  ultralight::WindowGLFW* win = static_cast<ultralight::WindowGLFW*>(glfwGetWindowUserPointer(window));
+  win->SetWindowFocused((bool)focused);
 }
 
 } // extern "C"
@@ -136,6 +142,7 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
   glfwSetMouseButtonCallback(window_, WindowGLFW_mouse_button_callback);
   glfwSetScrollCallback(window_, WindowGLFW_scroll_callback);
   glfwSetWindowSizeCallback(window_, WindowGLFW_window_size_callback);
+  glfwSetWindowFocusCallback(window_, WindowGLFW_focus_callback);
 
   // Create standard cursors
   cursor_ibeam_ = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
@@ -153,6 +160,7 @@ WindowGLFW::~WindowGLFW() {
     glfwSetMouseButtonCallback(window_, nullptr);
     glfwSetScrollCallback(window_, nullptr);
     glfwSetWindowSizeCallback(window_, nullptr);
+    glfwSetWindowFocusCallback(window_, nullptr);
 
     glfwDestroyCursor(cursor_ibeam_);
     glfwDestroyCursor(cursor_crosshair_);
@@ -165,17 +173,17 @@ WindowGLFW::~WindowGLFW() {
 }
 
 uint32_t WindowGLFW::width() const {
-  // Returns width in device coordinates
+  // Returns width in pixels
   int width, height;
   glfwGetWindowSize(window_, &width, &height);
-  return (uint32_t)PixelsToDevice(width);
+  return (uint32_t)width;
 }
 
 uint32_t WindowGLFW::height() const {
-  // Return height in device coordinates
+  // Return height in pixels
   int width, height;
   glfwGetWindowSize(window_, &width, &height);
-  return (uint32_t)PixelsToDevice(height);
+  return (uint32_t)height;
 }
 
 double WindowGLFW::scale() const {

@@ -491,9 +491,8 @@ void GPUDriverGL::DrawGeometry(uint32_t geometry_id,
 
   if (state.enable_scissor) {
     glEnable(GL_SCISSOR_TEST);
-    const Rect& r = state.scissor_rect;
-    float scale = context_->scale();
-    glScissor(r.left * scale, r.top * scale, (r.right - r.left) * scale, (r.bottom - r.top) * scale);
+    const IntRect& r = state.scissor_rect;
+    glScissor(r.left, r.top, (r.right - r.left), (r.bottom - r.top));
   } else {
     glDisable(GL_SCISSOR_TEST);
   }
@@ -530,15 +529,8 @@ void GPUDriverGL::DestroyGeometry(uint32_t geometry_id) {
   geometry_map.erase(geometry_id);
 }
 
-void GPUDriverGL::UpdateCommandList(const CommandList& list) {
-  if (list.size) {
-    command_list.resize(list.size);
-    memcpy(&command_list[0], list.commands, sizeof(Command) * list.size);
-  }
-}
-
 void GPUDriverGL::DrawCommandList() {
-  if (command_list.empty())
+  if (command_list_.empty())
     return;
 
   CHECK_GL();
@@ -554,7 +546,7 @@ void GPUDriverGL::DrawCommandList() {
 
   CHECK_GL();
 
-  for (auto i = command_list.begin(); i != command_list.end(); ++i) {
+  for (auto i = command_list_.begin(); i != command_list_.end(); ++i) {
     switch (i->command_type) {
     case kCommandType_DrawGeometry:
       DrawGeometry(i->geometry_id, i->indices_count, i->indices_offset, i->gpu_state);
@@ -565,7 +557,7 @@ void GPUDriverGL::DrawCommandList() {
     };
   }
 
-  command_list.clear();
+  command_list_.clear();
   glDisable(GL_SCISSOR_TEST);
 
 #if ENABLE_OFFSCREEN_GL
@@ -683,9 +675,9 @@ void GPUDriverGL::SelectProgram(ProgramType type) {
 
 void GPUDriverGL::UpdateUniforms(const GPUState& state) {
   bool flip_y = state.render_buffer_id != 0;
-  Matrix model_view_projection = ApplyProjection(state.transform, state.viewport_width, state.viewport_height, flip_y);
+  Matrix model_view_projection = ApplyProjection(state.transform, (float)state.viewport_width, (float)state.viewport_height, flip_y);
 
-  float params[4] = { (float)(glfwGetTime() / 1000.0), state.viewport_width, state.viewport_height, context_->scale() };
+  float params[4] = { (float)(glfwGetTime() / 1000.0), (float)state.viewport_width, (float)state.viewport_height, context_->scale() };
   SetUniform4f("State", params);
   CHECK_GL();
   ultralight::Matrix4x4 mat = model_view_projection.GetMatrix4x4();
@@ -726,9 +718,9 @@ void GPUDriverGL::SetUniformMatrix4fv(const char* name, size_t count, const floa
   glUniformMatrix4fv(glGetUniformLocation(cur_program_id_, name), (GLsizei)count, false, val);
 }
 
-void GPUDriverGL::SetViewport(float width, float height) {
-  glViewport(0, 0, static_cast<GLsizei>(round(width * context_->scale())),
-                   static_cast<GLsizei>(round(height * context_->scale())));
+void GPUDriverGL::SetViewport(uint32_t width, uint32_t height) {
+  glViewport(0, 0, static_cast<GLsizei>(width),
+                   static_cast<GLsizei>(height));
 }
 
 Matrix GPUDriverGL::ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height, bool flip_y) {

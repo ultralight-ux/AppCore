@@ -1,6 +1,7 @@
 #pragma once
 #include <Ultralight/platform/GPUDriver.h>
 #include <Ultralight/platform/Config.h>
+#include "GPUDriverImpl.h"
 #include <memory>
 
 typedef struct GLFWwindow GLFWwindow;
@@ -11,7 +12,7 @@ namespace ultralight {
 
 class GPUContextGL {
 protected:
-  std::unique_ptr<ultralight::GPUDriver> driver_;
+  std::unique_ptr<ultralight::GPUDriverImpl> driver_;
   GLFWwindow* window_;
   float scale_;
   bool msaa_enabled_;
@@ -20,7 +21,7 @@ public:
 
   virtual ~GPUContextGL() {}
 
-  virtual ultralight::GPUDriver* driver() const { return driver_.get(); }
+  virtual ultralight::GPUDriverImpl* driver() const { return driver_.get(); }
 
   virtual ultralight::FaceWinding face_winding() const { return ultralight::kFaceWinding_CounterClockwise; }
 
