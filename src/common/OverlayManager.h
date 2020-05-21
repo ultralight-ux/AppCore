@@ -22,6 +22,8 @@ public:
 
   virtual void SetWindowFocused(bool focused);
 
+  virtual void SetWindowScale(double scale);
+
   virtual void FireKeyEvent(const ultralight::KeyEvent& evt);
 
   virtual void FireMouseEvent(const ultralight::MouseEvent& evt);
@@ -44,6 +46,7 @@ protected:
   Overlay* hovered_overlay_ = nullptr;
   bool is_dragging_ = false;
   bool window_focused_ = false;
+  double window_scale_ = 1.0;
 };
 
 }  // namespace ultralight

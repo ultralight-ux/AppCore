@@ -41,6 +41,10 @@ void OverlayManager::SetWindowFocused(bool focused) {
   }
 }
 
+void OverlayManager::SetWindowScale(double scale) {
+  window_scale_ = scale;
+}
+
 void OverlayManager::FireKeyEvent(const ultralight::KeyEvent& evt) {
   if (focused_overlay_) {
     focused_overlay_->view()->FireKeyEvent(evt);
@@ -48,12 +52,10 @@ void OverlayManager::FireKeyEvent(const ultralight::KeyEvent& evt) {
 }
 
 void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
-
-  
   if (is_dragging_) {
     MouseEvent rel_evt = evt;
-    rel_evt.x -= hovered_overlay_->x();
-    rel_evt.y -= hovered_overlay_->y();
+    rel_evt.x -= (int)std::round(hovered_overlay_->x() / window_scale_);
+    rel_evt.y -= (int)std::round(hovered_overlay_->y() / window_scale_);
 
     focused_overlay_->view()->FireMouseEvent(rel_evt);
 
@@ -63,7 +65,9 @@ void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
     return;
   }
 
-  hovered_overlay_ = HitTest(evt.x, evt.y);
+  int x_px = (int)std::round(evt.x * window_scale_);
+  int y_px = (int)std::round(evt.y * window_scale_);
+  hovered_overlay_ = HitTest(x_px, y_px);
 
   if (hovered_overlay_ && evt.type == ultralight::MouseEvent::kType_MouseDown 
     && evt.button == MouseEvent::kButton_Left) {
@@ -82,8 +86,8 @@ void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
       continue;
 
     MouseEvent rel_evt = evt;
-    rel_evt.x -= i->x();
-    rel_evt.y -= i->y();
+    rel_evt.x -= (int)std::round(i->x() / window_scale_);
+    rel_evt.y -= (int)std::round(i->y() / window_scale_);
     
     i->view()->FireMouseEvent(rel_evt);
   }

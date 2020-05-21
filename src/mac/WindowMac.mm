@@ -43,6 +43,8 @@ WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
   // Move app to foreground
   ProcessSerialNumber psn = {0, kCurrentProcess};
   TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+
+  SetWindowScale(scale());
 }
 
 WindowMac::~WindowMac() {

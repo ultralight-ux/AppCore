@@ -223,6 +223,8 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height,
   cursor_arrow_ = ::LoadCursor(NULL, IDC_ARROW);
   cursor_ibeam_ = ::LoadCursor(NULL, IDC_IBEAM);
   cur_cursor_ = ultralight::kCursor_Hand;
+
+  SetWindowScale(scale());
 }
 
 WindowWin::~WindowWin() {

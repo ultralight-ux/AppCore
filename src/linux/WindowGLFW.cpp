@@ -150,6 +150,8 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
   cursor_hand_ = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
   cursor_hresize_ = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
   cursor_vresize_ = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+
+  SetWindowScale(scale());
 }
 
 WindowGLFW::~WindowGLFW() {
