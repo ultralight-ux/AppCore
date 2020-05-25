@@ -8,10 +8,6 @@ cbuffer Uniforms : register(b0)
   matrix Clip[8];
 };
 
-float Time() { return State[0]; }
-float ScreenWidth() { return State[1]; }
-float ScreenHeight() { return State[2]; }
-float ScreenScale() { return State[3]; }
 float Scalar(int i) { if (i < 4) return Scalar4[0][i]; else return Scalar4[1][i - 4]; }
 
 Texture2D texture0 : register(t0);
@@ -31,7 +27,6 @@ struct VS_OUTPUT
   float4 Data5       : COLOR6;
   float4 Data6       : COLOR7;
   float2 ObjectCoord : TEXCOORD1;
-  float2 ScreenCoord : TEXCOORD2;
 };
 
 uint FillType(VS_OUTPUT input) { return uint(input.Data0.x + 0.5); }
@@ -146,9 +141,6 @@ float sdEllipse(float2 p, float2 ab) {
   return length(r - p) * sign(p.y - r.y);
 }
 
-// 1.0 = No softening, 0.1 = Max softening
-#define SOFTEN_ELLIPSE 1.0
-
 float sdRoundRect(float2 p, float2 size, float4 rx, float4 ry) {
   size *= 0.5;
   float2 corner;
@@ -156,56 +148,31 @@ float sdRoundRect(float2 p, float2 size, float4 rx, float4 ry) {
   corner = float2(-size.x + rx.x, -size.y + ry.x);  // Top-Left
   float2 local = p - corner;
   if (dot(rx.x, ry.x) > 0.0 && p.x < corner.x && p.y <= corner.y)
-    return sdEllipse(local, float2(rx.x, ry.x)) * SOFTEN_ELLIPSE;
+    return sdEllipse(local, float2(rx.x, ry.x));
 
   corner = float2(size.x - rx.y, -size.y + ry.y);   // Top-Right
   local = p - corner;
   if (dot(rx.y, ry.y) > 0.0 && p.x >= corner.x && p.y <= corner.y)
-    return sdEllipse(local, float2(rx.y, ry.y)) * SOFTEN_ELLIPSE;
+    return sdEllipse(local, float2(rx.y, ry.y));
 
   corner = float2(size.x - rx.z, size.y - ry.z);  // Bottom-Right
   local = p - corner;
   if (dot(rx.z, ry.z) > 0.0 && p.x >= corner.x && p.y >= corner.y)
-    return sdEllipse(local, float2(rx.z, ry.z)) * SOFTEN_ELLIPSE;
+    return sdEllipse(local, float2(rx.z, ry.z));
 
   corner = float2(-size.x + rx.w, size.y - ry.w); // Bottom-Left
   local = p - corner;
   if (dot(rx.w, ry.w) > 0.0 && p.x < corner.x && p.y > corner.y)
-    return sdEllipse(local, float2(rx.w, ry.w)) * SOFTEN_ELLIPSE;
+    return sdEllipse(local, float2(rx.w, ry.w));
 
   return sdRect(p, size);
 }
 
 float4 fillSolid(VS_OUTPUT input) {
-  //float alpha = input.Color.a;
-  //return float4(input.Color.rgb * alpha, alpha);
   return input.Color;
 }
 
-float4 fillImageSuperSample(VS_OUTPUT input) {
-  float2 dx = ddx(input.TexCoord.xy);
-  float2 dy = ddy(input.TexCoord.xy);
-
-  float mip_bias = 0.0;
-  float2 uvOffsets = float2(0.125, 0.375);
-  float2 offsetUV = float2(0.0, 0.0);
-
-  float4 col = 0;
-  offsetUV.xy = input.TexCoord.xy + uvOffsets.x * dx + uvOffsets.y * dy;
-  col += texture0.SampleBias(sampler0, offsetUV, mip_bias);
-  offsetUV.xy = input.TexCoord.xy - uvOffsets.x * dx - uvOffsets.y * dy;
-  col += texture0.SampleBias(sampler0, offsetUV, mip_bias);
-  offsetUV.xy = input.TexCoord.xy + uvOffsets.y * dx - uvOffsets.x * dy;
-  col += texture0.SampleBias(sampler0, offsetUV, mip_bias);
-  offsetUV.xy = input.TexCoord.xy - uvOffsets.y * dx + uvOffsets.x * dy;
-  col += texture0.SampleBias(sampler0, offsetUV, mip_bias);
-  col *= 0.25;
-
-  return col * input.Color;
-}
-
 float4 fillImage(VS_OUTPUT input) {
-  //return fillImageSuperSample(input);
   return texture0.Sample(sampler0, input.TexCoord) * input.Color;
 }
 
@@ -293,78 +260,7 @@ float4 fillPatternGradient(VS_OUTPUT input) {
     }
   }
 
-  // Add gradient noise to reduce banding (+4/-4 gradations)
-  //out_Color += (8.0/255.0) * gradientNoise(input.Position.xy) - (4.0/255.0);
   return float4(out_Color.rgb, out_Color.a);
-}
-
-float stroke(float d, float s, float a) {
-  if (d <= s)
-    return 1.0;
-  return 1.0 - smoothstep(s, s + a, d);
-}
-
-float samp(in float2 uv, float width, float median) {
-  return antialias(texture0.Sample(sampler0, uv).a, width, median);
-}
-
-#define SHARPENING 0.9 // 0 = No sharpening, 0.9 = Max sharpening.
-#define SHARPEN_MORE 0
-
-float supersample(in float2 uv) {
-  float dist = texture0.Sample(sampler0, uv).a;
-  float width = fwidth(dist) * (1.0 - SHARPENING);
-  const float median = 0.5;
-  float alpha = antialias(dist, width, median);
-  float2 dscale = float2(0.354, 0.354); // half of 1/sqrt2
-  float2 duv = (ddx(uv) + ddy(uv)) * dscale;
-  float4 box = float4(uv - duv, uv + duv);
-
-  float asum = samp(box.xy, width, median)
-             + samp(box.zw, width, median)
-             + samp(box.xw, width, median)
-             + samp(box.zy, width, median);
-#if SHARPEN_MORE
-  alpha = (alpha + 0.4 * asum) * 0.39;
-#else
-  alpha = (alpha + 0.5 * asum) / 3.0;
-#endif
-  return alpha;
-}
-
-float4 fillSDF(VS_OUTPUT input) {
-  float a = supersample(input.TexCoord);
-  return input.Color * a;
-}
-
-float samp_stroke(in float2 uv, float w, float m, float max_d) {
-  float d = abs(((texture0.Sample(sampler0, uv).r * 2.0) - 1.0) * max_d);
-  return antialias(d, w, m);
-}
-
-float4 fillStrokeSDF(VS_OUTPUT input) {
-  float max_distance = SDFMaxDistance(input);
-  float2 uv = input.TexCoord;
-  float dist = abs(((texture0.Sample(sampler0, uv).r * 2.0) - 1.0) * max_distance);
-  float stroke_width = (max_distance - 2.0) * 0.5;
-  float width = fwidth(dist) * (1.0 - SHARPENING);
-  float alpha = antialias(dist, width, stroke_width);
-
-#if SUPERSAMPLE_SDF
-  float2 dscale = float2(0.354, 0.354); // half of 1/sqrt2
-  float2 duv = (ddx(uv) + ddy(uv)) * dscale;
-  float4 box = float4(uv - duv, uv + duv);
-
-  float asum = samp_stroke(box.xy, width, stroke_width, max_distance)
-    + samp_stroke(box.zw, width, stroke_width, max_distance)
-    + samp_stroke(box.xw, width, stroke_width, max_distance)
-    + samp_stroke(box.zy, width, stroke_width, max_distance);
-
-  alpha = (alpha + 0.5 * asum) / 3.;
-#endif
-
-  alpha = 1.0 - alpha;
-  return input.Color * alpha;
 }
 
 void Unpack(float4 x, out float4 a, out float4 b) {
@@ -404,117 +300,6 @@ float4 blend(float4 src, float4 dest) {
   result.rgb = src.rgb + dest.rgb * (1.0 - src.a);
   result.a = src.a + dest.a * (1.0 - src.a);
   return result;
-}
-
-float minBorderLine(float d_border, float d_line, float width) {
-  return (d_border < width) ? d_line : ((d_line > 0.0) ? 1e9 : d_border);
-}
-
-void drawBorderSide(inout float4 out_Color, float4 color, float2 p, float border_alpha, bool is_horiz,
-                    float2 a, float2 b, float2 outer_a, float2 outer_b, inout float offset_px, float width) {
-  float2 seg = sdSegment(p, a, b);
-  float len = distance(a, b);
-
-  float2 middle_a = is_horiz ? float2(a.x, 0.0) : float2(0.0, a.y);
-  float2 middle_b = is_horiz ? float2(b.x, 0.0) : float2(0.0, b.y);
-
-  // We already have an SDF representing the total interior border SDF (border alpha).
-  // Let's clip it by 3 lines to obtain the (trapezoid) SDF for this side.
-  float line_alpha;
-  line_alpha = antialias(-sdLine(a, outer_a, p), width, 0.0);
-  border_alpha = min(border_alpha, line_alpha);
-  line_alpha = antialias(-sdLine(outer_b, b, p), width, 0.0);
-  border_alpha = min(border_alpha, line_alpha);
-  line_alpha = antialias(-sdLine(middle_b, middle_a, p), width, 0.0);
-  border_alpha = min(border_alpha, line_alpha);
-
-  float alpha = border_alpha * color.a;
-  float4 border = float4(color.rgb * alpha, alpha);
-  out_Color = blend(border, out_Color);
-
-  offset_px += len;
-}
-
-void drawBorder(inout float4 out_Color, float2 p, float border_alpha, float2 outer_size, float2 inner_size, float2 inner_offset,
-                float4 color_top, float4 color_right, float4 color_bottom, float4 color_left, float width) {
-  outer_size *= 0.5;
-  inner_size *= 0.5;
-  
-  // We shrink the inner size just a tiny bit so that we can calculate
-  // the trapezoid even when the border width for a side is zero.
-  inner_size.x -= (outer_size.x - inner_size.x) < 1.0 ? 0.5 : 0.0;
-  inner_size.y -= (outer_size.y - inner_size.y) < 1.0 ? 0.5 : 0.0;
-
-  float2 outerTopLeft = float2(-outer_size.x, -outer_size.y);
-  float2 outerTopRight = float2(outer_size.x, -outer_size.y);
-  float2 outerBottomRight = float2(outer_size.x, outer_size.y);
-  float2 outerBottomLeft = float2(-outer_size.x, outer_size.y);
-
-  float2 innerTopLeft = float2(-inner_size.x, -inner_size.y) + inner_offset;
-  float2 innerTopRight = float2(inner_size.x, -inner_size.y) + inner_offset;
-  float2 innerBottomRight = float2(inner_size.x, inner_size.y) + inner_offset;
-  float2 innerBottomLeft = float2(-inner_size.x, inner_size.y) + inner_offset;
-
-  float offset_px = 0.0f;
-
-  // Top, Right, Bottom, Left
-  drawBorderSide(out_Color, color_top, p, border_alpha, true, innerTopLeft, innerTopRight, outerTopLeft, outerTopRight, offset_px, width);
-  drawBorderSide(out_Color, color_right, p, border_alpha, false, innerTopRight, innerBottomRight, outerTopRight, outerBottomRight, offset_px, width);
-  drawBorderSide(out_Color, color_bottom, p, border_alpha, true, innerBottomRight, innerBottomLeft, outerBottomRight, outerBottomLeft, offset_px, width);
-  drawBorderSide(out_Color, color_left, p, border_alpha, false, innerBottomLeft, innerTopLeft, outerBottomLeft, outerTopLeft, offset_px, width);
-}
-
-float sdRoundBox(in float2 p, in float2 b, in float r)
-{
-  b *= 0.5;
-  r = min(min(b.x, b.y), r);
-  b = b - r;
-  float2 q = abs(p) - b;
-  float2 m = float2(min(q.x, q.y), max(q.x, q.y));
-  float d = (m.x > 0.0) ? length(q) : m.y;
-  return d - r;
-}
-
-float4 fillBoxDecorations(VS_OUTPUT input) {
-  float2 outer_size = input.Data0.zw;
-  float2 inner_offset = input.Data1.xy;
-  float2 inner_size = input.Data1.zw;
-
-  float4 outer_radii_x, outer_radii_y;
-  Unpack(input.Data2, outer_radii_x, outer_radii_y);
-
-  float4 inner_radii_x, inner_radii_y;
-  Unpack(input.Data3, inner_radii_x, inner_radii_y);
-
-  float4 color_top, color_right;
-  Unpack(input.Data4, color_top, color_right);
-  color_top /= 16384.0f;
-  color_right /= 16384.0f;
-
-  float4 color_bottom, color_left;
-  Unpack(input.Data5, color_bottom, color_left);
-  color_bottom /= 16384.0f;
-  color_left /= 16384.0f;
-
-  float width = AA_WIDTH;
-
-  float2 p = input.TexCoord * outer_size - (outer_size * 0.5);
-
-  float d_outer = sdRoundRect(p, outer_size, outer_radii_x, outer_radii_y);
-  float d_inner = sdRoundRect(p - inner_offset, inner_size, inner_radii_x, inner_radii_y);
-
-  float outer_alpha = antialias(-d_outer, width, 0.0);
-  float inner_alpha = antialias(-d_inner, width, 0.0);
-  float border_alpha = min(outer_alpha, 1.0 - inner_alpha);
-
-  // Draw background fill
-  float alpha = antialias(-d_outer, width, 0.0) * input.Color.a;
-  float4 outColor = float4(input.Color.rgb * alpha, alpha);
-
-  // Draw border
-  drawBorder(outColor, p, border_alpha, outer_size, inner_size, inner_offset, color_top, color_right, color_bottom, color_left, 0.5);
-
-  return outColor;
 }
 
 float innerStroke(float stroke_width, float d) {
@@ -761,9 +546,9 @@ float4 PS(VS_OUTPUT input) : SV_Target
   const uint FillType_Image = 1u;
   const uint FillType_Pattern_Image = 2u;
   const uint FillType_Pattern_Gradient = 3u;
-  const uint FillType_Fill_SDF = 4u;
-  const uint FillType_Stroke_SDF = 5u;
-  const uint FillType_Box_Decorations = 6u;
+  const uint FillType_RESERVED_1 = 4u;
+  const uint FillType_RESERVED_2 = 5u;
+  const uint FillType_RESERVED_3 = 6u;
   const uint FillType_Rounded_Rect = 7u;
   const uint FillType_Box_Shadow = 8u;
   const uint FillType_Blend = 9u;
@@ -778,9 +563,6 @@ float4 PS(VS_OUTPUT input) : SV_Target
   case FillType_Image: outColor = fillImage(input); break;
   case FillType_Pattern_Image: outColor = fillPatternImage(input); break;
   case FillType_Pattern_Gradient: outColor = fillPatternGradient(input); break;
-  case FillType_Fill_SDF: outColor = fillSDF(input); break;
-  case FillType_Stroke_SDF: outColor = fillStrokeSDF(input); break;
-  case FillType_Box_Decorations: outColor = fillBoxDecorations(input); break;
   case FillType_Rounded_Rect: outColor = fillRoundedRect(input); break;
   case FillType_Box_Shadow: outColor = fillBoxShadow(input); break;
   case FillType_Blend: outColor = fillBlend(input); break;

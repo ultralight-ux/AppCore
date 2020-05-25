@@ -143,7 +143,7 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id,
     desc.Usage = D3D11_USAGE_DEFAULT;
     desc.CPUAccessFlags = 0;
 #if ENABLE_MSAA
-    desc.SampleDesc.Count = 4;
+    desc.SampleDesc.Count = 8;
     desc.SampleDesc.Quality = D3D11_STANDARD_MULTISAMPLE_PATTERN;
 
     texture_entry.is_msaa_render_target = true;
@@ -774,7 +774,7 @@ void GPUDriverD3D11::UpdateConstantBuffer(const GPUState& state) {
   float screen_height = (float)state.viewport_height;
 
   Uniforms uniforms;
-  uniforms.State = { state.enable_snap ? 1.0f : 0.0f, screen_width, screen_height, (float)context_->scale() };
+  uniforms.State = { 0.0f, screen_width, screen_height, (float)context_->scale() };
   uniforms.Transform = DirectX::XMMATRIX(model_view_projection.GetMatrix4x4().data);
   uniforms.Scalar4[0] =
     { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2], state.uniform_scalar[3] };

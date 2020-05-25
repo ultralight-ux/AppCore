@@ -8,7 +8,6 @@ cbuffer Uniforms : register(b0)
   matrix Clip[8];
 };
 
-float Time() { return State[0]; }
 float ScreenWidth() { return State[1]; }
 float ScreenHeight() { return State[2]; }
 float Scalar(int i) { if (i < 4) return Scalar4[0][i]; else return Scalar4[1][i - 4]; }
