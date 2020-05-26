@@ -68,6 +68,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         WINDOWDATA()->cur_btn });
     break;
   case WM_LBUTTONDOWN:
+  case WM_LBUTTONDBLCLK:
     SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Left;
     WINDOW()->FireMouseEvent(
@@ -77,6 +78,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         WINDOWDATA()->cur_btn });
     break;
   case WM_MBUTTONDOWN:
+  case WM_MBUTTONDBLCLK:
     SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Middle;
     WINDOW()->FireMouseEvent(
@@ -86,6 +88,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
       WINDOWDATA()->cur_btn });
     break;
   case WM_RBUTTONDOWN:
+  case WM_RBUTTONDBLCLK:
     SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Right;
     WINDOW()->FireMouseEvent(
