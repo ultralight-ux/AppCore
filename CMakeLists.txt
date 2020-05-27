@@ -74,7 +74,7 @@ if (PORT MATCHES "UltralightLinux")
     include_directories("${GLFW_DIR}/include")
     include_directories("${GLFW_DIR}/deps")
     
-    link_libraries(glfw)
+    link_libraries(glfw fontconfig)
 elseif (PORT MATCHES "UltralightMac")
     link_directories("${ULTRALIGHTCORE_DIR}/bin"
                      "${WEBCORE_DIR}/bin"
@@ -123,10 +123,6 @@ add_dependencies(AppCore UltralightCoreBin WebCoreBin UltralightBin)
 if (PORT MATCHES "UltralightMac")
     set_target_properties(AppCore PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework QuartzCore -framework MetalKit")
     set_property (TARGET AppCore APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
-endif ()
-
-if (PORT MATCHES "UltralightLinux")
-    set_target_properties(AppCore PROPERTIES LINK_FLAGS "-lfontconfig")
 endif ()
 
 if(${BUILD_TESTS})
