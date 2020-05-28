@@ -12,10 +12,6 @@ uniform uint ClipSize;
 uniform mat4 Clip[8];
 
 // Uniform Accessor Functions
-float Time() { return State[0]; }
-float ScreenWidth() { return State[1]; }
-float ScreenHeight() { return State[2]; }
-float ScreenScale() { return State[3]; }
 float Scalar(uint i) { if (i < 4u) return Scalar4[0][i]; else return Scalar4[1][i - 4u]; }
 
 // Texture Units
@@ -274,76 +270,6 @@ void fillPatternGradient() {
   //out_Color += (8.0/255.0) * gradientNoise(gl_FragCoord.xy) - (4.0/255.0);
 }
 
-float stroke(float d, float s, float a) {
-  if (d <= s)
-    return 1.0;
-  return 1.0 - smoothstep(s, s + a, d);
-}
-
-float samp(in vec2 uv, float width, float median) {
-  return antialias(texture(Texture1, uv).r, width, median);
-}
-
-#define SHARPENING 0.9 // 0 = No sharpening, 0.9 = Max sharpening.
-#define SHARPEN_MORE 1
-#define SUPERSAMPLE_SDF 1
-
-float supersample(in vec2 uv) {
-  float dist = texture(Texture1, uv).a;
-  float width = fwidth(dist) * (1.0 - SHARPENING);
-  const float median = 0.5;
-  float alpha = antialias(dist, width, median);
-  vec2 dscale = vec2(0.354, 0.354); // half of 1/sqrt2
-  vec2 duv = (dFdx(uv) + dFdy(uv)) * dscale;
-  vec4 box = vec4(uv - duv, uv + duv);
-
-  float asum = samp(box.xy, width, median)
-             + samp(box.zw, width, median)
-             + samp(box.xw, width, median)
-             + samp(box.zy, width, median);
-#if SHARPEN_MORE
-  alpha = (alpha + 0.4 * asum) * 0.39;
-#else
-  alpha = (alpha + 0.5 * asum) / 3.0;
-#endif
-  return alpha;
-}
-
-void fillSDF() {
-  float a = supersample(ex_TexCoord);
-  out_Color = ex_Color * a;
-}
-
-float samp_stroke(in vec2 uv, float w, float m, float max_d) {
-  float d = abs(((texture(Texture1, uv).r  * 2.0) - 1.0) * max_d);
-  return antialias(d, w, m);
-}
-
-void fillStrokeSDF() {
-  float max_distance = SDFMaxDistance();
-  vec2 uv = ex_TexCoord;
-  float dist = abs(((texture(Texture1, uv).r * 2.0) - 1.0) * max_distance);
-  float stroke_width = (max_distance - 2.0) * 0.5;
-  float width = fwidth(dist) * (1.0 - SHARPENING);
-  float alpha = antialias(dist, width, stroke_width);
-
-#if SUPERSAMPLE_SDF
-  float dscale = 0.354; // half of 1/sqrt2; you can play with this
-  vec2 duv = dscale * (dFdx(uv) + dFdy(uv));
-  vec4 box = vec4(uv - duv, uv + duv);
-
-  float asum = samp_stroke(box.xy, width, stroke_width, max_distance)
-    + samp_stroke(box.zw, width, stroke_width, max_distance)
-    + samp_stroke(box.xw, width, stroke_width, max_distance)
-    + samp_stroke(box.zy, width, stroke_width, max_distance);
-
-  alpha = (alpha + 0.5 * asum) / 3.;
-#endif
-
-  alpha = 1.0 - alpha;
-  out_Color = ex_Color * alpha;
-}
-
 void Unpack(vec4 x, out vec4 a, out vec4 b) {
   const float s = 65536.0;
   a = floor(x / s);
@@ -384,118 +310,9 @@ vec4 blend(vec4 src, vec4 dest) {
   return result;
 }
 
-float minBorderLine(float d_border, float d_line, float width) {
-  return (d_border < width) ? d_line : ((d_line > 0.0) ? 1e9 : d_border);
-}
-
-void drawBorderSide(inout vec4 out_Color, vec4 color, vec2 p, float border_alpha, bool is_horiz,
-                    vec2 a, vec2 b, vec2 outer_a, vec2 outer_b, inout float offset_px, float width) {
-  vec2 seg = sdSegment(p, a, b);
-  float len = distance(a, b);
-
-  vec2 middle_a = is_horiz ? vec2(a.x, 0.0) : vec2(0.0, a.y);
-  vec2 middle_b = is_horiz ? vec2(b.x, 0.0) : vec2(0.0, b.y);
-
-  // We already have an SDF representing the total interior border SDF (border alpha).
-  // Let's clip it by 3 lines to obtain the (trapezoid) SDF for this side.
-  float line_alpha;
-  line_alpha = antialias(-sdLine(a, outer_a, p), width, 0.0);
-  border_alpha = min(border_alpha, line_alpha);
-  line_alpha = antialias(-sdLine(outer_b, b, p), width, 0.0);
-  border_alpha = min(border_alpha, line_alpha);
-  line_alpha = antialias(-sdLine(middle_b, middle_a, p), width, 0.0);
-  border_alpha = min(border_alpha, line_alpha);
-
-  float alpha = border_alpha * color.a;
-  vec4 border = vec4(color.rgb * alpha, alpha);
-  out_Color = blend(border, out_Color);
-
-  offset_px += len;
-}
-
 )";
 
 static const std::string shader_fill_frag2 = R"(
-
-void drawBorder(inout vec4 out_Color, vec2 p, float border_alpha, vec2 outer_size, vec2 inner_size, vec2 inner_offset,
-                vec4 color_top, vec4 color_right, vec4 color_bottom, vec4 color_left, float width) {
-  outer_size *= 0.5;
-  inner_size *= 0.5;
-  
-  // We shrink the inner size just a tiny bit so that we can calculate
-  // the trapezoid even when the border width for a side is zero.
-  inner_size.x -= (outer_size.x - inner_size.x) < 1.0 ? 0.5 : 0.0;
-  inner_size.y -= (outer_size.y - inner_size.y) < 1.0 ? 0.5 : 0.0;
-
-  vec2 outerTopLeft = vec2(-outer_size.x, -outer_size.y);
-  vec2 outerTopRight = vec2(outer_size.x, -outer_size.y);
-  vec2 outerBottomRight = vec2(outer_size.x, outer_size.y);
-  vec2 outerBottomLeft = vec2(-outer_size.x, outer_size.y);
-
-  vec2 innerTopLeft = vec2(-inner_size.x, -inner_size.y) + inner_offset;
-  vec2 innerTopRight = vec2(inner_size.x, -inner_size.y) + inner_offset;
-  vec2 innerBottomRight = vec2(inner_size.x, inner_size.y) + inner_offset;
-  vec2 innerBottomLeft = vec2(-inner_size.x, inner_size.y) + inner_offset;
-
-  float offset_px = 0.0f;
-
-  // Top, Right, Bottom, Left
-  drawBorderSide(out_Color, color_top, p, border_alpha, true, innerTopLeft, innerTopRight, outerTopLeft, outerTopRight, offset_px, width);
-  drawBorderSide(out_Color, color_right, p, border_alpha, false, innerTopRight, innerBottomRight, outerTopRight, outerBottomRight, offset_px, width);
-  drawBorderSide(out_Color, color_bottom, p, border_alpha, true, innerBottomRight, innerBottomLeft, outerBottomRight, outerBottomLeft, offset_px, width);
-  drawBorderSide(out_Color, color_left, p, border_alpha, false, innerBottomLeft, innerTopLeft, outerBottomLeft, outerTopLeft, offset_px, width);
-}
-
-float sdRoundBox(in vec2 p, in vec2 b, in float r)
-{
-  b *= 0.5;
-  r = min(min(b.x, b.y), r);
-  b = b - r;
-  vec2 q = abs(p) - b;
-  vec2 m = vec2(min(q.x, q.y), max(q.x, q.y));
-  float d = (m.x > 0.0) ? length(q) : m.y;
-  return d - r;
-}
-
-void fillBoxDecorations() {
-  vec2 outer_size = ex_Data0.zw;
-  vec2 inner_offset = ex_Data1.xy;
-  vec2 inner_size = ex_Data1.zw;
-
-  vec4 outer_radii_x, outer_radii_y;
-  Unpack(ex_Data2, outer_radii_x, outer_radii_y);
-
-  vec4 inner_radii_x, inner_radii_y;
-  Unpack(ex_Data3, inner_radii_x, inner_radii_y);
-
-  vec4 color_top, color_right;
-  Unpack(ex_Data4, color_top, color_right);
-  color_top /= 16384.0f;
-  color_right /= 16384.0f;
-
-  vec4 color_bottom, color_left;
-  Unpack(ex_Data5, color_bottom, color_left);
-  color_bottom /= 16384.0f;
-  color_left /= 16384.0f;
-
-  float width = AA_WIDTH;
-
-  vec2 p = ex_TexCoord * outer_size - (outer_size * 0.5);
-
-  float d_outer = sdRoundRect(p, outer_size, outer_radii_x, outer_radii_y);
-  float d_inner = sdRoundRect(p - inner_offset, inner_size, inner_radii_x, inner_radii_y);
-
-  float outer_alpha = antialias(-d_outer, width, 0.0);
-  float inner_alpha = antialias(-d_inner, width, 0.0);
-  float border_alpha = min(outer_alpha, 1.0 - inner_alpha);
-
-  // Draw background fill
-  float alpha = antialias(-d_outer, width, 0.0) * ex_Color.a;
-  out_Color = vec4(ex_Color.rgb * alpha, alpha);
-
-  // Draw border
-  drawBorder(out_Color, p, border_alpha, outer_size, inner_size, inner_offset, color_top, color_right, color_bottom, color_left, 0.5);
-}
 
 float innerStroke(float stroke_width, float d) {
   return min(antialias(-d, AA_WIDTH, 0.0), 1.0 - antialias(-d, AA_WIDTH, stroke_width));
@@ -740,9 +557,9 @@ void main(void) {
   const uint FillType_Image = 1u;
   const uint FillType_Pattern_Image = 2u;
   const uint FillType_Pattern_Gradient = 3u;
-  const uint FillType_Fill_SDF = 4u;
-  const uint FillType_Stroke_SDF = 5u;
-  const uint FillType_Box_Decorations = 6u;
+  const uint FillType_RESERVED_1 = 4u;
+  const uint FillType_RESERVED_2 = 5u;
+  const uint FillType_RESERVED_3 = 6u;
   const uint FillType_Rounded_Rect = 7u;
   const uint FillType_Box_Shadow = 8u;
   const uint FillType_Blend = 9u;
@@ -755,9 +572,6 @@ void main(void) {
   case FillType_Image: fillImage(ex_TexCoord); break;
   case FillType_Pattern_Image: fillPatternImage(); break;
   case FillType_Pattern_Gradient: fillPatternGradient(); break;
-  case FillType_Fill_SDF: fillSDF(); break;
-  case FillType_Stroke_SDF: fillStrokeSDF(); break;
-  case FillType_Box_Decorations: fillBoxDecorations(); break;
   case FillType_Rounded_Rect: fillRoundedRect(); break;
   case FillType_Box_Shadow: fillBoxShadow(); break;
   case FillType_Blend: fillBlend(); break;
