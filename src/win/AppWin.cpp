@@ -13,6 +13,7 @@
 #include <Ultralight/platform/Logger.h>
 #include <Ultralight/private/util/Debug.h>
 #include <Ultralight/private/PlatformFileSystem.h>
+#include <AppCore/Platform.h>
 #include "DIBSurface.h"
 #include <Shlwapi.h>
 #include <ShlObj.h>
@@ -75,8 +76,7 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
 
-  font_loader_.reset(new FontLoaderWin());
-  Platform::instance().set_font_loader(font_loader_.get());
+  Platform::instance().set_font_loader(GetPlatformFontLoader());
 
   // Replace forward slashes with backslashes for proper path
   // resolution on Windows
@@ -86,8 +86,7 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   String file_system_path = PlatformFileSystem::AppendPath(module_path,
     String16(fs_str.data(), fs_str.length()));
 
-  file_system_.reset(new FileSystemWin(file_system_path.utf16().data()));
-  Platform::instance().set_file_system(file_system_.get());
+  Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
 
   clipboard_.reset(new ClipboardWin());
   Platform::instance().set_clipboard(clipboard_.get());

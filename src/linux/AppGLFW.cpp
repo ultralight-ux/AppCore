@@ -5,8 +5,7 @@
 #include <Ultralight/platform/Config.h>
 #include <GLFW/glfw3.h>
 #include "WindowGLFW.h"
-#include "FileSystemBasic.h"
-#include "FontLoaderLinux.h"
+#include <AppCore/Platform.h>
 #include "ClipboardGLFW.h"
 #include "FileLogger.h"
 #include <Ultralight/private/util/Debug.h>
@@ -88,16 +87,14 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
   String file_system_path = PlatformFileSystem::AppendPath(executable_path, 
     settings_.file_system_path.utf16());
 
-  file_system_.reset(new FileSystemBasic(file_system_path.utf8().data()));
-  Platform::instance().set_file_system(file_system_.get());
+  Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
 
   std::ostringstream info;
   info << "File system base directory resolved to: " <<
     file_system_path.utf8().data();
   UL_LOG_INFO(info.str().c_str());
 
-  font_loader_.reset(new FontLoaderLinux());
-  Platform::instance().set_font_loader(font_loader_.get());
+  Platform::instance().set_font_loader(GetPlatformFontLoader());
 
   clipboard_.reset(new ClipboardGLFW());
   Platform::instance().set_clipboard(clipboard_.get());

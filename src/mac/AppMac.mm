@@ -6,8 +6,7 @@
 #import "WindowMac.h"
 #import "metal/GPUContextMetal.h"
 #import "metal/GPUDriverMetal.h"
-#include "FileSystemMac.h"
-#include "FontLoaderMac.h"
+#include <AppCore/Platform.h>
 #include "ClipboardMac.h"
 #include <vector>
 #include <CoreFoundation/CFString.h>
@@ -97,16 +96,14 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   // Determine file system path
   String file_system_path = PlatformFileSystem::AppendPath(bundle_resource_path, settings_.file_system_path.utf16());
 
-  file_system_.reset(new FileSystemMac(file_system_path.utf16()));
-  Platform::instance().set_file_system(file_system_.get());
+  Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
   
   std::ostringstream info;
   info << "File system base directory resolved to: " <<
     file_system_path.utf8().data();
   UL_LOG_INFO(info.str().c_str());
 
-  font_loader_.reset(new FontLoaderMac());
-  Platform::instance().set_font_loader(font_loader_.get());
+  Platform::instance().set_font_loader(GetPlatformFontLoader());
   
   clipboard_.reset(new ClipboardMac());
   Platform::instance().set_clipboard(clipboard_.get());

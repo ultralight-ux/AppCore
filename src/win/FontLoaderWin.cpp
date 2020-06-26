@@ -235,5 +235,10 @@ static RefPtr<FontFile> LoadFont(const String16& family, int weight, bool italic
 RefPtr<FontFile> FontLoaderWin::Load(const String16& family, int weight, bool italic) {
   return LoadFont(family, weight, italic);
 }
+  
+// Called from Platform.cpp
+FontLoader* CreatePlatformFontLoader() {
+  return new FontLoaderWin();
+}
 
 }  // namespace ultralight

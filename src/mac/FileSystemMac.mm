@@ -159,13 +159,11 @@ int64_t FileSystemMac::ReadFromFile(FileHandle handle, char* data, int64_t lengt
 String16 FileSystemMac::getRelative(const ultralight::String16 &path) {
     return GetPathByAppendingComponent(base_dir_, path);
 }
+
+// Called from Platform.cpp
+FileSystem* CreatePlatformFileSystem(const String& baseDir) {
+    return new FileSystemMac(baseDir.utf16());
+}
     
 } // namespace ultralight
 
-namespace framework {
-    
-ultralight::FileSystem* CreatePlatformFileSystem(const char* baseDir) {
-    return new ultralight::FileSystemMac(baseDir);
-}
-    
-}  // namespace framework

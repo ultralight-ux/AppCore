@@ -117,5 +117,10 @@ RefPtr<FontFile> FontLoaderMac::Load(const String16& family, int weight, bool it
     return FontFile::Create(filepath);
 }
 
+// Called from Platform.cpp
+FontLoader* CreatePlatformFontLoader() {
+    return new FontLoaderMac();
+}
+
 }  // namespace ultralight
 

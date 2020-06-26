@@ -349,4 +349,9 @@ RefPtr<FontFile> FontLoaderLinux::Load(const String16& family, int weight, bool 
   return nullptr;
 }
 
+// Called from Platform.cpp
+FontLoader* CreatePlatformFontLoader() {
+    return new FontLoaderLinux();
+}
+
 }  // namespace ultralight

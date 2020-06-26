@@ -3,3 +3,4 @@
 #include <AppCore/Window.h>
 #include <AppCore/Overlay.h>
 #include <AppCore/JSHelpers.h>
+#include <AppCore/Platform.h>

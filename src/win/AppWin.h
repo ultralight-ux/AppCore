@@ -2,8 +2,6 @@
 #include <AppCore/App.h>
 #include <AppCore/Window.h>
 #include "RefCountedImpl.h"
-#include "FontLoaderWin.h"
-#include "FileSystemWin.h"
 #include "ClipboardWin.h"
 #include "FileLogger.h"
 #include <vector>
@@ -78,8 +76,6 @@ protected:
   RefPtr<Window> window_;
   std::unique_ptr<WindowsUtil> windows_util_;
   std::unique_ptr<MonitorWin> main_monitor_;
-  std::unique_ptr<FontLoaderWin> font_loader_;
-  std::unique_ptr<FileSystemWin> file_system_;
   std::unique_ptr<ClipboardWin> clipboard_;
 #if defined(DRIVER_D3D11)
   std::unique_ptr<GPUContextD3D11> gpu_context_;

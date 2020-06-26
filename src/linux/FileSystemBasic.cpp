@@ -93,12 +93,8 @@ int64_t FileSystemBasic::ReadFromFile(FileHandle handle, char* data, int64_t len
   return 0;
 }
 
-}  // namespace ultralight
-
-namespace framework {
-
-ultralight::FileSystem* CreatePlatformFileSystem(const char* baseDir) {
-  return new ultralight::FileSystemBasic(baseDir);
+FileSystem* CreatePlatformFileSystem(const String& baseDir) {
+  return new ultralight::FileSystemBasic(baseDir.utf8().data());
 }
 
 }  // namespace ultralight

@@ -10,9 +10,7 @@ namespace ultralight {
 
 class GPUContextGL;
 class GPUDriverGL;
-class FileSystemBasic;
 class FileLogger;
-class FontLoaderLinux;
 class ClipboardGLFW;
 
 class AppGLFW : public App,
@@ -65,8 +63,6 @@ protected:
   RefPtr<Window> window_;
   std::unique_ptr<MonitorGLFW> main_monitor_;
   std::unique_ptr<GPUContextGL> gpu_context_;
-  std::unique_ptr<FileSystemBasic> file_system_;
-  std::unique_ptr<FontLoaderLinux> font_loader_;
   std::unique_ptr<ClipboardGLFW> clipboard_;
   std::unique_ptr<FileLogger> logger_;
 };
