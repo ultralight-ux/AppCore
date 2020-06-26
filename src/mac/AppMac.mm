@@ -68,6 +68,9 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   AppDelegate *appDelegate = [[AppDelegate alloc] init];
   [NSApp setDelegate:appDelegate];
 
+  // Force GPU renderer by default until we support CPU drawing in this port
+  config.use_gpu_renderer = true;
+
   // Generate cache path
   String cache_path = GetSystemCachePath();
   String cache_dirname = "com." + settings_.developer_name + "." +

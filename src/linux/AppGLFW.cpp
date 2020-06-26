@@ -46,6 +46,10 @@ static const char* GetExecutableDirectory() {
 namespace ultralight {
 
 AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
+
+  // Force GPU renderer by default until we support CPU drawing in this port
+  config.use_gpu_renderer = true;
+
   // Generate cache path
   String cache_path = GetHomeDirectory();
   cache_path = PlatformFileSystem::AppendPath(cache_path, ".cache");

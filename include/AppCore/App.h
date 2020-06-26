@@ -79,6 +79,13 @@ struct AExport Settings {
   /// from memory which speeds up application startup time.
   ///
   bool load_shaders_from_file_system = false;
+
+  ///
+  /// We try to use the GPU renderer when a compatible GPU is detected.
+  ///
+  /// Set this to true to force the engine to always use the CPU renderer.
+  ///
+  bool force_cpu_renderer = false;
 };
 
 ///

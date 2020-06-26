@@ -47,6 +47,8 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
 
   main_monitor_.reset(new MonitorWin(windows_util_.get()));
 
+  config.use_gpu_renderer = !settings_.force_cpu_renderer;
+
   // Generate cache path
   String cache_path = GetRoamingAppDataPath();
   cache_path = PlatformFileSystem::AppendPath(cache_path, settings_.developer_name);
