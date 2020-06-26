@@ -24,7 +24,7 @@ namespace ultralight {
 ///
 /// @note  This singleton is owned by the library, do not destroy it.
 ///
-FontLoader* AExport GetPlatformFontLoader();
+AExport FontLoader* GetPlatformFontLoader();
 
 ///
 /// Get the native file system for the current platform, creating it if it
@@ -38,6 +38,6 @@ FontLoader* AExport GetPlatformFontLoader();
 ///
 /// @note  This singleton is owned by the library, do not destroy it.
 ///
-FileSystem* AExport GetPlatformFileSystem(const String& baseDir);
+AExport FileSystem* GetPlatformFileSystem(const String& baseDir);
 
 }  // namespace ultralight

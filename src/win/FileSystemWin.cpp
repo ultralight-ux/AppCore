@@ -178,7 +178,7 @@ std::unique_ptr<WCHAR[]> FileSystemWin::GetRelative(const String16& path) {
   
 // Called from Platform.cpp
 ultralight::FileSystem* CreatePlatformFileSystem(const String& baseDir) {
-  std::wstring baseDirWStr(baseDir.data());
+  std::wstring baseDirWStr(baseDir.utf16().data());
   
   WCHAR cur_dir[_MAX_PATH];
   GetCurrentDirectoryW(_MAX_PATH, cur_dir);
