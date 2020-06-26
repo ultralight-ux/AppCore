@@ -15,11 +15,13 @@
 #include "Defines.h"
 #include <Ultralight/RefPtr.h>
 #include <Ultralight/Listener.h>
+#include <Ultralight/Bitmap.h>
 
 namespace ultralight {
 
 class Monitor;
 class OverlayManager;
+class Surface;
 
 ///
 /// Interface for all Window-related events. @see Window::set_listener
@@ -130,6 +132,11 @@ public:
   /// Convert pixels to device coordinates using the current DPI scale.
   ///
   virtual int PixelsToDevice(int val) const = 0;
+
+  ///
+  /// Draw a surface directly to window, used only by CPU renderer
+  ///
+  virtual void DrawSurface(int x, int y, Surface* surface) {}
 
 protected:
   virtual ~Window();

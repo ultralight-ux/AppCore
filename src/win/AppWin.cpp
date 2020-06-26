@@ -13,6 +13,7 @@
 #include <Ultralight/platform/Logger.h>
 #include <Ultralight/private/util/Debug.h>
 #include <Ultralight/private/PlatformFileSystem.h>
+#include "DIBSurface.h"
 #include <Shlwapi.h>
 #include <ShlObj.h>
 #include "WindowsUtil.h"
@@ -20,6 +21,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <chrono>
 
 namespace ultralight {
 
@@ -88,6 +90,11 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   clipboard_.reset(new ClipboardWin());
   Platform::instance().set_clipboard(clipboard_.get());
 
+  if (!Platform::instance().config().use_gpu_renderer) {
+    surface_factory_.reset(new DIBSurfaceFactory(GetDC(0)));
+    Platform::instance().set_surface_factory(surface_factory_.get());
+  }
+
   renderer_ = Renderer::Create();
 
   info.clear();
@@ -105,15 +112,22 @@ void AppWin::OnClose() {
 }
 
 void AppWin::OnResize(uint32_t width, uint32_t height) {
-  if (gpu_context_)
+  if (gpu_context_) {
     gpu_context_->Resize((int)width, (int)height);
+  }
 }
 
 void AppWin::set_window(Ref<Window> window) {
   window_ = window;
+  WindowWin* win = static_cast<WindowWin*>(window_.get());
+  win->set_app_listener(this);
+
+  if (!Platform::instance().config().use_gpu_renderer)
+    return;
+
 #if defined(DRIVER_D3D11)
   gpu_context_.reset(new GPUContextD3D11());
-  WindowWin* win = static_cast<WindowWin*>(window_.get());
+  
   if (!gpu_context_->Initialize(win->hwnd(), win->width(),
     win->height(), win->scale(), win->is_fullscreen(), true, true, 1)) {
     MessageBoxW(NULL, (LPCWSTR)L"Failed to initialize D3D11 context", (LPCWSTR)L"Notification", MB_OK);
@@ -133,7 +147,6 @@ void AppWin::set_window(Ref<Window> window) {
   gpu_driver_.reset(new GPUDriverD3D12(gpu_context_.get()));
 #endif
   Platform::instance().set_gpu_driver(gpu_driver_.get());
-  win->set_app_listener(this);
 }
 
 Monitor* AppWin::main_monitor() {
@@ -153,18 +166,33 @@ void AppWin::Run() {
   if (is_running_)
     return;
 
-  MSG msg = { 0 };
+  std::chrono::milliseconds interval_ms(2);
+  std::chrono::steady_clock::time_point next_paint = std::chrono::steady_clock::now();
+
   is_running_ = true;
-  while (WM_QUIT != msg.message && is_running_) {
-    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+  while (is_running_) {
+    auto timeout_ns = next_paint - std::chrono::steady_clock::now();
+    long long timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(timeout_ns).count();
+    DWORD timeout = timeout_ms <= 0 ? 0 : (DWORD)timeout_ms;
+    DWORD result = (timeout
+      ? MsgWaitForMultipleObjects(0, 0, TRUE, timeout, QS_ALLEVENTS)
+      : WAIT_TIMEOUT);
+    if (result == WAIT_TIMEOUT) {
+      Update();
+      WindowWin* win = static_cast<WindowWin*>(window_.get());
+      if (win->NeedsRepaint())
+        InvalidateRect(win->hwnd(), nullptr, false);
+      next_paint = std::chrono::steady_clock::now() + interval_ms;
+    }
+
+    MSG msg;
+    while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
+      if (msg.message == WM_QUIT) {
+        return;
+      }
+
       TranslateMessage(&msg);
       DispatchMessage(&msg);
-    }
-    else {
-      OnPaint();
-
-      // Sleep a tiny bit to reduce CPU usage
-      Sleep(1);
     }
   }
 }
@@ -174,7 +202,15 @@ void AppWin::Quit() {
 }
 
 void AppWin::OnPaint() {
-  Update();
+  if (!Platform::instance().config().use_gpu_renderer) {
+    renderer_->Render();
+
+    if (window_)
+      static_cast<WindowWin*>(window_.get())->Draw();
+
+    return;
+  }
+
   if (!gpu_driver_)
     return;
 

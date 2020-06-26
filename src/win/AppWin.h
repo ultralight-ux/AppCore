@@ -20,6 +20,7 @@ class GPUDriverD3D12;
 #endif
 class WindowsUtil;
 class MonitorWin;
+class DIBSurfaceFactory;
 
 class AppWin : public App,
                public RefCountedImpl<AppWin>,
@@ -88,6 +89,7 @@ protected:
   std::unique_ptr<GPUDriverD3D12> gpu_driver_;
 #endif
   std::unique_ptr<FileLogger> logger_;
+  std::unique_ptr<DIBSurfaceFactory> surface_factory_;
 };
 
 }  // namespace ultralight

@@ -5,21 +5,25 @@
 #include "Windowsx.h"
 #include <tchar.h>
 #include "AppWin.h"
+#include "DIBSurface.h"
 
 namespace ultralight {
 
 #define WINDOWDATA() ((WindowData*)GetWindowLongPtr(hWnd, GWLP_USERDATA))
 #define WINDOW() (WINDOWDATA()->window)
 
+  static HDC g_dc = 0;
+
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
   PAINTSTRUCT ps;
   HDC hdc;
   switch (message) {
   case WM_PAINT:
-    hdc = BeginPaint(hWnd, &ps);
+    g_dc = hdc = BeginPaint(hWnd, &ps);
     static_cast<AppWin*>(App::instance())->InvalidateWindow();
     static_cast<AppWin*>(App::instance())->OnPaint();
     EndPaint(hWnd, &ps);
+    g_dc = 0;
     break;
   case WM_DESTROY:
     PostQuitMessage(0);
@@ -34,14 +38,15 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
       // This would normally be called when the message loop is idle
       // but during resize the window consumes all messages so we need
       // to force paints during the operation.
-      static_cast<AppWin*>(App::instance())->OnPaint();
+      //static_cast<AppWin*>(App::instance())->OnPaint();
+      InvalidateRect(hWnd, nullptr, false);
     }
     break;
   }
   case WM_EXITSIZEMOVE:
     WINDOWDATA()->is_resizing_modal = false;
     WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
-    static_cast<AppWin*>(App::instance())->OnPaint();
+    InvalidateRect(hWnd, nullptr, false);
     break;
   case WM_KEYDOWN:
     WINDOW()->FireKeyEvent(KeyEvent(KeyEvent::kType_RawKeyDown, (uintptr_t)wParam, (intptr_t)lParam, false));
@@ -110,7 +115,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     break;
   case WM_MOUSEWHEEL:
     WINDOW()->FireScrollEvent(
-      { ScrollEvent::kType_ScrollByPixel, 0, WINDOW()->PixelsToDevice(GET_WHEEL_DELTA_WPARAM(wParam)) });
+      { ScrollEvent::kType_ScrollByPixel, 0, static_cast<int>(WINDOW()->PixelsToDevice(GET_WHEEL_DELTA_WPARAM(wParam)) * 0.8) });
     break;
   case WM_SETFOCUS:
     WINDOW()->SetWindowFocused(true);
@@ -277,6 +282,44 @@ void WindowWin::SetCursor(ultralight::Cursor cursor) {
 
 void WindowWin::Close() {
   DestroyWindow(hwnd_);
+}
+
+/*
+void WindowWin::DrawBitmap(int x, int y, Ref<Bitmap> bitmap, IntRect rect) {
+  if (bitmap->IsEmpty())
+    return;
+
+  //HDC hdc = GetDC(hwnd_);
+  if (!g_dc) return;
+  HDC hdc = g_dc;
+  void* bits = bitmap->LockPixels();
+  BITMAPINFO bmi = {};
+  bmi.bmiHeader.biSize = sizeof(BITMAPINFO);
+  bmi.bmiHeader.biWidth = static_cast<LONG>(bitmap->width());
+  bmi.bmiHeader.biHeight = -static_cast<LONG>(bitmap->height());
+  bmi.bmiHeader.biBitCount = bitmap->bpp() * 8;
+  bmi.bmiHeader.biCompression = BI_RGB;
+  bmi.bmiHeader.biPlanes = 1;
+  bmi.bmiHeader.biSizeImage = static_cast<DWORD>(bitmap->size());
+
+  // TODO: Handle double buffering properly. For now ignore dirty rect bounds
+  //       and force repaint of entire bitmap.
+  rect = { 0, 0, (int)bitmap->width(), (int)bitmap->height() };
+
+  LONG adjustedSourceTop = bitmap->height() - rect.bottom;
+  StretchDIBits(hdc, x + rect.left, y + rect.top, rect.width(), rect.height(), 
+    rect.left, adjustedSourceTop, rect.width(), rect.height(), bits, &bmi, DIB_RGB_COLORS, SRCCOPY);
+
+  bitmap->UnlockPixels();
+}
+*/
+
+void WindowWin::DrawSurface(int x, int y, Surface* surface) {
+  DIBSurface* dibSurface = static_cast<DIBSurface*>(surface);
+
+  if (!g_dc) return;
+  HDC hdc = g_dc;
+  BitBlt(hdc, x, y, (int)surface->width(), (int)surface->height(), dibSurface->dc(), 0, 0, SRCCOPY);
 }
 
 void WindowWin::OnClose() {

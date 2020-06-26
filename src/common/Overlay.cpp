@@ -5,6 +5,7 @@
 #include <Ultralight/Buffer.h>
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/Config.h>
+#include <Ultralight/platform/Surface.h>
 #include "GPUDriverImpl.h"
 #include "RefCountedImpl.h"
 #include "OverlayManager.h"
@@ -22,9 +23,17 @@ public:
     if (is_hidden_)
       return;
 
-    UpdateGeometry();
+    if (use_gpu_) {
+      UpdateGeometry();
 
-    driver_->DrawGeometry(geometry_id_, 6, 0, gpu_state_);
+      driver_->DrawGeometry(geometry_id_, 6, 0, gpu_state_);
+    } else if (view()->surface()) {
+      Surface* surface = view()->surface();
+      if (!surface->dirty_bounds().IsEmpty()) {
+        window_->DrawSurface(x_, y_, surface);
+        surface->ClearDirtyBounds();
+      }
+    }
   }
 
   virtual void Resize(uint32_t width, uint32_t height) override {
@@ -40,16 +49,22 @@ public:
     width_ = width;
     height_ = height;
     needs_update_ = true;
-    UpdateGeometry();
 
-    // Update these now since they were invalidated
-    RenderTarget target = view_->render_target();
-    gpu_state_.texture_1_id = target.texture_id;
-    gpu_state_.viewport_width = window_->width();
-    gpu_state_.viewport_height = window_->height();
+    if (use_gpu_) {
+      UpdateGeometry();
+
+      // Update these now since they were invalidated
+      RenderTarget target = view_->render_target();
+      gpu_state_.texture_1_id = target.texture_id;
+      gpu_state_.viewport_width = window_->width();
+      gpu_state_.viewport_height = window_->height();
+    }
   }
 
   void UpdateGeometry() {
+    if (!use_gpu_)
+      return;
+
     bool initial_creation = false;
     RenderTarget target = view_->render_target();
 
@@ -198,14 +213,20 @@ protected:
   OverlayImpl(Ref<Window> window, uint32_t width, uint32_t height, int x, int y) :
     window_(window), view_(App::instance()->renderer()->CreateView(width, height, false, nullptr)),
     width_(width), height_(height), x_(x), y_(y), needs_update_(true),
-    driver_((GPUDriverImpl*)Platform::instance().gpu_driver()) {
+    use_gpu_(Platform::instance().config().use_gpu_renderer) {
+    if (use_gpu_)
+      driver_ = (ultralight::GPUDriverImpl*)Platform::instance().gpu_driver();
+
     window_->overlay_manager()->Add(this);
   }
 
   OverlayImpl(Ref<Window> window, Ref<View> view, int x, int y) :
     window_(window), view_(view), width_(view->width()),
     height_(view->height()), x_(x), y_(y), needs_update_(true),
-    driver_((GPUDriverImpl*)Platform::instance().gpu_driver()) {
+    use_gpu_(Platform::instance().config().use_gpu_renderer) {
+    if (use_gpu_)
+      driver_ = (ultralight::GPUDriverImpl*)Platform::instance().gpu_driver();
+
     window_->overlay_manager()->Add(this);
   }
 
@@ -213,7 +234,7 @@ protected:
     if (App::instance()) {
       window_->overlay_manager()->Remove(this);
 
-      if (vertices_.size())
+      if (use_gpu_ && vertices_.size() && driver_)
         driver_->DestroyGeometry(geometry_id_);
     }
   }
@@ -224,6 +245,7 @@ protected:
   int x_;
   int y_;
   bool is_hidden_ = false;
+  bool use_gpu_ = true;
   ultralight::Ref<ultralight::View> view_;
   ultralight::GPUDriverImpl* driver_;
   std::vector<ultralight::Vertex_2f_4ub_2f_2f_28f> vertices_;
