@@ -354,6 +354,37 @@ ACExport void ulOverlayFocus(ULOverlay overlay);
 ///
 ACExport void ulOverlayUnfocus(ULOverlay overlay);
 
+/******************************************************************************
+ * Platform
+ *****************************************************************************/
+
+///
+/// This is only needed if you are not calling ulCreateApp().
+///
+/// Initializes the platform font loader and sets it as the current FontLoader.
+///
+ACExport void ulEnablePlatformFontLoader();
+
+///
+/// This is only needed if you are not calling ulCreateApp().
+///
+/// Initializes the platform file system (needed for loading file:/// URLs) and
+/// sets it as the current FileSystem.
+///
+/// You can specify a base directory path to resolve relative paths against.
+///
+ACExport void ulEnablePlatformFileSystem(ULString base_dir);
+
+///
+/// This is only needed if you are not calling ulCreateApp().
+///
+/// Initializes the default logger (writes the log to a file).
+///
+/// You should specify a writable log path to write the log to 
+/// for example "./ultralight.log".
+///
+ACExport void ulEnableDefaultLogger(ULString log_path);
+
 #ifdef __cplusplus
 }
 #endif

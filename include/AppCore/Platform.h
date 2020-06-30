@@ -16,6 +16,7 @@
 #include <Ultralight/String.h>
 #include <Ultralight/platform/FontLoader.h>
 #include <Ultralight/platform/FileSystem.h>
+#include <Ultralight/platform/Logger.h>
 
 namespace ultralight {
 
@@ -39,5 +40,14 @@ AExport FontLoader* GetPlatformFontLoader();
 /// @note  This singleton is owned by the library, do not destroy it.
 ///
 AExport FileSystem* GetPlatformFileSystem(const String& baseDir);
+
+///
+/// Get the default logger (writes the log to a file on disk).
+///
+/// @param  logPath  A file path to write the log to.
+///
+/// @note  This singleton is owned by the library, do not destroy it.
+///
+AExport Logger* GetDefaultLogger(const String& logPath);
 
 }  // namespace ultralight

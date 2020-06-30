@@ -1,5 +1,6 @@
 #include <AppCore/CAPI.h>
 #include <AppCore/AppCore.h>
+#include <AppCore/Platform.h>
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/Config.h>
 
@@ -268,4 +269,22 @@ void ulOverlayFocus(ULOverlay overlay) {
 
 void ulOverlayUnfocus(ULOverlay overlay) {
   overlay->val->Unfocus();
+}
+
+void ulEnablePlatformFontLoader() {
+  Platform::instance().set_font_loader(GetPlatformFontLoader());
+}
+
+void ulEnablePlatformFileSystem(ULString base_dir) {
+  ultralight::String str;
+  if (base_dir)
+    str = ToString(base_dir);
+
+  Platform::instance().set_file_system(GetPlatformFileSystem(str));
+}
+
+void ulEnableDefaultLogger(ULString log_path) {
+  ultralight::String str = ToString(log_path);
+
+  Platform::instance().set_logger(GetDefaultLogger(str));
 }
