@@ -88,7 +88,7 @@ void WindowMac::Close() {
 }
 
 void* WindowMac::native_handle() const {
-  return window_;
+  return reinterpret_cast<void*>(window_);
 }
 
 void WindowMac::OnClose() {
