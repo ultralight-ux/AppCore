@@ -57,6 +57,26 @@ ACExport ULSettings ulCreateSettings();
 ACExport void ulDestroySettings(ULSettings settings);
 
 ///
+/// Set the name of the developer of this app.
+///
+/// This is used to generate a unique path to store local application data
+/// on the user's machine.
+///
+/// Default is "MyCompany"
+///
+ACExport void ulSettingsSetDeveloperName(ULSettings settings, ULString name);
+
+///
+/// Set the name of this app.
+///
+/// This is used to generate a unique path to store local application data
+/// on the user's machine.
+///
+/// Default is "MyApp"
+///
+ACExport void ulSettingsSetAppName(ULSettings settings, ULString name);
+
+///
 /// Set the root file path for our file system, you should set this to the
 /// relative path where all of your app data is.
 ///
@@ -81,6 +101,13 @@ ACExport void ulSettingsSetFileSystemPath(ULSettings settings, ULString path);
 ACExport void ulSettingsSetLoadShadersFromFileSystem(ULSettings settings,
                                                      bool enabled);
 
+///
+/// We try to use the GPU renderer when a compatible GPU is detected.
+///
+/// Set this to true to force the engine to always use the CPU renderer.
+///
+ACExport void ulSettingsSetForceCPURenderer(ULSettings settings,
+                                            bool force_cpu);
 ///
 /// Create the App singleton.
 ///
@@ -259,6 +286,15 @@ ACExport int ulWindowDeviceToPixel(ULWindow window, int val);
 /// Convert pixels to device coordinates using the current DPI scale.
 ///
 ACExport int ulWindowPixelsToDevice(ULWindow window, int val);
+
+///
+/// Get the underlying native window handle.
+///
+/// @note This is:  - HWND on Windows
+///                 - NSWindow* on macOS
+///                 - GLFWwindow* on Linux
+///
+ACExport void* ulWindowGetNativeHandle(ULWindow window);
 
 ///
 /// Create a new Overlay.

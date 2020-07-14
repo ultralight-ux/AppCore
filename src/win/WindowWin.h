@@ -46,6 +46,8 @@ public:
 
   virtual void DrawSurface(int x, int y, Surface* surface) override;
 
+  virtual void* native_handle() const override;
+
   virtual OverlayManager* overlay_manager() const { return const_cast<WindowWin*>(this); }
 
   REF_COUNTED_IMPL(WindowWin);

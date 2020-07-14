@@ -87,6 +87,10 @@ void WindowMac::Close() {
   [window_ close];
 }
 
+void* WindowMac::native_handle() const {
+  return window_;
+}
+
 void WindowMac::OnClose() {
   if (listener_)
     listener_->OnClose();

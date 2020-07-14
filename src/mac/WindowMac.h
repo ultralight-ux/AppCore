@@ -40,6 +40,8 @@ public:
     return (int)round(val / scale());
   }
 
+  virtual void* native_handle() const override;
+
   virtual OverlayManager* overlay_manager() const override { return const_cast<WindowMac*>(this); }
 
   REF_COUNTED_IMPL(WindowMac);

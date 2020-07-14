@@ -138,6 +138,15 @@ public:
   ///
   virtual void DrawSurface(int x, int y, Surface* surface) {}
 
+  ///
+  /// Get the underlying native window handle.
+  ///
+  /// @note This is:  - HWND on Windows
+  ///                 - NSWindow* on macOS
+  ///                 - GLFWwindow* on Linux
+  ///
+  virtual void* native_handle() const = 0;
+
 protected:
   virtual ~Window();
   virtual OverlayManager* overlay_manager() const = 0;

@@ -90,12 +90,24 @@ void ulDestroySettings(ULSettings settings) {
   delete settings;
 }
 
+void ulSettingsSetDeveloperName(ULSettings settings, ULString name) {
+  settings->val.developer_name = ToString(name).utf16();
+}
+
+void ulSettingsSetAppName(ULSettings settings, ULString name) {
+  settings->val.app_name = ToString(name).utf16();
+}
+
 void ulSettingsSetFileSystemPath(ULSettings settings, ULString path) {
   settings->val.file_system_path = ToString(path).utf16();
 }
 
 void ulSettingsSetLoadShadersFromFileSystem(ULSettings settings, bool enabled) {
   settings->val.load_shaders_from_file_system = enabled;
+}
+
+void ulSettingsSetForceCPURenderer(ULSettings settings, bool force_cpu) {
+  settings->val.force_cpu_renderer = force_cpu;
 }
 
 ULApp ulCreateApp(ULSettings settings, ULConfig config) {
@@ -207,6 +219,10 @@ int ulWindowDeviceToPixel(ULWindow window, int val) {
 
 int ulWindowPixelsToDevice(ULWindow window, int val) {
   return window->val->PixelsToDevice(val);
+}
+
+void* ulWindowGetNativeHandle(ULWindow window) {
+  return window->val->native_handle();
 }
 
 ULOverlay ulCreateOverlay(ULWindow window, unsigned int width,

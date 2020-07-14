@@ -322,6 +322,10 @@ void WindowWin::DrawSurface(int x, int y, Surface* surface) {
   BitBlt(hdc, x, y, (int)surface->width(), (int)surface->height(), dibSurface->dc(), 0, 0, SRCCOPY);
 }
 
+void* WindowWin::native_handle() const {
+  return hwnd_;
+}
+
 void WindowWin::OnClose() {
   if (listener_)
     listener_->OnClose();

@@ -222,6 +222,10 @@ void WindowGLFW::Close() {
   glfwSetWindowShouldClose(window_, 1);
 }
 
+void* WindowGLFW::native_handle() const {
+  return window_;
+}
+
 void WindowGLFW::OnClose() {
   if (listener_)
     listener_->OnClose();
