@@ -29,11 +29,10 @@ public:
       driver_->DrawGeometry(geometry_id_, 6, 0, gpu_state_);
     } else if (view()->surface()) {
       Surface* surface = view()->surface();
-      if (!surface->dirty_bounds().IsEmpty()) {
-        window_->DrawSurface(x_, y_, surface);
-        surface->ClearDirtyBounds();
-      }
+      window_->DrawSurface(x_, y_, surface);
     }
+
+    needs_update_ = false;
   }
 
   virtual void Resize(uint32_t width, uint32_t height) override {
@@ -182,6 +181,7 @@ public:
 
   virtual void Show() override {
     is_hidden_ = false;
+    needs_update_ = true;
   }
 
   virtual bool has_focus() const override {
