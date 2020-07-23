@@ -77,11 +77,13 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   cache_path = PlatformFileSystem::AppendPath(cache_path, cache_dirname);
   PlatformFileSystem::MakeAllDirectories(cache_path);
 
-  String log_path = PlatformFileSystem::AppendPath(cache_path,
-                                                   "ultralight.log");
-  
-  logger_.reset(new FileLogger(log_path));
-  Platform::instance().set_logger(logger_.get());
+  if (!Platform::instance().logger()) {
+    String log_path = PlatformFileSystem::AppendPath(cache_path,
+                                                    "ultralight.log");
+    
+    logger_.reset(new FileLogger(log_path));
+    Platform::instance().set_logger(logger_.get());
+  }
 
   // Determine resources path
   String bundle_resource_path = GetBundleResourcePath();
@@ -93,17 +95,21 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
 
-  // Determine file system path
-  String file_system_path = PlatformFileSystem::AppendPath(bundle_resource_path, settings_.file_system_path.utf16());
+  if (!Platform::instance().file_system()) {
+    // Determine file system path
+    String file_system_path = PlatformFileSystem::AppendPath(bundle_resource_path, settings_.file_system_path.utf16());
 
-  Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
-  
-  std::ostringstream info;
-  info << "File system base directory resolved to: " <<
-    file_system_path.utf8().data();
-  UL_LOG_INFO(info.str().c_str());
+    Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
+    
+    std::ostringstream info;
+    info << "File system base directory resolved to: " <<
+      file_system_path.utf8().data();
+    UL_LOG_INFO(info.str().c_str());
+  }
 
-  Platform::instance().set_font_loader(GetPlatformFontLoader());
+  if (!Platform::instance().font_loader()) {
+    Platform::instance().set_font_loader(GetPlatformFontLoader());
+  }
   
   clipboard_.reset(new ClipboardMac());
   Platform::instance().set_clipboard(clipboard_.get());

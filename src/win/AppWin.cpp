@@ -56,14 +56,18 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   cache_path = PlatformFileSystem::AppendPath(cache_path, settings_.app_name);
   PlatformFileSystem::MakeAllDirectories(cache_path);
 
-  String log_path = PlatformFileSystem::AppendPath(cache_path, "ultralight.log");
-
-  logger_.reset(new FileLogger(log_path));
-  Platform::instance().set_logger(logger_.get());
-
   std::ostringstream info;
-  info << "Writing log to: " << log_path.utf8().data() << std::endl;
-  OutputDebugStringA(info.str().c_str());
+
+  if (!Platform::instance().logger()) {
+    String log_path = PlatformFileSystem::AppendPath(cache_path, "ultralight.log");
+
+    logger_.reset(new FileLogger(log_path));
+    Platform::instance().set_logger(logger_.get());
+
+    
+    info << "Writing log to: " << log_path.utf8().data() << std::endl;
+    OutputDebugStringA(info.str().c_str());
+  }
 
   // Get module path
   String module_path = GetModulePath();
@@ -76,17 +80,25 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
 
-  Platform::instance().set_font_loader(GetPlatformFontLoader());
+  if (!Platform::instance().font_loader()) {
+    Platform::instance().set_font_loader(GetPlatformFontLoader());
+  }
 
-  // Replace forward slashes with backslashes for proper path
-  // resolution on Windows
-  std::wstring fs_str = settings.file_system_path.utf16().data();
-  std::replace(fs_str.begin(), fs_str.end(), L'/', L'\\');
+  if (!Platform::instance().file_system()) {
+    // Replace forward slashes with backslashes for proper path
+    // resolution on Windows
+    std::wstring fs_str = settings.file_system_path.utf16().data();
+    std::replace(fs_str.begin(), fs_str.end(), L'/', L'\\');
 
-  String file_system_path = PlatformFileSystem::AppendPath(module_path,
-    String16(fs_str.data(), fs_str.length()));
+    String file_system_path = PlatformFileSystem::AppendPath(module_path,
+      String16(fs_str.data(), fs_str.length()));
 
-  Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
+    Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
+
+    info.clear();
+    info << "File system base directory resolved to: " << file_system_path.utf8().data();
+    UL_LOG_INFO(info.str().c_str());
+  }
 
   clipboard_.reset(new ClipboardWin());
   Platform::instance().set_clipboard(clipboard_.get());
@@ -97,10 +109,6 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   }
 
   renderer_ = Renderer::Create();
-
-  info.clear();
-  info << "File system base directory resolved to: " << file_system_path.utf8().data();
-  UL_LOG_INFO(info.str().c_str());
 }
 
 AppWin::~AppWin() {
