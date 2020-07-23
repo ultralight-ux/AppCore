@@ -9,7 +9,7 @@
 ///
 /// Website: <http://ultralig.ht>
 ///
-/// Copyright (C) 2019 Ultralight, Inc. All rights reserved.
+/// Copyright (C) 2020 Ultralight, Inc. All rights reserved.
 ///
 #ifndef APPCORE_CAPI_H
 #define APPCORE_CAPI_H
@@ -317,6 +317,26 @@ ACExport void* ulWindowGetNativeHandle(ULWindow window);
 ///
 ACExport ULOverlay ulCreateOverlay(ULWindow window, unsigned int width,
                                    unsigned int height, int x, int y);
+
+///
+/// Create a new Overlay, wrapping an existing View.
+///
+/// @param  window  The window to create the Overlay in. (we currently only
+///                 support one window per application)
+///
+/// @param  view    The View to wrap (will use its width and height).
+///
+/// @param  x       The x-position (offset from the left of the Window), in
+///                 pixels.
+///
+/// @param  y       The y-position (offset from the top of the Window), in
+///                 pixels.
+///
+/// @note  Each Overlay is essentially a View and an on-screen quad. You should
+///        create the Overlay then load content into the underlying View.
+///
+ACExport ULOverlay ulCreateOverlayWithView(ULWindow window, ULView view, 
+                                           int x, int y);
 
 ///
 /// Destroy an overlay.

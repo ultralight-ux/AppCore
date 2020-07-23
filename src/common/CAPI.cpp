@@ -6,9 +6,14 @@
 
 using namespace ultralight;
 
-// Undocumented functions from Ultralight's CAPI, each must be destroyed
-ULExport ULRenderer C_WrapRenderer(Ref<Renderer> renderer);
-ULExport ULView C_WrapView(Ref<View> view);
+///
+/// Undocumented functions from Ultralight's CAPI
+///
+ULExport ULRenderer C_WrapRenderer(Ref<Renderer> renderer); // Must be destroyed
+ULExport ULView C_WrapView(Ref<View> view); // Must be destroyed
+ULExport Ref<Renderer> C_UnwrapRenderer(ULRenderer renderer);
+ULExport Ref<View> C_UnwrapView(ULView view);
+
 #define ToULString(x) reinterpret_cast<ULString>(const_cast<ultralight::String*>(&x))
 #define ToString(x) (*reinterpret_cast<ultralight::String*>(x))
 
@@ -228,6 +233,11 @@ void* ulWindowGetNativeHandle(ULWindow window) {
 ULOverlay ulCreateOverlay(ULWindow window, unsigned int width,
                           unsigned int height, int x, int y) {
   return new C_Overlay(Overlay::Create(window->val, width, height, x, y));
+}
+
+ULOverlay ulCreateOverlayWithView(ULWindow window, ULView view,
+  int x, int y) {
+  return new C_Overlay(Overlay::Create(window->val, C_UnwrapView(view), x, y));
 }
 
 void ulDestroyOverlay(ULOverlay overlay) {
