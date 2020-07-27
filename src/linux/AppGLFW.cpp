@@ -126,7 +126,7 @@ void AppGLFW::set_window(Ref<Window> window) {
   window_ = window;
   
   WindowGLFW* win = static_cast<WindowGLFW*>(window_.get());
-  gpu_context_.reset(new GPUContextGL(win->handle(), (float)win->scale(), true, true));
+  gpu_context_.reset(new GPUContextGL(win->handle(), (float)win->scale(), true, false));
   Platform::instance().set_gpu_driver(gpu_context_->driver());
   
   win->set_app_listener(this);

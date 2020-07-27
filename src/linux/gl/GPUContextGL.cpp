@@ -10,6 +10,14 @@ GPUContextGL::GPUContextGL(GLFWwindow* window, float scale, bool enable_vsync, b
   glfwMakeContextCurrent(window_);
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
   glfwSwapInterval(enable_vsync ? 1 : 0);
+
+  // TODO: enable msaa, GLFW currently has num_samples == 0 in glfwWindowHint
+  int samples = 4;
+  glGetIntegerv(GL_SAMPLES, &samples);
+  if (!samples) {
+    msaa_enabled_ = false;
+  }
+
   driver_.reset(new ultralight::GPUDriverGL(this));
 }
 
