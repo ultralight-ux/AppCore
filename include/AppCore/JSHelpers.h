@@ -6,9 +6,6 @@
 #include <functional>
 #include <memory>
 
-///
-/// This is a simple C++ wrapper for JavaScriptCore.
-///
 namespace ultralight {
 
 ///
@@ -16,7 +13,7 @@ namespace ultralight {
 ///
 /// Most JavaScriptCore C API calls require an active JavaScript execution
 /// context (JSContextRef). You can get the JSContextRef for a page via
-/// `View::js_context()`. This context changes with each page navigation.
+/// `View::LockJSContext()`. This context changes with each page navigation.
 ///
 /// **Note**:
 ///    You MUST set a JSContext before using most of the C++ API below.
