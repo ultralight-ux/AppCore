@@ -178,9 +178,6 @@ if(${BUILD_TESTS})
         add_custom_command(TARGET MiniBrowser POST_BUILD 
             COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.dylib" $<TARGET_FILE_DIR:MiniBrowser>
             COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libWebCore.dylib" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libicudata.dylib" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libicui18n.dylib" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libicuuc.dylib" $<TARGET_FILE_DIR:MiniBrowser>
             COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.dylib" $<TARGET_FILE_DIR:MiniBrowser>)
     endif ()
 
@@ -190,9 +187,6 @@ if(${BUILD_TESTS})
         add_custom_command(TARGET MiniBrowser POST_BUILD 
             COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.so" $<TARGET_FILE_DIR:MiniBrowser>
             COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libWebCore.so" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libicudata.so" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libicui18n.so" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libicuuc.so" $<TARGET_FILE_DIR:MiniBrowser>
             COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.so" $<TARGET_FILE_DIR:MiniBrowser>)
             
     endif ()
