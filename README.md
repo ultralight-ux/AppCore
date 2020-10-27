@@ -73,10 +73,10 @@ make release x64
 
 #### Building Debug on Windows
 
-To build AppCore with Debug PDBs (equivalent to Release with Debug Info):
+To build AppCore with debug symbols:
 
 ```
-make debug x64
+make full_debug x64
 ```
 
 #### Building on Windows with locally-built dependencies
