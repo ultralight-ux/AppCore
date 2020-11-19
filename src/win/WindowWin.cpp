@@ -58,12 +58,22 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     WINDOW()->FireKeyEvent(KeyEvent(KeyEvent::kType_Char, (uintptr_t)wParam, (intptr_t)lParam, false));
     break;
   case WM_MOUSELEAVE:
-    WINDOWDATA()->mouse_in_client = false;
+    WINDOWDATA()->is_mouse_in_client = false;
+    WINDOWDATA()->is_tracking_mouse = false;
     break;
   case WM_MOUSEMOVE:
-    if (!WINDOWDATA()->mouse_in_client) {
+  {
+    if (!WINDOWDATA()->is_tracking_mouse) {
+      // Need to install tracker to get WM_MOUSELEAVE events.
+      WINDOWDATA()->track_mouse_event_data = { sizeof(WINDOWDATA()->track_mouse_event_data) };
+      WINDOWDATA()->track_mouse_event_data.dwFlags = TME_LEAVE;
+      WINDOWDATA()->track_mouse_event_data.hwndTrack = hWnd;
+      TrackMouseEvent(&(WINDOWDATA()->track_mouse_event_data));
+      WINDOWDATA()->is_tracking_mouse = true;
+    }
+    if (!WINDOWDATA()->is_mouse_in_client) {
       // We need to manually set the cursor when mouse enters client area
-      WINDOWDATA()->mouse_in_client = true;
+      WINDOWDATA()->is_mouse_in_client = true;
       WINDOW()->SetCursor(ultralight::kCursor_Pointer);
     }
     WINDOW()->FireMouseEvent(
@@ -72,6 +82,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)),
         WINDOWDATA()->cur_btn });
     break;
+  }
   case WM_LBUTTONDOWN:
   case WM_LBUTTONDBLCLK:
     SetCapture(WINDOW()->hwnd());
@@ -217,6 +228,8 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height,
   window_data_.window = this;
   window_data_.cur_btn = ultralight::MouseEvent::kButton_None;
   window_data_.is_resizing_modal = false;
+  window_data_.is_mouse_in_client = false;
+  window_data_.is_tracking_mouse = false;
 
   SetWindowLongPtr(hwnd_, GWLP_USERDATA, (LONG_PTR)&window_data_);
 
