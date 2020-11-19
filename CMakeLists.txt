@@ -101,6 +101,10 @@ elseif (PORT MATCHES "UltralightWin")
                      "${ULTRALIGHT_DIR}/lib")
 
     load_sources(AppCore_SOURCES "src/win")
+
+    if (STATIC_BUILD)
+        add_definitions(-DULTRALIGHT_STATIC_BUILD)
+    endif ()
     
     if (${USE_D3D12})
         add_definitions(-DDRIVER_D3D12)
@@ -112,11 +116,49 @@ elseif (PORT MATCHES "UltralightWin")
     
     add_definitions(-D_UNICODE -DUNICODE -DNOMINMAX)
     link_libraries("Shlwapi.lib" "Usp10.lib" "Dwrite.lib")
+
+    foreach (flag_var
+        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
+        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+        # Reset all project configurations to use /MD so we can override below
+        string(REGEX REPLACE "/MT" "/MD" ${flag_var} "${${flag_var}}")
+        string(REGEX REPLACE "/MDd" "/MD" ${flag_var} "${${flag_var}}")
+        string(REGEX REPLACE "/D_DEBUG" "" ${flag_var} "${${flag_var}}")
+
+        if (${STATIC_CRT})
+            string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        endif ()
+
+        if (${DEBUG_CRT})
+            string(REGEX REPLACE "/MD" "/MDd" ${flag_var} "${${flag_var}}")
+            string(REGEX REPLACE "/MT" "/MTd" ${flag_var} "${${flag_var}}")
+        endif ()
+    endforeach ()
+
+    if (${STATIC_CRT})
+        if (${DEBUG_CRT})
+            message(STATUS "Building projects with MultiThreaded Static Debug Runtime (/MTd)")
+        else ()
+            message(STATUS "Building projects with MultiThreaded Static Runtime (/MT)")
+        endif ()
+    else ()
+        if (${DEBUG_CRT})
+            message(STATUS "Building projects with MuliThreaded DLL Debug Runtime (/MDd)")
+        else ()
+            message(STATUS "Building projects with MultiThreaded DLL Runtime (/MD)")
+        endif ()
+    endif ()
 endif ()
 
 link_libraries(UltralightCore WebCore Ultralight)
 
-add_library(AppCore SHARED ${AppCore_SOURCES})
+if (STATIC_BUILD)
+    add_library(AppCore STATIC ${AppCore_SOURCES})
+else ()
+    add_library(AppCore SHARED ${AppCore_SOURCES})
+endif ()
 
 add_dependencies(AppCore UltralightCoreBin WebCoreBin UltralightBin)
 

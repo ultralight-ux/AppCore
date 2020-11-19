@@ -9,112 +9,151 @@ if "%1"=="vs" GOTO CHECKTYPE
 GOTO SYNTAX
 :CHECKTYPE
 if "%2"=="x64" (
-  echo Targeting the x64 platform.
   set CFG=amd64
   GOTO VALID
 )
 if "%2"=="x64_uwp" (
-  echo Targeting the x64 UWP platform.
   set CFG=amd64 uwp
   GOTO VALID
 )
 GOTO SYNTAX
 :VALID
-set BUILD_TESTS=1
-set USE_D3D12=0
-set USE_LOCAL_DEPS=0
-if "%3"=="BUILD_TESTS" (
-  echo Tests enabled.
-  set BUILD_TESTS=1
-)
-if "%4"=="BUILD_TESTS" (
-  echo Tests enabled.
-  set BUILD_TESTS=1
-)
-if "%5"=="BUILD_TESTS" (
-  echo Tests enabled.
-  set BUILD_TESTS=1
-)
-if "%3"=="USE_D3D12" (
-  echo D3D12 driver enabled.
-  set USE_D3D12=1
-)
-if "%4"=="USE_D3D12" (
-  echo D3D12 driver enabled.
-  set USE_D3D12=1
-)
-if "%5"=="USE_D3D12" (
-  echo D3D12 driver enabled.
-  set USE_D3D12=1
-)
-if "%3"=="local" (
-  echo Using local deps.
-  set USE_LOCAL_DEPS=1
-)
-if "%4"=="local" (
-  echo Using local deps.
-  set USE_LOCAL_DEPS=1
-)
-if "%5"=="local" (
-  echo Using local deps.
-  set USE_LOCAL_DEPS=1
-)
+
 set "DIRNAME=build_%1_%2"
+
 if "%1"=="vs" (
-  echo Generating projects for Visual Studio 2019.
-  set "FLAGS=-G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTS=%BUILD_TESTS% -DUSE_D3D12=%USE_D3D12% -DUSE_LOCAL_DEPS=%USE_LOCAL_DEPS%"
+  set "FLAGS=-G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=RelWithDebInfo"
 )
 if "%1"=="release" (
-  echo Generating projects for Ninja ^(Minimum Size / Release^).
-  set "FLAGS=-G "Ninja" -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_TESTS=%BUILD_TESTS% -DUSE_D3D12=%USE_D3D12% -DUSE_LOCAL_DEPS=%USE_LOCAL_DEPS%"
+  set "FLAGS=-G "Ninja" -DCMAKE_BUILD_TYPE=MinSizeRel"
 )
 if "%1"=="full_release" (
-  echo Generating projects for Ninja ^(Max Speed / Release^).
-  set "FLAGS=-G "Ninja" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=%BUILD_TESTS% -DUSE_D3D12=%USE_D3D12% -DUSE_LOCAL_DEPS=%USE_LOCAL_DEPS%"
+  set "FLAGS=-G "Ninja" -DCMAKE_BUILD_TYPE=Release"
 )
 if "%1"=="debug" (
-  echo Generating projects for Ninja ^(Release with Debug Info^).
-  set "FLAGS=-G "Ninja" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTS=%BUILD_TESTS% -DUSE_D3D12=%USE_D3D12% -DUSE_LOCAL_DEPS=%USE_LOCAL_DEPS%"
+  set "FLAGS=-G "Ninja" -DCMAKE_BUILD_TYPE=RelWithDebInfo"
 )
 if "%1"=="full_debug" (
-  echo Generating projects for Ninja ^(Debug^).
-  set "FLAGS=-G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=%BUILD_TESTS% -DUSE_D3D12=%USE_D3D12% -DUSE_LOCAL_DEPS=%USE_LOCAL_DEPS%"
+  set "FLAGS=-G "Ninja" -DCMAKE_BUILD_TYPE=Debug"
 )
+
+if "%2"=="x64_uwp" (
+  echo Using UWP Platform.
+  set "FLAGS=%FLAGS% -DUWP_PLATFORM=1 -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0"
+) else (
+  set "FLAGS=%FLAGS% -DUWP_PLATFORM=0 -DWINDOWS_DESKTOP_PLATFORM=1"
+)
+
+set STATIC_BUILD=0
+set STATIC_CRT=0
+set DEBUG_CRT=0
+set USE_LOCAL_DEPS=0
+set BUILD_TESTS=1
+set USE_D3D12=0
+
+:PROCESS_ARG
+if not "%3" == "" (
+  if "%3"=="static" ( 
+    set STATIC_BUILD=1
+  )
+  if "%3"=="static_crt" ( 
+    set STATIC_CRT=1
+  )
+  if "%3"=="debug_crt" ( 
+    set DEBUG_CRT=1
+  )
+  if "%3"=="local" (
+    set USE_LOCAL_DEPS=1
+  )
+  if "%3"=="build_tests" (
+    set BUILD_TESTS=1
+  )
+  if "%3"=="use_d3d12" (
+    set USE_D3D12=1
+  )
+  shift
+  goto PROCESS_ARG
+)
+
+if %STATIC_BUILD%==1 (
+  echo Building static library.
+  echo Tests will be disabled, not supported in static build.
+  set BUILD_TESTS=0
+  set "DIRNAME=%DIRNAME%_static"
+) else (
+  set "DIRNAME=%DIRNAME%_dll"
+)
+set "FLAGS=%FLAGS% -DSTATIC_BUILD=%STATIC_BUILD%"
+
+if %STATIC_CRT%==1 (
+  echo Building with static CRT
+  set "DIRNAME=%DIRNAME%_MT"
+) else (
+  set "DIRNAME=%DIRNAME%_MD"
+)
+set "FLAGS=%FLAGS% -DSTATIC_CRT=%STATIC_CRT%"
+
+if %DEBUG_CRT%==1 (
+  echo Building with debug CRT
+  set "DIRNAME=%DIRNAME%d"
+)
+set "FLAGS=%FLAGS% -DDEBUG_CRT=%DEBUG_CRT%"
+
+if %USE_LOCAL_DEPS%==1 (
+  echo Using local dependencies.
+) else (
+  echo Fetching dependencies from remote server.
+)
+set "FLAGS=%FLAGS% -DUSE_LOCAL_DEPS=%USE_LOCAL_DEPS%"
+
+if %BUILD_TESTS%==1 (
+  echo Tests are enabled.
+) else (
+  echo Tests are disabled.
+)
+set "FLAGS=%FLAGS% -DBUILD_TESTS=%BUILD_TESTS%"
+
+if %USE_D3D12%==1 (
+  echo Using D3D12 backend.
+) else (
+  echo Using D3D11 backend.
+)
+set "FLAGS=%FLAGS% -DUSE_D3D12=%USE_D3D12%"
+
 call "%VCVARS%" %CFG%
 if not exist %DIRNAME% mkdir %DIRNAME%
 cd %DIRNAME%
 set CC=cl.exe
 set CXX=cl.exe
-set "EXTRA_FLAGS=-DUWP_PLATFORM=0"
-if "%2"=="x64_uwp" (
-  echo Using UWP Platform.
-  set "EXTRA_FLAGS=-DUWP_PLATFORM=1 -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0"
-)
-cmake .. %FLAGS% %EXTRA_FLAGS%
+
+cmake .. %FLAGS%
 if "%1"=="vs" GOTO FINISH
 ninja
 GOTO FINISH
 :SYNTAX
 echo.
-echo usage: make [ release ^| debug ^| full_release ^| full_debug ^| vs  ]   [ x64 ^| x64_uwp ]  [local] [BUILD_TESTS] [USE_D3D12]
+echo usage: make [ release ^| full_release ^| debug ^| full_debug ^| vs ]  [ x64 ^| x64_uwp ] [ local ] [ static ] [ static_crt ]
 echo.
 echo Build type parameter descriptions:
 echo.
-echo     release       Build minimum-size release via Ninja/VS2019
-echo     debug         Build release with debug symbols via Ninja/VS2019
-echo     full_release  Build fully-optimized release via Ninja/VS2019
-echo     full_debug    Build unoptimized debug via Ninja/VS2019
+echo     release       Build optimized, minimum-size release via Ninja/VS2019
+echo     full_release  Build optimized, maximum-speed release via Ninja/VS2019
+echo     debug         Build optimized release with debug symbols via Ninja/VS2019
+echo     full_debug    Build non-optimized release with debug symbols via Ninja/VS2019
 echo     vs            Generate VS2019 project files, does not perform a build.
 echo.
 echo Configuration parameter descriptions:
 echo.
 echo     x64         Compile binaries for the x64 (amd64) platform.
-echo     x64_uwp     Compile binaries for the x64 (amd64) UWP (Universal Windows Platform) platform.
+echo     x64_uwp     Compile binaries for the x64 (amd64) platform with UWP toolchain.
 echo.
 echo Additional, optional build options:
 echo.
-echo     local        Whether or not we should use local deps in deps folder (instead of fetching from server). Disabled by default.
-echo     BUILD_TESTS  Whether tests should be built (currently MiniBrowser test shell). Enabled by default.
-echo     USE_D3D12    Whether the D3D12 driver should be used instead of D3D11. Only compatible with vs2019. Disabled by default.
+echo     local       Use local dependencies in deps folder (don't fetch from server).
+echo     static      Whether or not to build a static library. Disabled by default (creates a DLL).
+echo     static_crt  Whether or not to use static runtime library (MT). Disabled by default (MD instead).
+echo     debug_crt   Whether or not to use the debug runtime library (MDd or MTd, based on static_crt). Disabled by default.
+echo     build_tests Whether tests should be built (currently MiniBrowser test shell). Enabled by default.
+echo     use_d3d12   Whether the D3D12 driver should be used instead of D3D11. Only compatible with vs2019. Disabled by default.
 :FINISH
 cd ..
