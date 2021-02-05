@@ -40,7 +40,7 @@ VS_OUTPUT VS(float2 Position : POSITION,
   VS_OUTPUT output;
   output.ObjectCoord = ObjCoord;
   output.Position = mul(Transform, float4(Position, 0.0, 1.0));
-  output.Color = sRGBToLinear(float4(Color) / 255.0);
+  output.Color = float4(Color) / 255.0;
   output.TexCoord = TexCoord;
   output.Data0 = Data0;
   output.Data1 = Data1;

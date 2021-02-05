@@ -63,14 +63,14 @@ struct C_Window : public WindowListener {
     val->set_listener(nullptr);
   }
 
-  virtual void OnClose() override {
+  virtual void OnClose(Window* window) override {
     if (close_callback)
-      close_callback(close_callback_data);
+      close_callback(close_callback_data, this);
   }
 
-  virtual void OnResize(uint32_t width, uint32_t height) override {
+  virtual void OnResize(Window* window, uint32_t width, uint32_t height) override {
     if (resize_callback)
-      resize_callback(resize_callback_data, width, height);
+      resize_callback(resize_callback_data, this, width, height);
   }
 };
 
@@ -122,15 +122,6 @@ ULApp ulCreateApp(ULSettings settings, ULConfig config) {
 
 void ulDestroyApp(ULApp app) {
   delete app;
-}
-
-void ulAppSetWindow(ULApp app, ULWindow window) {
-  app->val->set_window(window->val);
-  app->c_window = window;
-}
-
-ULWindow ulAppGetWindow(ULApp app) {
-  return app->c_window;
 }
 
 void ulAppSetUpdateCallback(ULApp app, ULUpdateCallback callback, void* user_data) {

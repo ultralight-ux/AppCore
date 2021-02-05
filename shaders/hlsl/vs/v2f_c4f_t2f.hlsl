@@ -26,7 +26,7 @@ VS_OUTPUT VS(float2 Position : POSITION,
 {
   VS_OUTPUT output;
   output.Position = mul(Transform, float4(Position, 0.0, 1.0));
-  output.Color = sRGBToLinear(float4(Color) / 255.0);
+  output.Color = float4(Color) / 255.0;
   output.ObjectCoord = ObjCoord;
   return output;
 }

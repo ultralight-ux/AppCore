@@ -1,18 +1,25 @@
 #include "WindowWin.h"
-#include <AppCore/Monitor.h>
-#include <Windows.h>
-#include <ShellScalingAPI.h>
-#include "Windowsx.h"
-#include <tchar.h>
 #include "AppWin.h"
 #include "DIBSurface.h"
+#include "Windowsx.h"
+#include <AppCore/Monitor.h>
+#include <ShellScalingAPI.h>
+#include <Windows.h>
+#include <tchar.h>
+#if defined(DRIVER_D3D11)
+#include "d3d11/GPUContextD3D11.h"
+#include "d3d11/GPUDriverD3D11.h"
+#elif defined(DRIVER_D3D12)
+#include "d3d12/GPUContextD3D12.h"
+#include "d3d12/GPUDriverD3D12.h"
+#endif
 
 namespace ultralight {
 
 #define WINDOWDATA() ((WindowData*)GetWindowLongPtr(hWnd, GWLP_USERDATA))
 #define WINDOW() (WINDOWDATA()->window)
 
-  static HDC g_dc = 0;
+static HDC g_dc = 0;
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
   PAINTSTRUCT ps;
@@ -20,25 +27,24 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
   switch (message) {
   case WM_PAINT:
     g_dc = hdc = BeginPaint(hWnd, &ps);
-    static_cast<AppWin*>(App::instance())->InvalidateWindow();
-    static_cast<AppWin*>(App::instance())->OnPaint();
+    WINDOW()->InvalidateWindow();
+    WINDOW()->Paint();
     EndPaint(hWnd, &ps);
     g_dc = 0;
     break;
   case WM_DESTROY:
-    PostQuitMessage(0);
+    WINDOW()->OnClose();
     break;
   case WM_ENTERSIZEMOVE:
     WINDOWDATA()->is_resizing_modal = true;
     break;
-  case WM_SIZE:
-  {
+  case WM_SIZE: {
     if (WINDOWDATA()) {
       WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
       // This would normally be called when the message loop is idle
       // but during resize the window consumes all messages so we need
       // to force paints during the operation.
-      //static_cast<AppWin*>(App::instance())->OnPaint();
+      // static_cast<AppWin*>(App::instance())->OnPaint();
       InvalidateRect(hWnd, nullptr, false);
     }
     break;
@@ -49,20 +55,22 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     InvalidateRect(hWnd, nullptr, false);
     break;
   case WM_KEYDOWN:
-    WINDOW()->FireKeyEvent(KeyEvent(KeyEvent::kType_RawKeyDown, (uintptr_t)wParam, (intptr_t)lParam, false));
+    WINDOW()->FireKeyEvent(
+        KeyEvent(KeyEvent::kType_RawKeyDown, (uintptr_t)wParam, (intptr_t)lParam, false));
     break;
   case WM_KEYUP:
-    WINDOW()->FireKeyEvent(KeyEvent(KeyEvent::kType_KeyUp, (uintptr_t)wParam, (intptr_t)lParam, false));
+    WINDOW()->FireKeyEvent(
+        KeyEvent(KeyEvent::kType_KeyUp, (uintptr_t)wParam, (intptr_t)lParam, false));
     break;
   case WM_CHAR:
-    WINDOW()->FireKeyEvent(KeyEvent(KeyEvent::kType_Char, (uintptr_t)wParam, (intptr_t)lParam, false));
+    WINDOW()->FireKeyEvent(
+        KeyEvent(KeyEvent::kType_Char, (uintptr_t)wParam, (intptr_t)lParam, false));
     break;
   case WM_MOUSELEAVE:
     WINDOWDATA()->is_mouse_in_client = false;
     WINDOWDATA()->is_tracking_mouse = false;
     break;
-  case WM_MOUSEMOVE:
-  {
+  case WM_MOUSEMOVE: {
     if (!WINDOWDATA()->is_tracking_mouse) {
       // Need to install tracker to get WM_MOUSELEAVE events.
       WINDOWDATA()->track_mouse_event_data = { sizeof(WINDOWDATA()->track_mouse_event_data) };
@@ -77,10 +85,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
       WINDOW()->SetCursor(ultralight::kCursor_Pointer);
     }
     WINDOW()->FireMouseEvent(
-      { MouseEvent::kType_MouseMoved,
-        WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-        WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)),
-        WINDOWDATA()->cur_btn });
+        { MouseEvent::kType_MouseMoved, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
     break;
   }
   case WM_LBUTTONDOWN:
@@ -88,45 +94,38 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Left;
     WINDOW()->FireMouseEvent(
-      { MouseEvent::kType_MouseDown,
-        WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-        WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)),
-        WINDOWDATA()->cur_btn });
+        { MouseEvent::kType_MouseDown, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
     break;
   case WM_MBUTTONDOWN:
   case WM_MBUTTONDBLCLK:
     SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Middle;
     WINDOW()->FireMouseEvent(
-    { MouseEvent::kType_MouseDown,
-      WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-      WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)),
-      WINDOWDATA()->cur_btn });
+        { MouseEvent::kType_MouseDown, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
     break;
   case WM_RBUTTONDOWN:
   case WM_RBUTTONDBLCLK:
     SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Right;
     WINDOW()->FireMouseEvent(
-    { MouseEvent::kType_MouseDown,
-      WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-      WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)),
-      WINDOWDATA()->cur_btn });
+        { MouseEvent::kType_MouseDown, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
     break;
   case WM_LBUTTONUP:
   case WM_MBUTTONUP:
   case WM_RBUTTONUP:
     ReleaseCapture();
     WINDOW()->FireMouseEvent(
-    { MouseEvent::kType_MouseUp,
-      WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-      WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)),
-      WINDOWDATA()->cur_btn });
-	WINDOWDATA()->cur_btn = MouseEvent::kButton_None;
+        { MouseEvent::kType_MouseUp, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
+    WINDOWDATA()->cur_btn = MouseEvent::kButton_None;
     break;
   case WM_MOUSEWHEEL:
     WINDOW()->FireScrollEvent(
-      { ScrollEvent::kType_ScrollByPixel, 0, static_cast<int>(WINDOW()->PixelsToDevice(GET_WHEEL_DELTA_WPARAM(wParam)) * 0.8) });
+        { ScrollEvent::kType_ScrollByPixel, 0,
+          static_cast<int>(WINDOW()->PixelsToDevice(GET_WHEEL_DELTA_WPARAM(wParam)) * 0.8) });
     break;
   case WM_SETFOCUS:
     WINDOW()->SetWindowFocused(true);
@@ -140,19 +139,18 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
   return 0;
 }
 
-void CenterHwndOnMainMonitor(HWND hwnd)
-{
+void CenterHwndOnMainMonitor(HWND hwnd) {
   RECT rect;
   GetWindowRect(hwnd, &rect);
   LPRECT prc = &rect;
 
   // Get main monitor
-  HMONITOR hMonitor = MonitorFromPoint({ 1,1 }, MONITOR_DEFAULTTONEAREST);
+  HMONITOR hMonitor = MonitorFromPoint({ 1, 1 }, MONITOR_DEFAULTTONEAREST);
 
   MONITORINFO mi;
-  RECT        rc;
-  int         w = prc->right - prc->left;
-  int         h = prc->bottom - prc->top;
+  RECT rc;
+  int w = prc->right - prc->left;
+  int h = prc->bottom - prc->top;
 
   mi.cbSize = sizeof(mi);
   GetMonitorInfo(hMonitor, &mi);
@@ -167,29 +165,34 @@ void CenterHwndOnMainMonitor(HWND hwnd)
   SetWindowPos(hwnd, NULL, rect.left, rect.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
-WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height,
-  bool fullscreen, unsigned int window_flags) : monitor_(monitor), is_fullscreen_(fullscreen) {
+static bool g_window_class_initialized = false;
 
-  TCHAR* class_name = _T("UltralightWindow");
+WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool fullscreen,
+                     unsigned int window_flags)
+    : monitor_(monitor), is_fullscreen_(fullscreen) {
 
   HINSTANCE hInstance = GetModuleHandle(NULL);
+  TCHAR* class_name = _T("UltralightWindow");
 
-  WNDCLASSEX wcex;
-  wcex.cbSize = sizeof(WNDCLASSEX);
-  wcex.style = CS_HREDRAW | CS_VREDRAW;
-  wcex.lpfnWndProc = WndProc;
-  wcex.cbClsExtra = 0;
-  wcex.cbWndExtra = 0;
-  wcex.hInstance = hInstance;
-  wcex.hIcon = LoadIcon(hInstance, (LPCTSTR)IDI_APPLICATION);
-  wcex.hCursor = NULL;
-  wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-  wcex.lpszMenuName = NULL;
-  wcex.lpszClassName = class_name;
-  wcex.hIconSm = LoadIcon(wcex.hInstance, (LPCTSTR)IDI_APPLICATION);
-  if (!RegisterClassEx(&wcex)) {
-    MessageBoxW(NULL, (LPCWSTR)L"RegisterClassEx failed", (LPCWSTR)L"Notification", MB_OK);
-    exit(-1);
+  if (!g_window_class_initialized) {
+    WNDCLASSEX wcex;
+    wcex.cbSize = sizeof(WNDCLASSEX);
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(hInstance, (LPCTSTR)IDI_APPLICATION);
+    wcex.hCursor = NULL;
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = NULL;
+    wcex.lpszClassName = class_name;
+    wcex.hIconSm = LoadIcon(wcex.hInstance, (LPCTSTR)IDI_APPLICATION);
+    if (!RegisterClassEx(&wcex)) {
+      MessageBoxW(NULL, (LPCWSTR)L"RegisterClassEx failed", (LPCWSTR)L"Notification", MB_OK);
+      exit(-1);
+    }
+    g_window_class_initialized = true;
   }
 
   DWORD style = WS_SYSMENU;
@@ -207,18 +210,11 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height,
   // Create window
   RECT rc = { 0, 0, (LONG)DeviceToPixels(width), (LONG)DeviceToPixels(height) };
   AdjustWindowRect(&rc, style, FALSE);
-  hwnd_ = ::CreateWindowEx(NULL
-    , class_name
-    , _T("")
-    , fullscreen ? (WS_EX_TOPMOST | WS_POPUP) : style
-    , fullscreen ? 0 : CW_USEDEFAULT
-    , fullscreen ? 0 : CW_USEDEFAULT
-    , fullscreen ? DeviceToPixels(width) : (rc.right - rc.left)
-    , fullscreen ? DeviceToPixels(height) : (rc.bottom - rc.top)
-    , NULL
-    , NULL
-    , hInstance
-    , NULL);
+  hwnd_ = ::CreateWindowEx(
+      NULL, class_name, _T(""), fullscreen ? (WS_EX_TOPMOST | WS_POPUP) : style,
+      fullscreen ? 0 : CW_USEDEFAULT, fullscreen ? 0 : CW_USEDEFAULT,
+      fullscreen ? DeviceToPixels(width) : (rc.right - rc.left),
+      fullscreen ? DeviceToPixels(height) : (rc.bottom - rc.top), NULL, NULL, hInstance, NULL);
 
   if (!hwnd_) {
     MessageBoxW(NULL, (LPCWSTR)L"CreateWindowEx failed", (LPCWSTR)L"Notification", MB_OK);
@@ -246,12 +242,43 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height,
   cur_cursor_ = ultralight::kCursor_Hand;
 
   SetWindowScale(scale());
+
+  is_accelerated_ = false;
+
+  assert(App::instance());
+
+#if defined(DRIVER_D3D11)
+  auto gpu_context = static_cast<AppWin*>(App::instance())->gpu_context();
+  auto gpu_driver = static_cast<AppWin*>(App::instance())->gpu_driver();
+  if (gpu_context && gpu_driver) {
+    swap_chain_.reset(new SwapChainD3D11(gpu_context, gpu_driver, hwnd_, this->width(),
+                                         this->height(), scale(), is_fullscreen(), true, true, 1));
+    if (swap_chain_->swap_chain()) {
+      is_accelerated_ = true;
+      gpu_context->AddSwapChain(swap_chain_.get());
+    } else {
+      swap_chain_.reset();
+    }
+  }
+#endif
+
+  static_cast<AppWin*>(App::instance())->AddWindow(this);
 }
 
 WindowWin::~WindowWin() {
   DestroyCursor(cursor_hand_);
   DestroyCursor(cursor_arrow_);
   DestroyCursor(cursor_ibeam_);
+  if (App::instance()) {
+    static_cast<AppWin*>(App::instance())->RemoveWindow(this);
+
+#if defined(DRIVER_D3D11)
+    auto gpu_context = static_cast<AppWin*>(App::instance())->gpu_context();
+    if (is_accelerated_ && gpu_context && swap_chain_) {
+      gpu_context->RemoveSwapChain(swap_chain_.get());
+    }
+#endif
+  }
 }
 
 uint32_t WindowWin::width() const {
@@ -266,13 +293,9 @@ uint32_t WindowWin::height() const {
   return rc.bottom - rc.top;
 }
 
-double WindowWin::scale() const {
-  return monitor_->scale();
-}
+double WindowWin::scale() const { return monitor_->scale(); }
 
-void WindowWin::SetTitle(const char* title) {
-  SetWindowTextA(hwnd_, title);
-}
+void WindowWin::SetTitle(const char* title) { SetWindowTextA(hwnd_, title); }
 
 void WindowWin::SetCursor(ultralight::Cursor cursor) {
   switch (cursor) {
@@ -293,9 +316,7 @@ void WindowWin::SetCursor(ultralight::Cursor cursor) {
   cur_cursor_ = cursor;
 }
 
-void WindowWin::Close() {
-  DestroyWindow(hwnd_);
-}
+void WindowWin::Close() { DestroyWindow(hwnd_); }
 
 /*
 void WindowWin::DrawBitmap(int x, int y, Ref<Bitmap> bitmap, IntRect rect) {
@@ -320,7 +341,7 @@ void WindowWin::DrawBitmap(int x, int y, Ref<Bitmap> bitmap, IntRect rect) {
   rect = { 0, 0, (int)bitmap->width(), (int)bitmap->height() };
 
   LONG adjustedSourceTop = bitmap->height() - rect.bottom;
-  StretchDIBits(hdc, x + rect.left, y + rect.top, rect.width(), rect.height(), 
+  StretchDIBits(hdc, x + rect.left, y + rect.top, rect.width(), rect.height(),
     rect.left, adjustedSourceTop, rect.width(), rect.height(), bits, &bmi, DIB_RGB_COLORS, SRCCOPY);
 
   bitmap->UnlockPixels();
@@ -330,34 +351,64 @@ void WindowWin::DrawBitmap(int x, int y, Ref<Bitmap> bitmap, IntRect rect) {
 void WindowWin::DrawSurface(int x, int y, Surface* surface) {
   DIBSurface* dibSurface = static_cast<DIBSurface*>(surface);
 
-  if (!g_dc) return;
+  if (!g_dc)
+    return;
   HDC hdc = g_dc;
   BitBlt(hdc, x, y, (int)surface->width(), (int)surface->height(), dibSurface->dc(), 0, 0, SRCCOPY);
 }
 
-void* WindowWin::native_handle() const {
-  return hwnd_;
+void* WindowWin::native_handle() const { return hwnd_; }
+
+void WindowWin::Paint() {
+  if (!is_accelerated()) {
+    OverlayManager::Render();
+    OverlayManager::Paint();
+    return;
+  }
+
+  auto gpu_context = static_cast<AppWin*>(App::instance())->gpu_context();
+  auto gpu_driver = static_cast<AppWin*>(App::instance())->gpu_driver();
+
+  gpu_driver->BeginSynchronize();
+  OverlayManager::Render();
+  gpu_driver->EndSynchronize();
+
+  if (gpu_driver->HasCommandsPending() || (window_needs_repaint_ && !is_first_paint_)) {
+    gpu_context->BeginDrawing();
+    gpu_driver->DrawCommandList();
+    OverlayManager::Paint();
+    swap_chain_->PresentFrame();
+    gpu_context->EndDrawing();
+    if (window_needs_repaint_ && !is_first_paint_)
+      is_first_paint_ = false;
+  }
+
+  window_needs_repaint_ = false;
 }
 
 void WindowWin::OnClose() {
   if (listener_)
-    listener_->OnClose();
+    listener_->OnClose(this);
   if (app_listener_)
-    app_listener_->OnClose();
+    app_listener_->OnClose(this);
 }
 
 void WindowWin::OnResize(uint32_t width, uint32_t height) {
+  if (swap_chain_)
+    swap_chain_->Resize(width, height);
+
   if (listener_)
-    listener_->OnResize(width, height);
+    listener_->OnResize(this, width, height);
+
   if (app_listener_)
-    app_listener_->OnResize(width, height);
+    app_listener_->OnResize(this, width, height);
 }
 
-Ref<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height,
-  bool fullscreen, unsigned int window_flags) {
+Ref<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height, bool fullscreen,
+                           unsigned int window_flags) {
   return AdoptRef(*new WindowWin(monitor, width, height, fullscreen, window_flags));
 }
 
-Window::~Window() {}
+Window::~Window() { }
 
-}  // namespace ultralight
+} // namespace ultralight

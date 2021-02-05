@@ -48,8 +48,6 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
 
   main_monitor_.reset(new MonitorWin(windows_util_.get()));
 
-  config.use_gpu_renderer = !settings_.force_cpu_renderer;
-
   // Generate cache path
   String cache_path = GetRoamingAppDataPath();
   cache_path = PlatformFileSystem::AppendPath(cache_path, settings_.developer_name);
@@ -76,7 +74,6 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   
   config.resource_path = resource_path.utf16();
   config.cache_path = cache_path.utf16();
-  config.device_scale = main_monitor_->scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
 
@@ -103,9 +100,21 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   clipboard_.reset(new ClipboardWin());
   Platform::instance().set_clipboard(clipboard_.get());
 
-  if (!Platform::instance().config().use_gpu_renderer) {
+  if (settings_.force_cpu_renderer) {
     surface_factory_.reset(new DIBSurfaceFactory(GetDC(0)));
     Platform::instance().set_surface_factory(surface_factory_.get());
+  } else {
+#if defined(DRIVER_D3D11)
+    gpu_context_.reset(new GPUContextD3D11());
+    if (gpu_context_->device()) {
+      gpu_driver_.reset(new GPUDriverD3D11(gpu_context_.get()));
+      Platform::instance().set_gpu_driver(gpu_driver_.get());
+    } else {
+      gpu_context_.reset();
+    }
+#elif defined(DRIVER_D3D12)
+    // TODO
+#endif
   }
 
   renderer_ = Renderer::Create();
@@ -117,47 +126,6 @@ AppWin::~AppWin() {
   gpu_context_.reset();
 }
 
-void AppWin::OnClose() {
-}
-
-void AppWin::OnResize(uint32_t width, uint32_t height) {
-  if (gpu_context_) {
-    gpu_context_->Resize((int)width, (int)height);
-  }
-}
-
-void AppWin::set_window(Ref<Window> window) {
-  window_ = window;
-  WindowWin* win = static_cast<WindowWin*>(window_.get());
-  win->set_app_listener(this);
-
-  if (!Platform::instance().config().use_gpu_renderer)
-    return;
-
-#if defined(DRIVER_D3D11)
-  gpu_context_.reset(new GPUContextD3D11());
-  
-  if (!gpu_context_->Initialize(win->hwnd(), win->width(),
-    win->height(), win->scale(), win->is_fullscreen(), true, true, 1)) {
-    MessageBoxW(NULL, (LPCWSTR)L"Failed to initialize D3D11 context", (LPCWSTR)L"Notification", MB_OK);
-    exit(-1);
-  }
-
-  gpu_driver_.reset(new GPUDriverD3D11(gpu_context_.get()));
-#elif defined(DRIVER_D3D12)
-  gpu_context_.reset(new GPUContextD3D12());
-  WindowWin* win = static_cast<WindowWin*>(window_.get());
-  if (!gpu_context_->Initialize(win->hwnd(), win->width(),
-	  win->height(), win->scale(), win->is_fullscreen(), true, true, 1)) {
-	  MessageBoxW(NULL, (LPCWSTR)L"Failed to initialize D3D12 context", (LPCWSTR)L"Notification", MB_OK);
-	  exit(-1);
-  }
-
-  gpu_driver_.reset(new GPUDriverD3D12(gpu_context_.get()));
-#endif
-  Platform::instance().set_gpu_driver(gpu_driver_.get());
-}
-
 Monitor* AppWin::main_monitor() {
   return main_monitor_.get();
 }
@@ -167,11 +135,6 @@ Ref<Renderer> AppWin::renderer() {
 }
 
 void AppWin::Run() {
-  if (!window_) {
-    MessageBoxW(NULL, (LPCWSTR)L"Forgot to call App::set_window before App::Run", (LPCWSTR)L"Notification", MB_OK);
-    exit(-1);
-  }
-
   if (is_running_)
     return;
 
@@ -188,9 +151,10 @@ void AppWin::Run() {
       : WAIT_TIMEOUT);
     if (result == WAIT_TIMEOUT) {
       Update();
-      WindowWin* win = static_cast<WindowWin*>(window_.get());
-      if (win->NeedsRepaint())
-        InvalidateRect(win->hwnd(), nullptr, false);
+      for (auto window : windows_) {
+        if (window->NeedsRepaint())
+          InvalidateRect(window->hwnd(), nullptr, false);
+      }
       next_paint = std::chrono::steady_clock::now() + interval_ms;
     }
 
@@ -210,49 +174,16 @@ void AppWin::Quit() {
   is_running_ = false;
 }
 
-void AppWin::OnPaint() {
-  if (!Platform::instance().config().use_gpu_renderer) {
-    renderer_->Render();
-
-    if (window_)
-      static_cast<WindowWin*>(window_.get())->Draw();
-
-    return;
-  }
-
-  if (!gpu_driver_)
-    return;
-
-  gpu_driver_->BeginSynchronize();
-  renderer_->Render();
-  gpu_driver_->EndSynchronize();
-
-  if (gpu_driver_->HasCommandsPending()) {
-    gpu_context_->BeginDrawing();
-    gpu_driver_->DrawCommandList();
-    if (window_)
-	    static_cast<WindowWin*>(window_.get())->Draw();
-    gpu_context_->PresentFrame();
-    gpu_context_->EndDrawing();
-    is_first_paint_ = false;
-  }
-  else if (window_needs_repaint_ && !is_first_paint_) {
-    gpu_context_->BeginDrawing();
-    if (window_)
-      static_cast<WindowWin*>(window_.get())->Draw();
-    gpu_context_->PresentFrame();
-    gpu_context_->EndDrawing();
-  }
-
-  window_needs_repaint_ = false;
-}
-
 void AppWin::Update() {
   if (listener_)
     listener_->OnUpdate();
 
   renderer()->Update();
 }
+
+GPUContextD3D11* AppWin::gpu_context() { return gpu_context_.get(); }
+
+GPUDriverD3D11* AppWin::gpu_driver() { return gpu_driver_.get(); }
 
 static App* g_app_instance = nullptr;
 

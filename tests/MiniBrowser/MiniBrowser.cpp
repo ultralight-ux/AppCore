@@ -1,91 +1,102 @@
 #include <AppCore/App.h>
 #include <AppCore/Window.h>
 #include <AppCore/Overlay.h>
+#include <vector>
 
 using namespace ultralight;
 
-class MyApp : public WindowListener, public ViewListener {
-  RefPtr<App> app_;
+struct AppWindow {
   RefPtr<Window> window_;
   RefPtr<Overlay> overlay_;
-public:
+};
+
+class MyApp : public WindowListener, public ViewListener {
+  RefPtr<App> app_;
+  std::vector<AppWindow> active_windows_;
+
+ public:
   MyApp() {
-    ///
-    /// Create our main App instance.
-    ///
-    app_ = App::Create();
+    Settings s;
+    s.force_cpu_renderer = false;
+    app_ = App::Create(s);
 
-    ///
-    /// Create our Window with the Resizable window flag.
-    ///
-    window_ = Window::Create(app_->main_monitor(), 800, 600, false,
-      kWindowFlags_Titled | kWindowFlags_Resizable);
-
-    ///
-    /// Set our window title.
-    ///
-    window_->SetTitle("MiniBrowser");
-
-    ///
-    /// Bind our App's main window.
-    ///
-    /// @note This MUST be done before creating any overlays or calling App::Run
-    ///
-    app_->set_window(*window_.get());
-
-    ///
-    /// Create our Overlay, use the same dimensions as our Window.
-    ///
-    overlay_ = Overlay::Create(*window_.get(), window_->width(),
-      window_->height(), 0, 0);
-
-    ///
-    /// Load a string of HTML into our overlay's View
-    ///
-    //overlay_->view()->LoadURL("file:///ui.html");
-    overlay_->view()->LoadURL("https://en.wikipedia.org");
-
-    ///
-    /// Register our MyApp instance as a WindowListener so we can handle the
-    /// Window's OnResize event below.
-    ///
-    window_->set_listener(this);
-
-    ///
-    /// Register our MyApp instance as a ViewListener so we can handle the
-    /// View's OnChangeCursor event below.
-    ///
-    overlay_->view()->set_view_listener(this);
+    CreateWindow();
   }
 
-  virtual ~MyApp() {}
+  virtual ~MyApp() { }
+
+  void CreateWindow() {
+    auto window = Window::Create(app_->main_monitor(), 800, 600, false,
+                             kWindowFlags_Titled | kWindowFlags_Resizable);
+    window->set_listener(this);
+    window->SetTitle("MiniBrowser");
+
+    auto overlay = Overlay::Create(window, window->width(), window->height(), 0, 0);
+    overlay->view()->set_view_listener(this);
+    overlay->view()->LoadURL("file:///home.html");
+
+    active_windows_.push_back({ window, overlay });
+  }
 
   ///
-  /// Inherited from WindowListener, not used.
+  /// Inherited from WindowListener, called when the window is closed.
   ///
-  virtual void OnClose() override {}
+  virtual void OnClose(ultralight::Window* window) override { 
+    for (auto i = active_windows_.begin(); i != active_windows_.end(); ++i) {
+      if (i->window_.get() == window) {
+        active_windows_.erase(i);
+      }
+    }
+
+    if (active_windows_.size() == 0)
+      app_->Quit();
+  }
 
   ///
   /// Inherited from WindowListener, called when the Window is resized.
   ///
-  virtual void OnResize(uint32_t width, uint32_t height) override {
+  virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override {
     ///
-    /// Resize our Overlay to match the new Window dimensions.
+    /// Find the overlay that matches the window emitting the resize event.
+    /// 
+    Overlay* overlay = nullptr;
+    for (auto i : active_windows_) {
+      if (i.window_.get() == window) {
+        overlay = i.overlay_.get();
+        break;
+      }
+    }
+
     ///
-    overlay_->Resize(width, height);
+    /// Resize the overlay to match the new window dimensions.
+    ///
+    if (overlay)
+      overlay->Resize(width, height);
   }
 
   ///
   /// Inherited from ViewListener
   ///
-  virtual void OnChangeCursor(ultralight::View* caller,
-    Cursor cursor) {
-    window_->SetCursor(cursor);
+  virtual void OnChangeCursor(ultralight::View* caller, Cursor cursor) {
+    ///
+    /// Find the window that matches the view emitting the cursor event.
+    ///
+    Window* window = nullptr;
+    for (auto i : active_windows_) {
+      if (i.overlay_->view().ptr() == caller) {
+        window = i.window_.get();
+        break;
+      }
+    }
+    
+    ///
+    /// Update the active cursor for the window.
+    ///
+    if (window)
+      window->SetCursor(cursor);
   }
 
-  void Run() {
-    app_->Run();
-  }
+  void Run() { app_->Run(); }
 };
 
 int main() {

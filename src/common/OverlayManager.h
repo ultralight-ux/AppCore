@@ -18,7 +18,11 @@ public:
 
   virtual void Remove(Overlay* overlay);
 
-  virtual void Draw();
+  // Render all active Views.
+  virtual void Render();
+
+  // Repaint overlays
+  virtual void Paint();
 
   virtual void SetWindowFocused(bool focused);
 

@@ -532,12 +532,10 @@ void applyClip(VS_OUTPUT input, inout float4 outColor) {
 
 float4 fillGlyph(VS_OUTPUT input) {
   float alpha = texture0.Sample(sampler0, input.TexCoord).a * input.Color.a;
+  float fill_color_luma = input.Data0.y;
+  float corrected_alpha = texture1.Sample(sampler0, float2(alpha, fill_color_luma)).a;
 
-  // Transform from 2.2 Gamma to target Gamma
-  float target_gamma = input.Data0.y;
-  alpha = pow(alpha, target_gamma / 2.2);
-
-  return float4(input.Color.rgb * alpha, alpha);
+  return float4(input.Color.rgb * corrected_alpha, corrected_alpha);
 }
 
 float4 PS(VS_OUTPUT input) : SV_Target

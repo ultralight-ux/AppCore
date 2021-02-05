@@ -129,21 +129,6 @@ ACExport ULApp ulCreateApp(ULSettings settings, ULConfig config);
 ///
 ACExport void ulDestroyApp(ULApp app);
 
-///
-/// Set the main window, you must set this before calling ulAppRun.
-///
-/// @param  window  The window to use for all rendering.
-///
-/// @note  We currently only support one Window per App, this will change
-///        later once we add support for multiple driver instances.
-///
-ACExport void ulAppSetWindow(ULApp app, ULWindow window);
-
-///
-/// Get the main window.
-///
-ACExport ULWindow ulAppGetWindow(ULApp app);
-
 typedef void
 (*ULUpdateCallback) (void* user_data);
 
@@ -222,7 +207,7 @@ ACExport ULWindow ulCreateWindow(ULMonitor monitor, unsigned int width,
 ACExport void ulDestroyWindow(ULWindow window);
 
 typedef void
-(*ULCloseCallback) (void* user_data);
+(*ULCloseCallback) (void* user_data, ULWindow window);
 
 ///
 /// Set a callback to be notified when a window closes.
@@ -232,7 +217,7 @@ ACExport void ulWindowSetCloseCallback(ULWindow window,
                                        void* user_data);
 
 typedef void
-(*ULResizeCallback) (void* user_data, unsigned int width, unsigned int height);
+(*ULResizeCallback) (void* user_data, ULWindow window, unsigned int width, unsigned int height);
 
 ///
 /// Set a callback to be notified when a window resizes

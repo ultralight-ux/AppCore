@@ -1,0 +1,19 @@
+# We'll use defaults from the Chromium style, with 2 column indentation
+BasedOnStyle: WebKit
+IndentWidth: 2
+AccessModifierOffset: -1
+ColumnLimit: 100
+FixNamespaceComments: true
+NamespaceIndentation: None
+MaxEmptyLinesToKeep: 1
+BreakBeforeBraces: Custom
+SortIncludes: false
+ReflowComments: true
+BreakConstructorInitializers: BeforeColon
+AllowAllParametersOfDeclarationOnNextLine: false
+AlignAfterOpenBracket: Align
+BinPackParameters: true
+BraceWrapping:
+  AfterFunction: false
+  AfterStruct: false
+  AfterClass: false

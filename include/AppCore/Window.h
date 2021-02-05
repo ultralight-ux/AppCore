@@ -22,6 +22,7 @@ namespace ultralight {
 class Monitor;
 class OverlayManager;
 class Surface;
+class Window;
 
 ///
 /// Interface for all Window-related events. @see Window::set_listener
@@ -33,7 +34,7 @@ public:
   ///
   /// Called when the Window is closed.
   ///
-  virtual void OnClose() = 0;
+  virtual void OnClose(ultralight::Window* window) = 0;
 
   ///
   /// Called when the Window is resized.
@@ -42,7 +43,7 @@ public:
   ///
   /// @param  height  The new height (in pixels).
   ///
-  virtual void OnResize(uint32_t width, uint32_t height) = 0;
+  virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) = 0;
 };
 
 ///
@@ -102,6 +103,17 @@ public:
   /// Whether or not the window is fullscreen.
   ///
   virtual bool is_fullscreen() const = 0;
+
+  ///
+  /// Whether or not the window is GPU accelerated.
+  /// 
+  virtual bool is_accelerated() const = 0;
+
+  ///
+  /// The render buffer id of the the window's backing texture.
+  /// (This will be 0 if the window is not accelerated).
+  /// 
+  virtual uint32_t render_buffer_id() const = 0;
 
   ///
   /// The DPI scale of the window.

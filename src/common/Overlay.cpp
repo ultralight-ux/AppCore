@@ -19,7 +19,7 @@ static IndexType patternCCW[] = { 0, 3, 1, 1, 3, 2 };
 class OverlayImpl : public Overlay,
                     public RefCountedImpl<OverlayImpl> {
 public:
-  virtual void Draw() override {
+  virtual void Paint() override {
     if (is_hidden_)
       return;
 
@@ -87,7 +87,7 @@ public:
       gpu_state_.enable_blend = true;
       gpu_state_.enable_texturing = true;
       gpu_state_.shader_type = kShaderType_Fill;
-      gpu_state_.render_buffer_id = 0; // default render target view (screen)
+      gpu_state_.render_buffer_id = window_->render_buffer_id();
       gpu_state_.texture_1_id = target.texture_id;
 
       initial_creation = true;
@@ -163,7 +163,7 @@ public:
     needs_update_ = false;
   }
 
-  virtual Ref<View> view() override { return view_; }
+  virtual Ref<View> view() override { return *view_; }
 
   virtual uint32_t width() const override { return width_; }
 
@@ -211,11 +211,15 @@ public:
 
 protected:
   OverlayImpl(Ref<Window> window, uint32_t width, uint32_t height, int x, int y) :
-    window_(window), view_(App::instance()->renderer()->CreateView(width, height, false, nullptr)),
-    width_(width), height_(height), x_(x), y_(y), needs_update_(true),
-    use_gpu_(Platform::instance().config().use_gpu_renderer) {
+    window_(window), width_(width), height_(height), x_(x), y_(y), needs_update_(true),
+    use_gpu_(Platform::instance().gpu_driver()) {
     if (use_gpu_)
       driver_ = (ultralight::GPUDriverImpl*)Platform::instance().gpu_driver();
+
+    ViewConfig view_config;
+    view_config.initial_device_scale = window_->scale();
+    view_config.is_accelerated = use_gpu_;
+    view_ = App::instance()->renderer()->CreateView(width, height, view_config, nullptr);
 
     window_->overlay_manager()->Add(this);
   }
@@ -223,7 +227,7 @@ protected:
   OverlayImpl(Ref<Window> window, Ref<View> view, int x, int y) :
     window_(window), view_(view), width_(view->width()),
     height_(view->height()), x_(x), y_(y), needs_update_(true),
-    use_gpu_(Platform::instance().config().use_gpu_renderer) {
+    use_gpu_(Platform::instance().gpu_driver()) {
     if (use_gpu_)
       driver_ = (ultralight::GPUDriverImpl*)Platform::instance().gpu_driver();
 
@@ -246,7 +250,7 @@ protected:
   int y_;
   bool is_hidden_ = false;
   bool use_gpu_ = true;
-  ultralight::Ref<ultralight::View> view_;
+  ultralight::RefPtr<ultralight::View> view_;
   ultralight::GPUDriverImpl* driver_;
   std::vector<ultralight::Vertex_2f_4ub_2f_2f_28f> vertices_;
   std::vector<ultralight::IndexType> indices_;

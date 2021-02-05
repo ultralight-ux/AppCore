@@ -1,6 +1,8 @@
 #include "OverlayManager.h"
 #include <algorithm>
 #include <AppCore/Overlay.h>
+#include <AppCore/App.h>
+#include <Ultralight/Renderer.h>
 
 namespace ultralight {
 
@@ -26,9 +28,14 @@ void OverlayManager::Remove(Overlay* overlay) {
     hovered_overlay_ = nullptr;
 }
 
-void OverlayManager::Draw() {
+void OverlayManager::Render() {
   for (auto& i : overlays_)
-    i->Draw();
+    App::instance()->renderer()->RenderOnly(i->view());
+}
+
+void OverlayManager::Paint() {
+  for (auto& i : overlays_)
+    i->Paint();
 }
 
 void OverlayManager::SetWindowFocused(bool focused) {

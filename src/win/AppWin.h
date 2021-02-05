@@ -6,6 +6,7 @@
 #include "FileLogger.h"
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 namespace ultralight {
 
@@ -18,27 +19,16 @@ class GPUDriverD3D12;
 #endif
 class WindowsUtil;
 class MonitorWin;
+class WindowWin;
 class DIBSurfaceFactory;
 
-class AppWin : public App,
-               public RefCountedImpl<AppWin>,
-               public WindowListener {
-public:
-  // Inherited from WindowListener
-
-  virtual void OnClose() override;
-
-  virtual void OnResize(uint32_t width, uint32_t height) override;
-
+class AppWin : public App, public RefCountedImpl<AppWin> {
+ public:
   // Inherited from App
 
   virtual const Settings& settings() const override { return settings_; }
 
   virtual void set_listener(AppListener* listener) override { listener_ = listener; }
-
-  virtual void set_window(Ref<Window> window) override;
-
-  virtual RefPtr<Window> window() override { return window_; }
 
   virtual AppListener* listener() override { return listener_; }
 
@@ -54,26 +44,33 @@ public:
 
   REF_COUNTED_IMPL(AppWin);
 
-  void OnPaint();
-
-  void InvalidateWindow() { window_needs_repaint_ = true; }
-
-protected:
+ protected:
   AppWin(Settings settings, Config config);
   virtual ~AppWin();
   void Update();
 
+#if defined(DRIVER_D3D11)
+  GPUContextD3D11* gpu_context();
+  GPUDriverD3D11* gpu_driver();
+#elif defined(DRIVER_D3D12)
+#endif
+
+  void AddWindow(WindowWin* window) { windows_.push_back(window); }
+
+  void RemoveWindow(WindowWin* window) {
+    windows_.erase(std::remove(windows_.begin(), windows_.end(), window), windows_.end());
+  }
+
   friend class App;
-  
+  friend class WindowWin;
+
   DISALLOW_COPY_AND_ASSIGN(AppWin);
 
   Settings settings_;
   bool is_running_ = false;
-  bool is_first_paint_ = true;
-  bool window_needs_repaint_ = false;
   AppListener* listener_ = nullptr;
+  std::vector<WindowWin*> windows_;
   RefPtr<Renderer> renderer_;
-  RefPtr<Window> window_;
   std::unique_ptr<WindowsUtil> windows_util_;
   std::unique_ptr<MonitorWin> main_monitor_;
   std::unique_ptr<ClipboardWin> clipboard_;
@@ -88,4 +85,4 @@ protected:
   std::unique_ptr<DIBSurfaceFactory> surface_factory_;
 };
 
-}  // namespace ultralight
+} // namespace ultralight
