@@ -5,10 +5,12 @@
 #include "GPUDriverImpl.h"
 #include <memory>
 #include <map>
+#include <unordered_map>
 
 namespace ultralight {
     
 class GPUDriverMetal;
+class WindowMac;
     
 struct RenderState {
   RenderState();
@@ -23,14 +25,10 @@ struct RenderState {
     
 class GPUContextMetal {
  public:
-  GPUContextMetal(id<MTLDevice> device, int screen_width, int screen_height, double screen_scale, bool fullscreen, bool enable_vsync, bool enable_msaa);
+  GPUContextMetal(id<MTLDevice> device, bool enable_vsync, bool enable_msaa);
   
   virtual ~GPUContextMetal();
   
-  void set_current_drawable(id<CAMetalDrawable> drawable);
-  
-  id<CAMetalDrawable> current_drawable() { return current_drawable_; }
-
   // Inherited from GPUContext
   virtual ultralight::GPUDriverImpl* driver() const { return (GPUDriverImpl*)driver_.get(); }
   
@@ -42,9 +40,9 @@ class GPUContextMetal {
   
   virtual void EndDrawing();
   
-  virtual void PresentFrame();
-  
-  virtual void Resize(int width, int height);
+  virtual void AddWindow(WindowMac* window);
+  virtual void RemoveWindow(WindowMac* window);
+  virtual WindowMac* GetWindowByRenderBufferId(uint32_t render_buffer_id);
   
   virtual bool msaa_enabled() const { return msaa_enabled_; }
   
@@ -66,18 +64,6 @@ class GPUContextMetal {
 
   virtual id<MTLCommandBuffer> command_buffer();
   virtual void CommitCommandBuffer();
-  virtual void set_scale(double scale) { scale_ = scale; }
-  virtual double scale() const { return scale_; }
-  
-  virtual void set_screen_size(uint32_t width, uint32_t height) {
-    width_ = width;
-    height_ = height;
-  }
-  
-  virtual void screen_size(uint32_t& width, uint32_t& height) {
-    width = width_;
-    height = height_;
-  }
   
   static const NSUInteger FrameCount = 3;
   
@@ -89,18 +75,15 @@ protected:
   } frames_[FrameCount];
   
   id<MTLDevice> device_;
-  id<CAMetalDrawable> current_drawable_;
   id<MTLLibrary> library_;
   RenderState render_state_;
   std::map<size_t, id<MTLRenderPipelineState>> render_pipeline_states_;
   id<MTLCommandQueue> command_queue_;
   id<MTLCommandBuffer> command_buffer_;
   CAMetalLayer* layer_;
-  double scale_;
-  uint32_t width_;
-  uint32_t height_;
   std::unique_ptr<ultralight::GPUDriverMetal> driver_;
   bool msaa_enabled_;
+  std::unordered_map<uint32_t, WindowMac*> windows_by_render_buffer_id_;
 };
     
 }  // namespace ultralight

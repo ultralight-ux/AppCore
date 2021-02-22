@@ -6,6 +6,8 @@
 #import <QuartzCore/CAMetalLayer.h>
 #import <Metal/Metal.h>
 #import <dispatch/dispatch.h>
+#import "AppMac.h"
+#import "metal/GPUContextMetal.h"
 
 @implementation MTLView
 {
@@ -30,9 +32,10 @@
 
 - (CALayer*)makeBackingLayer
 {
+  ultralight::AppMac* app = static_cast<ultralight::AppMac*>(ultralight::App::instance());
   CAMetalLayer* metalLayer = [CAMetalLayer layer];
-  metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
-  metalLayer.device = MTLCreateSystemDefaultDevice();
+  metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+  metalLayer.device = app->gpu_context()->device();
   metalLayer.allowsNextDrawableTimeout = false;
   metalLayer.autoresizingMask = kCALayerHeightSizable | kCALayerWidthSizable;
   metalLayer.needsDisplayOnBoundsChange = YES;

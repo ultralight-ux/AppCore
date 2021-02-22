@@ -111,7 +111,7 @@ vertexShader(uint vertexID [[vertex_id]],
     out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
     if (SnapEnabled(uniforms))
       out.Position = SnapToScreen(out.Position, uniforms);
-    out.Color = sRGBToLinear(float4(vertices[vertexID].Color) / 255.0f);
+    out.Color = float4(vertices[vertexID].Color) / 255.0f;
     out.TexCoord = vertices[vertexID].TexCoord;
     out.Data0 = vertices[vertexID].Data0;
     out.Data1 = vertices[vertexID].Data1;
@@ -133,7 +133,7 @@ pathVertexShader(uint vertexID [[vertex_id]],
     
     out.ObjectCoord = vertices[vertexID].ObjCoord;
     out.Position = uniforms.Transform * float4(vertices[vertexID].Position.xy, 0.0, 1.0);
-    out.Color = sRGBToLinear(float4(vertices[vertexID].Color) / 255.0f);
+    out.Color = float4(vertices[vertexID].Color) / 255.0f;
     
     return out;
 }
@@ -405,39 +405,9 @@ float supersample(thread texture2d<half>& tex, float2 uv) {
     return alpha;
 }
 
-float4 fillSDF(thread FragmentInput& input, thread texture2d<half>& tex) {
-    float a = supersample(tex, input.TexCoord);
-    return input.Color * a;
-}
-
 float samp_stroke(thread texture2d<half>& tex, float2 uv, float w, float m, float max_d) {
     float d = abs(((tex.sample(texSampler, uv).r * 2.0) - 1.0) * max_d);
     return antialias(d, w, m);
-}
-
-float4 fillStrokeSDF(thread FragmentInput& input, thread texture2d<half>& tex) {
-    float max_distance = SDFMaxDistance(input);
-    float2 uv = input.TexCoord;
-    float dist = abs(((tex.sample(texSampler, uv).r * 2.0) - 1.0) * max_distance);
-    float stroke_width = (max_distance - 2.0) * 0.5;
-    float width = fwidth(dist) * (1.0 - SHARPENING);
-    float alpha = antialias(dist, width, stroke_width);
-    
-#if SUPERSAMPLE_SDF
-    float2 dscale = float2(0.354, 0.354); // half of 1/sqrt2
-    float2 duv = (dfdx(uv) + dfdy(uv)) * dscale;
-    float4 box = float4(uv - duv, uv + duv);
-    
-    float asum = samp_stroke(tex, box.xy, width, stroke_width, max_distance)
-    + samp_stroke(tex, box.zw, width, stroke_width, max_distance)
-    + samp_stroke(tex, box.xw, width, stroke_width, max_distance)
-    + samp_stroke(tex, box.zy, width, stroke_width, max_distance);
-    
-    alpha = (alpha + 0.5 * asum) / 3.;
-#endif
-    
-    alpha = 1.0 - alpha;
-    return input.Color * alpha;
 }
 
 void Unpack(float4 x, thread float4& a, thread float4& b) {
@@ -472,116 +442,6 @@ float4 blend(float4 src, float4 dest) {
     result.rgb = src.rgb + dest.rgb * (1.0 - src.a);
     result.a = src.a + dest.a * (1.0 - src.a);
     return result;
-}
-
-float minBorderLine(float d_border, float d_line, float width) {
-    return (d_border < width) ? d_line : ((d_line > 0.0) ? 1e9 : d_border);
-}
-
-void drawBorderSide(thread float4& out_Color, float4 color, float2 p, float border_alpha, bool is_horiz,
-                    float2 a, float2 b, float2 outer_a, float2 outer_b, thread float& offset_px, float width) {
-    float2 seg = sdSegment(p, a, b);
-    float len = distance(a, b);
-    
-    float2 middle_a = is_horiz ? float2(a.x, 0.0) : float2(0.0, a.y);
-    float2 middle_b = is_horiz ? float2(b.x, 0.0) : float2(0.0, b.y);
-    
-    // We already have an SDF representing the total interior border SDF (border alpha).
-    // Let's clip it by 3 lines to obtain the (trapezoid) SDF for this side.
-    float line_alpha;
-    line_alpha = antialias(-sdLine(a, outer_a, p), width, 0.0);
-    border_alpha = min(border_alpha, line_alpha);
-    line_alpha = antialias(-sdLine(outer_b, b, p), width, 0.0);
-    border_alpha = min(border_alpha, line_alpha);
-    line_alpha = antialias(-sdLine(middle_b, middle_a, p), width, 0.0);
-    border_alpha = min(border_alpha, line_alpha);
-    
-    float alpha = border_alpha * color.a;
-    float4 border = float4(color.rgb * alpha, alpha);
-    out_Color = blend(border, out_Color);
-    
-    offset_px += len;
-}
-
-void drawBorder(thread float4& out_Color, float2 p, float border_alpha, float2 outer_size, float2 inner_size, float2 inner_offset, float4 color_top, float4 color_right, float4 color_bottom, float4 color_left, float width) {
-    outer_size *= 0.5;
-    inner_size *= 0.5;
-    
-    // We shrink the inner size just a tiny bit so that we can calculate
-    // the trapezoid even when the border width for a side is zero.
-    inner_size.x -= (outer_size.x - inner_size.x) < 1.0 ? 0.5 : 0.0;
-    inner_size.y -= (outer_size.y - inner_size.y) < 1.0 ? 0.5 : 0.0;
-    
-    float2 outerTopLeft = float2(-outer_size.x, -outer_size.y);
-    float2 outerTopRight = float2(outer_size.x, -outer_size.y);
-    float2 outerBottomRight = float2(outer_size.x, outer_size.y);
-    float2 outerBottomLeft = float2(-outer_size.x, outer_size.y);
-    
-    float2 innerTopLeft = float2(-inner_size.x, -inner_size.y) + inner_offset;
-    float2 innerTopRight = float2(inner_size.x, -inner_size.y) + inner_offset;
-    float2 innerBottomRight = float2(inner_size.x, inner_size.y) + inner_offset;
-    float2 innerBottomLeft = float2(-inner_size.x, inner_size.y) + inner_offset;
-    
-    float offset_px = 0.0f;
-    
-    // Top, Right, Bottom, Left
-    drawBorderSide(out_Color, color_top, p, border_alpha, true, innerTopLeft, innerTopRight, outerTopLeft, outerTopRight, offset_px, width);
-    drawBorderSide(out_Color, color_right, p, border_alpha, false, innerTopRight, innerBottomRight, outerTopRight, outerBottomRight, offset_px, width);
-    drawBorderSide(out_Color, color_bottom, p, border_alpha, true, innerBottomRight, innerBottomLeft, outerBottomRight, outerBottomLeft, offset_px, width);
-    drawBorderSide(out_Color, color_left, p, border_alpha, false, innerBottomLeft, innerTopLeft, outerBottomLeft, outerTopLeft, offset_px, width);
-}
-
-float sdRoundBox(float2 p, float2 b, float r)
-{
-    b *= 0.5;
-    r = min(min(b.x, b.y), r);
-    b = b - r;
-    float2 q = abs(p) - b;
-    float2 m = float2(min(q.x, q.y), max(q.x, q.y));
-    float d = (m.x > 0.0) ? length(q) : m.y;
-    return d - r;
-}
-
-float4 fillBoxDecorations(thread FragmentInput& input) {
-    float2 outer_size = input.Data0.zw;
-    float2 inner_offset = input.Data1.xy;
-    float2 inner_size = input.Data1.zw;
-    
-    float4 outer_radii_x, outer_radii_y;
-    Unpack(input.Data2, outer_radii_x, outer_radii_y);
-    
-    float4 inner_radii_x, inner_radii_y;
-    Unpack(input.Data3, inner_radii_x, inner_radii_y);
-    
-    float4 color_top, color_right;
-    Unpack(input.Data4, color_top, color_right);
-    color_top /= 16384.0f;
-    color_right /= 16384.0f;
-    
-    float4 color_bottom, color_left;
-    Unpack(input.Data5, color_bottom, color_left);
-    color_bottom /= 16384.0f;
-    color_left /= 16384.0f;
-    
-    float width = AA_WIDTH;
-    
-    float2 p = input.TexCoord * outer_size - (outer_size * 0.5);
-    
-    float d_outer = sdRoundRect(p, outer_size, outer_radii_x, outer_radii_y);
-    float d_inner = sdRoundRect(p - inner_offset, inner_size, inner_radii_x, inner_radii_y);
-    
-    float outer_alpha = antialias(-d_outer, width, 0.0);
-    float inner_alpha = antialias(-d_inner, width, 0.0);
-    float border_alpha = min(outer_alpha, 1.0 - inner_alpha);
-    
-    // Draw background fill
-    float alpha = antialias(-d_outer, width, 0.0) * input.Color.a;
-    float4 outColor = float4(input.Color.rgb * alpha, alpha);
-    
-    // Draw border
-    drawBorder(outColor, p, border_alpha, outer_size, inner_size, inner_offset, color_top, color_right, color_bottom, color_left, 0.5);
-    
-    return outColor;
 }
 
 float innerStroke(float stroke_width, float d, float aa_width) {
@@ -781,14 +641,12 @@ float4 fillMask(thread FragmentInput& input, thread texture2d<half>& tex0, threa
     return col * alpha;
 }
         
-float4 fillGlyph(thread FragmentInput& input, thread texture2d<half>& tex) {
-    float alpha = tex.sample(texSampler, input.TexCoord).a;
-  
-    // Transform from 2.2 Gamma to target Gamma
-    float gamma = input.Data0.y;
-    alpha = pow(alpha, gamma / 2.2);
+float4 fillGlyph(thread FragmentInput& input, thread texture2d<half>& tex0, thread texture2d<half>& tex1) {
+    float alpha = tex0.sample(texSampler, input.TexCoord).a * input.Color.a;
+    float fill_color_luma = input.Data0.y;
+    float corrected_alpha = tex1.sample(texSampler, float2(alpha, fill_color_luma)).a;
 
-    return input.Color * alpha;
+    return float4(input.Color.rgb * corrected_alpha, corrected_alpha);
 }
 
 //float4 GetCol(float4x4 m, uint i) { return float4(m[0][i], m[1][i], m[2][i], m[3][i]); }
@@ -829,9 +687,9 @@ fragment float4 fragmentShader(FragmentInput input [[stage_in]],
     const uint FillType_Image = 1u;
     const uint FillType_Pattern_Image = 2u;
     const uint FillType_Pattern_Gradient = 3u;
-    const uint FillType_Fill_SDF = 4u;
-    const uint FillType_Stroke_SDF = 5u;
-    const uint FillType_Box_Decorations = 6u;
+    const uint FillType_RESERVED_1 = 4u;
+    const uint FillType_RESERVED_2 = 5u;
+    const uint FillType_RESERVED_3 = 6u;
     const uint FillType_Rounded_Rect = 7u;
     const uint FillType_Box_Shadow = 8u;
     const uint FillType_Blend = 9u;
@@ -846,14 +704,14 @@ fragment float4 fragmentShader(FragmentInput input [[stage_in]],
         case FillType_Image: outColor = fillImage(input, tex0); break;
         case FillType_Pattern_Image: outColor = fillPatternImage(input, uniforms, tex0); break;
         case FillType_Pattern_Gradient: outColor = fillPatternGradient(input, uniforms); break;
-        case FillType_Fill_SDF: outColor = fillSDF(input, tex0); break;
-        case FillType_Stroke_SDF: outColor = fillStrokeSDF(input, tex0); break;
-        case FillType_Box_Decorations: outColor = fillBoxDecorations(input); break;
+        case FillType_RESERVED_1: break;
+        case FillType_RESERVED_2: break;
+        case FillType_RESERVED_3: break;
         case FillType_Rounded_Rect: outColor = fillRoundedRect(input, uniforms); break;
         case FillType_Box_Shadow: outColor = fillBoxShadow(input); break;
         case FillType_Blend: outColor = fillBlend(input, tex0, tex1); break;
         case FillType_Mask: outColor = fillMask(input, tex0, tex1); break;
-        case FillType_Glyph: outColor = fillGlyph(input, tex0); break;
+        case FillType_Glyph: outColor = fillGlyph(input, tex0, tex1); break;
     }
     
     applyClip(input.ObjectCoord, uniforms, outColor);

@@ -35,8 +35,7 @@ static inline ultralight::String toString(NSString* str) {
 
 - (void)displayLayer:(CALayer *)layer
 {
-  ultralight::AppMac* app = static_cast<ultralight::AppMac*>(ultralight::App::instance());
-  app->OnPaint((CAMetalLayer*)layer);
+  _window->OnPaint((CAMetalLayer*)layer);
 }
 
 - (void)mouseMoved:(CGFloat)x mouseY:(CGFloat)y

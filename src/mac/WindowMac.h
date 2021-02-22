@@ -7,6 +7,7 @@
 #import "ViewController.h"
 #import "WindowDelegate.h"
 #import <MetalKit/MetalKit.h>
+#import <QuartzCore/QuartzCore.h>
 
 namespace ultralight {
 
@@ -23,6 +24,10 @@ public:
   virtual uint32_t height() const override;
 
   virtual bool is_fullscreen() const override { return is_fullscreen_; }
+                    
+  virtual bool is_accelerated() const override { return is_accelerated_; }
+                
+  virtual uint32_t render_buffer_id() const override { return render_buffer_id_; }
 
   virtual double scale() const override;
 
@@ -53,8 +58,12 @@ public:
   void OnResize(uint32_t width, uint32_t height);
                       
   void SetNeedsDisplay();
+  
+  void OnPaint(CAMetalLayer* layer);
                       
   CAMetalLayer* layer();
+  
+  id <CAMetalDrawable> current_drawable() { return current_drawable_; }
 
 protected:
   WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
@@ -73,6 +82,9 @@ protected:
   WindowListener* app_listener_ = nullptr;
   Monitor* monitor_;
   bool is_fullscreen_;
+  bool is_accelerated_;
+  uint32_t render_buffer_id_;
+  id <CAMetalDrawable> current_drawable_;
 };
 
 }  // namespace ultralight

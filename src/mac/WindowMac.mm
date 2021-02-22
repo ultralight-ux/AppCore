@@ -3,6 +3,9 @@
 #include "AppMac.h"
 #import "Cocoa/Cocoa.h"
 #import "ViewController.h"
+#import "metal/GPUContextMetal.h"
+#include <Ultralight/platform/Platform.h>
+#include <Ultralight/platform/GPUDriver.h>
 
 namespace ultralight {
 
@@ -45,9 +48,34 @@ WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
   TransformProcessType(&psn, kProcessTransformToForegroundApplication);
 
   SetWindowScale(scale());
+  
+  auto app = static_cast<AppMac*>(App::instance());
+  GPUContextMetal* gpu_context = nullptr;
+  if (app) {
+    app->AddWindow(this);
+    
+    gpu_context = app->gpu_context();
+  }
+  
+  auto driver = ultralight::Platform::instance().gpu_driver();
+  render_buffer_id_ = driver? driver->NextRenderBufferId() : 0;
+  current_drawable_ = [layer() nextDrawable];
+  
+  if (gpu_context)
+    gpu_context->AddWindow(this);
 }
 
 WindowMac::~WindowMac() {
+  auto app = static_cast<AppMac*>(App::instance());
+  if (app) {
+    app->RemoveWindow(this);
+    auto gpu_context = app->gpu_context();
+    if (gpu_context)
+      gpu_context->RemoveWindow(this);
+  }
+  
+  [window_ setContentViewController:nil];
+  [window_ setDelegate:nil];
 }
 
 uint32_t WindowMac::width() const {
@@ -93,20 +121,42 @@ void* WindowMac::native_handle() const {
 
 void WindowMac::OnClose() {
   if (listener_)
-    listener_->OnClose();
+    listener_->OnClose(this);
   if (app_listener_)
-    app_listener_->OnClose();
+    app_listener_->OnClose(this);
 }
 
 void WindowMac::OnResize(uint32_t width, uint32_t height) {
   if (app_listener_)
-    app_listener_->OnResize(width, height);
+    app_listener_->OnResize(this, width, height);
   if (listener_)
-    listener_->OnResize(width, height);
+    listener_->OnResize(this, width, height);
 }
     
-void WindowMac::SetNeedsDisplay() {;
+void WindowMac::SetNeedsDisplay() {
   controller_.metalView.needsDisplay = true;
+}
+
+void WindowMac::OnPaint(CAMetalLayer* layer) {
+  auto gpu_context = static_cast<AppMac*>(App::instance())->gpu_context();
+  if (!gpu_context)
+    return;
+
+  if (!NeedsRepaint())
+    return;
+  
+  gpu_context->driver()->BeginSynchronize();
+  OverlayManager::Render();
+  gpu_context->driver()->EndSynchronize();
+
+  if (gpu_context->driver()->HasCommandsPending()) {
+    gpu_context->BeginDrawing();
+    gpu_context->driver()->DrawCommandList();
+    OverlayManager::Paint();
+    gpu_context->EndDrawing();
+    [current_drawable_ present];
+    current_drawable_ = [layer nextDrawable];
+  }
 }
     
 CAMetalLayer* WindowMac::layer() {

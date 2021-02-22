@@ -21,6 +21,7 @@ class MyApp : public WindowListener, public ViewListener {
     app_ = App::Create(s);
 
     CreateWindow();
+    CreateWindow();
   }
 
   virtual ~MyApp() { }
@@ -42,9 +43,11 @@ class MyApp : public WindowListener, public ViewListener {
   /// Inherited from WindowListener, called when the window is closed.
   ///
   virtual void OnClose(ultralight::Window* window) override { 
-    for (auto i = active_windows_.begin(); i != active_windows_.end(); ++i) {
+    for (auto i = active_windows_.begin(); i != active_windows_.end();) {
       if (i->window_.get() == window) {
-        active_windows_.erase(i);
+        i = active_windows_.erase(i);
+      } else {
+        i++;
       }
     }
 
@@ -77,7 +80,7 @@ class MyApp : public WindowListener, public ViewListener {
   ///
   /// Inherited from ViewListener
   ///
-  virtual void OnChangeCursor(ultralight::View* caller, Cursor cursor) {
+  virtual void OnChangeCursor(ultralight::View* caller, Cursor cursor) override {
     ///
     /// Find the window that matches the view emitting the cursor event.
     ///

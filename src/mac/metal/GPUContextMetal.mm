@@ -8,6 +8,7 @@
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/Config.h>
 #include <Ultralight/platform/FileSystem.h>
+#import "../WindowMac.h"
 
 namespace ultralight {
     
@@ -23,7 +24,7 @@ inline size_t hash_combine( size_t lhs, size_t rhs ) {
     
 RenderState::RenderState() : shader_type(kShaderType_Fill),
                              blend_enabled(true),
-                             pixel_format(MTLPixelFormatBGRA8Unorm_sRGB),
+                             pixel_format(MTLPixelFormatBGRA8Unorm),
                              sample_count(1) {}
 
 size_t RenderState::Hash() {
@@ -34,12 +35,9 @@ size_t RenderState::Hash() {
   return result;
 }
 
-GPUContextMetal::GPUContextMetal(id<MTLDevice> device, int screen_width, int screen_height, double screen_scale, bool fullscreen, bool enable_vsync, bool enable_msaa) {
+GPUContextMetal::GPUContextMetal(id<MTLDevice> device, bool enable_vsync, bool enable_msaa) {
   device_ = device;
   msaa_enabled_ = enable_msaa;
-  
-  set_screen_size(screen_width, screen_height);
-  set_scale(screen_scale);
   
   // Only allow FrameCount - 1 number of frames in-flight-- testing on MacBook Pros older than 2016 shows corruption
   // if we use semaphore == FrameCount. 
@@ -98,11 +96,6 @@ GPUContextMetal::GPUContextMetal(id<MTLDevice> device, int screen_width, int scr
 }
     
 GPUContextMetal::~GPUContextMetal() {}
-  
-void GPUContextMetal::set_current_drawable(id<CAMetalDrawable> drawable) {
-  current_drawable_ = drawable;
-  driver_->set_drawable_needs_flush(true);
-}
 
 void GPUContextMetal::BeginDrawing() {
   // We may have uncommitted command buffers from UpdateTextureResource calls when synchronizing textures
@@ -145,14 +138,23 @@ void GPUContextMetal::EndDrawing() {
   MTLCaptureManager *sharedCaptureManager = [MTLCaptureManager sharedCaptureManager];
   [sharedCaptureManager.defaultCaptureScope endScope];
 }
-    
-void GPUContextMetal::PresentFrame() {
-  if (current_drawable_)
-    [current_drawable_ present];
+
+void GPUContextMetal::AddWindow(WindowMac* window) {
+  windows_by_render_buffer_id_[window->render_buffer_id()] = window;
 }
-    
-void GPUContextMetal::Resize(int width, int height) {
-  set_screen_size(width, height);
+
+void GPUContextMetal::RemoveWindow(WindowMac* window) {
+  auto i = windows_by_render_buffer_id_.find(window->render_buffer_id());
+  if (i != windows_by_render_buffer_id_.end())
+    windows_by_render_buffer_id_.erase(i);
+}
+
+WindowMac* GPUContextMetal::GetWindowByRenderBufferId(uint32_t render_buffer_id) {
+  auto i = windows_by_render_buffer_id_.find(render_buffer_id);
+  if (i != windows_by_render_buffer_id_.end())
+    return i->second;
+
+  return nullptr;
 }
     
 id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {

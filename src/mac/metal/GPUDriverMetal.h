@@ -62,10 +62,6 @@ class GPUDriverMetal : public GPUDriverImpl {
                             uint32_t indices_offset,
                             const GPUState& state) override;
   
-  // Public members:
-  
-  void set_drawable_needs_flush(bool val) { drawable_needs_flush_ = val; }
-  
 protected:
   void SetGPUState(const GPUState& state);
   
@@ -91,9 +87,7 @@ protected:
     id<MTLTexture> resolve_texture_;
     bool needs_init_ = true;
   };
-  
-  bool drawable_needs_flush_ = false;
-  
+    
   typedef std::map<uint32_t, TextureEntry> TextureMap;
   TextureMap textures_;
   
@@ -111,6 +105,8 @@ protected:
   
   typedef std::map<uint32_t, GeometryEntry> GeometryMap;
   GeometryMap geometry_;
+  
+  bool is_drawing_to_window_ = false;
 };
     
 } // namespace ultralight

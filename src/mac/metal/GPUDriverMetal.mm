@@ -1,5 +1,6 @@
 #import "GPUDriverMetal.h"
 #import "GPUContextMetal.h"
+#import "../WindowMac.h"
 
 namespace ultralight {
 
@@ -13,7 +14,7 @@ void GPUDriverMetal::CreateTexture(uint32_t texture_id,
                                    Ref<Bitmap> bitmap) {
   MTLPixelFormat format;
   if (bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB) {
-    format = MTLPixelFormatBGRA8Unorm_sRGB;
+    format = MTLPixelFormatBGRA8Unorm;
   } else if (bitmap->format() == kBitmapFormat_A8_UNORM) {
     format = MTLPixelFormatA8Unorm;
   } else {
@@ -216,11 +217,12 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
   id<MTLTexture> texture, resolveTexture;
   bool force_clear = false;
   
-  if (render_buffer_id) {
-    auto i = render_buffers_.find(render_buffer_id);
-    if (i == render_buffers_.end())
-      return;
-    
+  if (!render_buffer_id)
+    return;
+  
+  auto i = render_buffers_.find(render_buffer_id);
+  
+  if (i != render_buffers_.end()) {
     auto renderBuffer = i->second;
     auto j = textures_.find(renderBuffer.texture_id);
     if (j == textures_.end())
@@ -233,6 +235,20 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
       j->second.needs_init_ = false;
       force_clear = true;
     }
+    is_drawing_to_window_ = false;
+  } else {
+    // Check if this render buffer id actually belongs to a GPUContext instead.
+    WindowMac* window = context_->GetWindowByRenderBufferId(render_buffer_id);
+    if (!window)
+      return;
+    
+    auto drawable = window->current_drawable();
+    texture = drawable.texture;
+    force_clear = true;
+    is_drawing_to_window_ = true;
+  }
+  
+  /*
   } else {
     texture = context_->current_drawable().texture;
     if (drawable_needs_flush_) {
@@ -240,6 +256,7 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
       force_clear = true;
     }
   }
+  */
   
   if (render_encoder_) {
     [render_encoder_ endEncoding];
@@ -253,7 +270,7 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id) {
   renderPassDescriptor.colorAttachments[ 0 ].texture = texture;
   renderPassDescriptor.colorAttachments[ 0 ].level = 0;
   
-  if (render_buffer_id && context_->msaa_enabled()) {
+  if (!is_drawing_to_window_ && context_->msaa_enabled()) {
     renderPassDescriptor.colorAttachments[ 0 ].storeAction = MTLStoreActionMultisampleResolve;
     renderPassDescriptor.colorAttachments[ 0 ].resolveTexture = resolveTexture;
   }
@@ -271,11 +288,11 @@ void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id) {
   id<MTLTexture> texture, resolveTexture;
   MTLClearColor clearColor;
   
-  if (render_buffer_id) {
-    auto i = render_buffers_.find(render_buffer_id);
-    if (i == render_buffers_.end())
-      return;
-    
+  if (!render_buffer_id)
+    return;
+  
+  auto i = render_buffers_.find(render_buffer_id);
+  if (i != render_buffers_.end()) {
     auto renderBuffer = i->second;
     auto j = textures_.find(renderBuffer.texture_id);
     if (j == textures_.end())
@@ -287,9 +304,17 @@ void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id) {
     texture = j->second.texture_;
     
     clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
+    is_drawing_to_window_ = false;
   } else {
-    texture = context_->current_drawable().texture;
+      // Check if this render buffer id actually belongs to a GPUContext instead.
+    WindowMac* window = context_->GetWindowByRenderBufferId(render_buffer_id);
+    if (!window)
+      return;
+    
+    auto drawable = window->current_drawable();
+    texture = drawable.texture;
     clearColor = MTLClearColorMake(1.0, 1.0, 1.0, 1.0);
+    is_drawing_to_window_ = true;
   }
   
   if (render_encoder_) {
@@ -336,10 +361,10 @@ void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
   // Set the region of the drawable to which we'll draw.
   [render_encoder_ setViewport:(MTLViewport){0.0, 0.0, (float)state.viewport_width, (float)state.viewport_height, -1.0, 1.0 }];
   
-  context_->set_pixel_format(MTLPixelFormatBGRA8Unorm_sRGB);
+  context_->set_pixel_format(MTLPixelFormatBGRA8Unorm);
   context_->set_shader_type((ShaderType)state.shader_type);
   context_->set_blend_enabled(state.enable_blend);
-  if (state.render_buffer_id && context_->msaa_enabled())
+  if (!is_drawing_to_window_ && context_->msaa_enabled())
     context_->set_sample_count(4);
   else
     context_->set_sample_count(1);
@@ -375,13 +400,10 @@ void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
 // Protected members:
 
 void GPUDriverMetal::SetGPUState(const GPUState& state) {
-  uint32_t screen_width, screen_height;
-  context_->screen_size(screen_width, screen_height);
-  
   Matrix model_view_projection = ApplyProjection(state.transform, state.viewport_width, state.viewport_height);
   
   Uniforms uniforms;
-  uniforms.State = { 0.0f, (float)state.viewport_width, (float)state.viewport_height, (float)context_->scale() };
+  uniforms.State = { 0.0f, (float)state.viewport_width, (float)state.viewport_height, 1.0f };
   uniforms.Transform = ToFloat4x4(model_view_projection.GetMatrix4x4());
   uniforms.Scalar4[0] = { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2], state.uniform_scalar[3] };
   uniforms.Scalar4[1] = { state.uniform_scalar[4], state.uniform_scalar[5], state.uniform_scalar[6], state.uniform_scalar[7] };

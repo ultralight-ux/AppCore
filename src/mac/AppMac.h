@@ -5,6 +5,7 @@
 #include "MonitorMac.h"
 #include "FileLogger.h"
 #include <memory>
+#include <vector>
 #import <QuartzCore/CAMetalLayer.h>
 
 namespace ultralight {
@@ -12,27 +13,17 @@ namespace ultralight {
 class AppMac;
 class GPUContextMetal;
 class ClipboardMac;
+class WindowMac;
     
 class AppMac : public App,
-               public RefCountedImpl<AppMac>,
-               public WindowListener {
+               public RefCountedImpl<AppMac> {
 public:
-  // Inherited from WindowListener
-
-  virtual void OnClose() override;
-
-  virtual void OnResize(uint32_t width, uint32_t height) override;
-
   // Inherited from App
                    
   virtual const Settings& settings() const override { return settings_; }
 
   virtual void set_listener(AppListener* listener) override { listener_ = listener; }
-
-  virtual void set_window(Ref<Window> window) override;
-
-  virtual RefPtr<Window> window() override { return window_; }
-
+                 
   virtual AppListener* listener() override { return listener_; }
 
   virtual bool is_running() const override { return is_running_; }
@@ -48,8 +39,14 @@ public:
   REF_COUNTED_IMPL(AppMac);
                    
   void Update();
-                   
-  void OnPaint(CAMetalLayer* layer);
+  
+  GPUContextMetal* gpu_context();
+  
+  void AddWindow(WindowMac* window) { windows_.push_back(window); }
+
+  void RemoveWindow(WindowMac* window) {
+    windows_.erase(std::remove(windows_.begin(), windows_.end(), window), windows_.end());
+  }
 
 protected:
   AppMac(Settings settings, Config config);
@@ -63,11 +60,11 @@ protected:
   Settings settings_;
   AppListener* listener_ = nullptr;
   RefPtr<Renderer> renderer_;
-  RefPtr<Window> window_;
   MonitorMac main_monitor_;
   std::unique_ptr<GPUContextMetal> gpu_context_;
   std::unique_ptr<ClipboardMac> clipboard_;
   std::unique_ptr<FileLogger> logger_;
+  std::vector<WindowMac*> windows_;
 };
     
     
