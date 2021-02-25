@@ -26,9 +26,15 @@ static String16 ToString16(CFStringRef str) {
 String16 FontLoaderMac::fallback_font_for_characters(const String16& characters, int weight, bool italic) const {
     CFStringRef str = CFStringCreateWithCharacters(kCFAllocatorDefault, reinterpret_cast<const UniChar*>(characters.data()), characters.length());
     // Use Helvetica as our base font, go through its cascade list to find a system fallback that can display the given charachters
-    CTFontRef font = CTFontCreateForString(CTFontCreateWithName(CFSTR("Helvetica"), 12.0, NULL), str, {0, (CFIndex)characters.length()});
+    CTFontRef helveticaRef = CTFontCreateWithName(CFSTR("Helvetica"), 12.0, NULL);
+    CTFontRef font = CTFontCreateForString(helveticaRef, str, {0, (CFIndex)characters.length()});
     CFStringRef family = CTFontCopyFamilyName(font);
     String16 result = ToString16(family);
+
+    CFRelease(str);
+    CFRelease(helveticaRef);
+    CFRelease(font);
+
     if (result.empty())
         return fallback_font();
     return result;
@@ -110,7 +116,7 @@ RefPtr<FontFile> FontLoaderMac::Load(const String16& family, int weight, bool it
     if (!url)
         return nullptr;
     
-    NSString* fontPath = [NSString stringWithString:[(__bridge NSURL *)url path]];
+    NSString* fontPath = [NSString stringWithString:[(NSURL *)CFBridgingRelease(url) path]];
     CFRelease(descriptor);
   
     ultralight::String16 filepath([fontPath UTF8String]);
