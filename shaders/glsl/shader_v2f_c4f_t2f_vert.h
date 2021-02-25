@@ -33,7 +33,7 @@ void main(void)
 {
   ex_ObjectCoord = in_TexCoord;
   gl_Position = Transform * vec4(in_Position, 0.0, 1.0);
-  ex_Color = sRGBToLinear(in_Color);
+  ex_Color = in_Color;
 }
 
 )";

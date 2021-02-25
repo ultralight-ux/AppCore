@@ -49,7 +49,7 @@ void main(void)
 {
   ex_ObjectCoord = in_ObjCoord;
   gl_Position = Transform * vec4(in_Position, 0.0, 1.0);
-  ex_Color = sRGBToLinear(in_Color);
+  ex_Color = in_Color;
   ex_TexCoord = in_TexCoord;
   ex_Data0 = in_Data0;
   ex_Data1 = in_Data1;

@@ -3,6 +3,7 @@
 #include <AppCore/App.h>
 #include "AppGLFW.h"
 #include <GLFW/glfw3.h>
+#include <iostream>
 
 static int GLFWModsToUltralightMods(int mods);
 static int GLFWKeyCodeToUltralightKeyCode(int key);
@@ -110,6 +111,18 @@ static void WindowGLFW_focus_callback(GLFWwindow* window, int focused)
   win->SetWindowFocused((bool)focused);
 }
 
+static void WindowGLFW_refresh_callback(GLFWwindow* window)
+{
+  ultralight::WindowGLFW* win = static_cast<ultralight::WindowGLFW*>(glfwGetWindowUserPointer(window));
+  win->InvalidateWindow();
+}
+
+static void WindowGLFW_close_callback(GLFWwindow* window)
+{
+  ultralight::WindowGLFW* win = static_cast<ultralight::WindowGLFW*>(glfwGetWindowUserPointer(window));
+  win->OnClose();
+}
+
 } // extern "C"
 
 namespace ultralight {
@@ -124,8 +137,20 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
 
+  glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+
+  auto gpu_context = static_cast<AppGLFW*>(App::instance())->gpu_context();
+  auto gpu_driver = static_cast<AppGLFW*>(App::instance())->gpu_driver();
+
+  if (!gpu_context) {
+    glfwTerminate();
+    exit(EXIT_FAILURE);
+  }
+
+  // This window will share the GL context of GPUContextGL's offscreen window
   GLFWwindow* win = glfwCreateWindow(DeviceToPixels(width), DeviceToPixels(height),
-    "", NULL, NULL);
+    "", NULL, gpu_context->window());
+
   window_ = win;
   if (!window_)
   {
@@ -143,6 +168,7 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
   glfwSetScrollCallback(window_, WindowGLFW_scroll_callback);
   glfwSetWindowSizeCallback(window_, WindowGLFW_window_size_callback);
   glfwSetWindowFocusCallback(window_, WindowGLFW_focus_callback);
+  glfwSetWindowCloseCallback(window_, WindowGLFW_close_callback);
 
   // Create standard cursors
   cursor_ibeam_ = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
@@ -152,6 +178,8 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
   cursor_vresize_ = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
 
   SetWindowScale(scale());
+
+  static_cast<AppGLFW*>(App::instance())->AddWindow(this);
 }
 
 WindowGLFW::~WindowGLFW() {
@@ -171,6 +199,7 @@ WindowGLFW::~WindowGLFW() {
     glfwDestroyCursor(cursor_vresize_);
 
     glfwDestroyWindow(window_);
+    static_cast<AppGLFW*>(App::instance())->RemoveWindow(this);
   }
 }
 
@@ -228,16 +257,35 @@ void* WindowGLFW::native_handle() const {
 
 void WindowGLFW::OnClose() {
   if (listener_)
-    listener_->OnClose();
-  if (app_listener_)
-    app_listener_->OnClose();
+    listener_->OnClose(this);
 }
 
 void WindowGLFW::OnResize(uint32_t width, uint32_t height) {
   if (listener_)
-    listener_->OnResize(width, height);
-  if (app_listener_)
-    app_listener_->OnResize(width, height);
+    listener_->OnResize(this, width, height);
+}
+
+void WindowGLFW::Repaint() {
+  auto gpu_context = static_cast<AppGLFW*>(App::instance())->gpu_context();
+  auto gpu_driver = static_cast<AppGLFW*>(App::instance())->gpu_driver();
+
+  gpu_context->set_active_window(window_);
+  glfwMakeContextCurrent(gpu_context->window());
+
+  gpu_driver->BeginSynchronize();
+  OverlayManager::Render();
+  gpu_driver->EndSynchronize();
+
+  if (gpu_driver->HasCommandsPending() || window_needs_repaint_) {
+    glfwMakeContextCurrent(window_);
+    gpu_context->BeginDrawing();
+    gpu_driver->DrawCommandList();
+    OverlayManager::Paint();
+    glfwSwapBuffers(window_);
+    gpu_context->EndDrawing();
+  }
+
+  window_needs_repaint_ = false;
 }
 
 Ref<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height,

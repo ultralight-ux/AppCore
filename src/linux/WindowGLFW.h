@@ -22,6 +22,10 @@ public:
 
   virtual uint32_t height() const override;
 
+  virtual uint32_t render_buffer_id() const override { return 0; }
+
+  virtual bool is_accelerated() const override { return true; }
+
   virtual bool is_fullscreen() const override { return is_fullscreen_; }
 
   virtual double scale() const override;
@@ -50,6 +54,9 @@ public:
 
   void OnClose();
   void OnResize(uint32_t width, uint32_t height);
+  void Repaint();
+
+  void InvalidateWindow() { window_needs_repaint_ = true; }
 
 protected:
   WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
@@ -74,6 +81,7 @@ protected:
   GLFWcursor* cursor_hand_;
   GLFWcursor* cursor_hresize_;
   GLFWcursor* cursor_vresize_;
+  bool window_needs_repaint_ = false;
 };
 
 }  // namespace ultralight

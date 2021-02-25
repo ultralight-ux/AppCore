@@ -103,16 +103,23 @@ protected:
   std::map<uint32_t, TextureEntry> texture_map;
   
   struct GeometryEntry {
-    GLuint vao; // VAO id
-    GLuint vbo_vertices; // VBO id for vertices
-    GLuint vbo_indices; // VBO id for indices
+    // VAOs are not shared across GL contexts so we create them lazily for each
+    std::map<GLFWwindow*, GLuint> vao_map;
+    VertexBufferFormat vertex_format;
+    GLuint vbo_vertices = 0; // VBO id for vertices
+    GLuint vbo_indices = 0; // VBO id for indices
   };
   std::map<uint32_t, GeometryEntry> geometry_map;
 
-  struct RenderBufferEntry {
+  struct FBOEntry {
     GLuint fbo_id = 0; // GL FBO ID (if MSAA is enabled, this will be used for resolve)
     GLuint msaa_fbo_id = 0; // GL FBO ID for MSAA
     bool needs_resolve = false; // Whether or not we need to perform MSAA resolve
+  };
+
+  struct RenderBufferEntry {
+    // FBOs are not shared across GL contexts so we create them lazily for each
+    std::map<GLFWwindow*, FBOEntry> fbo_map;
     uint32_t texture_id = 0; // The Ultralight texture ID backing this RenderBuffer.
 #if ENABLE_OFFSCREEN_GL
     RefPtr<Bitmap> bitmap;
@@ -122,6 +129,10 @@ protected:
     bool needs_update = false;
 #endif
   };
+
+  void CreateFBOIfNeededForActiveContext(uint32_t render_buffer_id);
+
+  void CreateVAOIfNeededForActiveContext(uint32_t geometry_id);
 
   void ResolveIfNeeded(uint32_t render_buffer_id);
 

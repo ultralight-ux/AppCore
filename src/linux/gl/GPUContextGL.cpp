@@ -5,8 +5,26 @@
 
 namespace ultralight {
 
-GPUContextGL::GPUContextGL(GLFWwindow* window, float scale, bool enable_vsync, bool enable_msaa) : 
-  window_(window), scale_(scale), msaa_enabled_(enable_msaa) {
+GPUContextGL::GPUContextGL(bool enable_vsync, bool enable_msaa) : 
+  msaa_enabled_(enable_msaa) {
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+
+#ifdef __APPLE__
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
+
+  // Make the window offscreen
+  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+  GLFWwindow* win = glfwCreateWindow(10, 10, "", NULL, NULL);
+  window_ = win;
+  if (!window_)
+  {
+    glfwTerminate();
+    exit(EXIT_FAILURE);
+  }
+
   glfwMakeContextCurrent(window_);
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
   glfwSwapInterval(enable_vsync ? 1 : 0);
@@ -19,15 +37,6 @@ GPUContextGL::GPUContextGL(GLFWwindow* window, float scale, bool enable_vsync, b
   }
 
   driver_.reset(new ultralight::GPUDriverGL(this));
-}
-
-void GPUContextGL::PresentFrame() {
-  glfwSwapBuffers(window_);
-}
-
-void GPUContextGL::Resize(int width, int height) {
-  //ultralight::GPUDriverGL* driver_gl = static_cast<ultralight::GPUDriverGL*>(driver_.get());
-  //driver_gl->ResizeViewport(width, height);
 }
 
 }  // namespace ultralight

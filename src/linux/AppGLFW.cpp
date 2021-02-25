@@ -45,10 +45,6 @@ static const char* GetExecutableDirectory() {
 namespace ultralight {
 
 AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
-
-  // Force GPU renderer by default until we support CPU drawing in this port
-  config.use_gpu_renderer = true;
-
   // Generate cache path
   String cache_path = GetHomeDirectory();
   cache_path = PlatformFileSystem::AppendPath(cache_path, ".cache");
@@ -81,7 +77,6 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
 
   main_monitor_.reset(new MonitorGLFW());
 
-  config.device_scale = main_monitor_->scale();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
 
@@ -106,32 +101,21 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
   clipboard_.reset(new ClipboardGLFW());
   Platform::instance().set_clipboard(clipboard_.get());
 
+  gpu_context_.reset(new GPUContextGL(true, false));
+  Platform::instance().set_gpu_driver(gpu_context_->driver());
+
+  // We use the GPUContext's global offscreen window to maintain
+  // clipboard state for the duration of the app lifetime.
+  clipboard_->set_window(gpu_context_->window());
+
   renderer_ = Renderer::Create();
 }
 
 AppGLFW::~AppGLFW() {
-  window_ = nullptr;
+  windows_.clear();
+  gpu_context_.reset();
+  Platform::instance().set_gpu_driver(nullptr);
   glfwTerminate();
-}
-
-void AppGLFW::OnClose() {
-}
-
-void AppGLFW::OnResize(uint32_t width, uint32_t height) {
-  if (gpu_context_)
-    gpu_context_->Resize((int)width, (int)height);
-}
-
-void AppGLFW::set_window(Ref<Window> window) {
-  window_ = window;
-  
-  WindowGLFW* win = static_cast<WindowGLFW*>(window_.get());
-  gpu_context_.reset(new GPUContextGL(win->handle(), (float)win->scale(), true, false));
-  Platform::instance().set_gpu_driver(gpu_context_->driver());
-  
-  win->set_app_listener(this);
-
-  clipboard_->set_window(win->handle());
 }
 
 Monitor* AppGLFW::main_monitor() {
@@ -143,17 +127,70 @@ Ref<Renderer> AppGLFW::renderer() {
 }
 
 void AppGLFW::Run() {
-  if (!window_) {
-    std::printf("Forgot to call App::set_window before App::Run\n");
-    exit(-1);
-  }
+  if (is_running_)
+   return;
 
-  WindowGLFW* win = static_cast<WindowGLFW*>(window_.get());
+  is_running_ = true;
 
-  while (!glfwWindowShouldClose(win->handle())) {
-    glfwPollEvents();
+  ///
+  /// Our main run loop tries to conserve CPU usage by sleeping in 4ms bursts
+  /// between each paint.
+  ///
+  /// We use glfwWaitEventsTimeout() to perform the sleep, which also allows
+  /// us the ability to wake up early if the OS sends us an event.
+  ///
+  std::chrono::milliseconds interval_ms(4);
+  std::chrono::steady_clock::time_point next_paint = std::chrono::steady_clock::now();
+  
+  while (is_running_) {
+    ///
+    /// Query the system clock to see how many milliseconds are left until
+    /// the next scheduled paint.
+    ///
+    long long timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+      next_paint - std::chrono::steady_clock::now()).count();
+    unsigned long timeout = timeout_ms <= 0 ? 0 : (unsigned long)timeout_ms;
+
+    ///
+    /// Use glfwWaitEventsTimeout() if we still have time left before the next
+    /// paint. (Will use OS primitives to sleep and wait for OS input events)
+    ///
+    /// Otherwise, call glfwPollEvents() immediately and continue.
+    ///
+    if (timeout > 0)
+      glfwWaitEventsTimeout(timeout / 1000.0);
+    else
+      glfwPollEvents();
+
+    ///
+    /// Allow Ultralight to update internal timers, JavaScript callbacks, and
+    /// other resource callbacks.
+    ///
     Update();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+    if (!is_running_)
+      return;
+
+    ///
+    /// Update our timeout by querying the system clock again.
+    ///
+    timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+      next_paint - std::chrono::steady_clock::now()).count();
+
+    ///
+    /// Perform paint if we have reached the scheduled time.
+    ///
+    if (timeout_ms <= 0) {
+      for (auto window : windows_) {
+        if (window->NeedsRepaint())
+          window->Repaint();
+      }
+
+      ///
+      /// Schedule the next paint.
+      ///
+      next_paint = std::chrono::steady_clock::now() + interval_ms;
+    }
   }
 }
 
@@ -166,21 +203,6 @@ void AppGLFW::Update() {
     listener_->OnUpdate();
 
   renderer()->Update();
-
-  GPUDriverImpl* driver = gpu_context_->driver();
-
-  driver->BeginSynchronize();
-  renderer_->Render();
-  driver->EndSynchronize();
-
-  if (driver->HasCommandsPending()) {
-    gpu_context_->BeginDrawing();
-    driver->DrawCommandList();
-    if (window_)
-	    static_cast<WindowGLFW*>(window_.get())->Draw();
-    gpu_context_->PresentFrame();
-    gpu_context_->EndDrawing();
-  }
 }
 
 static App* g_app_instance = nullptr;
