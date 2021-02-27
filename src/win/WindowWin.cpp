@@ -1,6 +1,7 @@
 #include "WindowWin.h"
 #include "AppWin.h"
 #include "DIBSurface.h"
+#include "AppCore/Overlay.h"
 #include "Windowsx.h"
 #include <AppCore/Monitor.h>
 #include <ShellScalingAPI.h>
@@ -18,6 +19,7 @@ namespace ultralight {
 
 #define WINDOWDATA() ((WindowData*)GetWindowLongPtr(hWnd, GWLP_USERDATA))
 #define WINDOW() (WINDOWDATA()->window)
+#define WM_DPICHANGED_ 0x02E0
 
 static HDC g_dc = 0;
 
@@ -48,6 +50,13 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
       InvalidateRect(hWnd, nullptr, false);
     }
     break;
+  }
+  case WM_DPICHANGED_: {
+    if (WINDOWDATA()) {
+      double fscale = (double)HIWORD(wParam) / USER_DEFAULT_SCREEN_DPI;
+      WINDOW()->OnChangeDPI(fscale, (RECT*)lParam);
+      InvalidateRect(hWnd, nullptr, false);
+    }
   }
   case WM_EXITSIZEMOVE:
     WINDOWDATA()->is_resizing_modal = false;
@@ -207,6 +216,8 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool ful
   if (window_flags & kWindowFlags_Maximizable)
     style |= WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 
+  scale_ = monitor_->scale();
+
   // Create window
   RECT rc = { 0, 0, (LONG)DeviceToPixels(width), (LONG)DeviceToPixels(height) };
   AdjustWindowRect(&rc, style, FALSE);
@@ -293,7 +304,7 @@ uint32_t WindowWin::height() const {
   return rc.bottom - rc.top;
 }
 
-double WindowWin::scale() const { return monitor_->scale(); }
+double WindowWin::scale() const { return scale_; }
 
 void WindowWin::SetTitle(const char* title) { SetWindowTextA(hwnd_, title); }
 
@@ -402,6 +413,25 @@ void WindowWin::OnResize(uint32_t width, uint32_t height) {
 
   if (app_listener_)
     app_listener_->OnResize(this, width, height);
+}
+
+void WindowWin::OnChangeDPI(double scale, const RECT* suggested_rect) { 
+  scale_ = scale;
+
+  SetWindowScale(scale_);
+
+  if (is_accelerated()) {
+    swap_chain_->set_scale(scale_);
+  }
+
+  for (auto overlay : overlays_) {
+    overlay->view()->set_device_scale(scale_);
+  }
+
+  RECT* const prcNewWindow = (RECT*)suggested_rect;
+  SetWindowPos(hwnd_, NULL, prcNewWindow->left, prcNewWindow->top,
+               prcNewWindow->right - prcNewWindow->left, prcNewWindow->bottom - prcNewWindow->top,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 Ref<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height, bool fullscreen,

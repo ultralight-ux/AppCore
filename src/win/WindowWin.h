@@ -68,6 +68,7 @@ class WindowWin : public Window, public RefCountedImpl<WindowWin>, public Overla
   // These are called by WndProc then forwarded to listener(s)
   void OnClose();
   void OnResize(uint32_t width, uint32_t height);
+  void OnChangeDPI(double scale, const RECT* suggested_rect);
 
   void InvalidateWindow() { window_needs_repaint_ = true; }
 
@@ -86,6 +87,7 @@ class WindowWin : public Window, public RefCountedImpl<WindowWin>, public Overla
   bool is_first_paint_ = true;
   bool window_needs_repaint_ = false;
   Monitor* monitor_;
+  double scale_;
   bool is_fullscreen_;
   bool is_accelerated_;
   HWND hwnd_;

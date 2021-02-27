@@ -29,11 +29,19 @@ public:
   double GetMonitorDPI(HMONITOR monitor);
 
 protected:
+
+  BOOL IsWindowsVersionOrGreaterWin32(WORD major, WORD minor, WORD sp);
+
+  BOOL IsWindows10BuildOrGreaterWin32(WORD build);
+
   typedef HRESULT(WINAPI * FN_SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS);
   typedef HRESULT(WINAPI * FN_GetDpiForMonitor)(HMONITOR, MONITOR_DPI_TYPE, UINT*, UINT*);
+  typedef LONG(WINAPI* FN_RtlVerifyVersionInfo)(OSVERSIONINFOEXW*, ULONG, ULONGLONG);
   FN_SetProcessDpiAwareness setProcessDpiAwareness_ = nullptr;
   FN_GetDpiForMonitor getDpiForMonitor_ = nullptr;
+  FN_RtlVerifyVersionInfo rtlVerifyVersionInfo_ = nullptr;
   HMODULE shcore_lib_ = nullptr;
+  HMODULE ntdll_lib_ = nullptr;
 };
 
 }

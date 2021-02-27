@@ -35,28 +35,17 @@ static BOOL IsWindowsVersionOrGreater(WORD major, WORD minor, WORD sp);
     IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINXP),      \
                               LOBYTE(_WIN32_WINNT_WINXP), 0)
 #define IsWindowsVistaOrGreater()                              \
-    IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_VISTA),      \
+    IsWindowsVersionOrGreaterWin32(HIBYTE(_WIN32_WINNT_VISTA),      \
                               LOBYTE(_WIN32_WINNT_VISTA), 0)
 #define IsWindows7OrGreater()                                  \
-    IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WIN7),       \
+    IsWindowsVersionOrGreaterWin32(HIBYTE(_WIN32_WINNT_WIN7),       \
                               LOBYTE(_WIN32_WINNT_WIN7), 0)
 #define IsWindows8OrGreater()                                  \
-    IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WIN8),       \
+    IsWindowsVersionOrGreaterWin32(HIBYTE(_WIN32_WINNT_WIN8),       \
                               LOBYTE(_WIN32_WINNT_WIN8), 0)
 #define IsWindows8Point1OrGreater()                            \
-    IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WINBLUE),    \
+    IsWindowsVersionOrGreaterWin32(HIBYTE(_WIN32_WINNT_WINBLUE),    \
                               LOBYTE(_WIN32_WINNT_WINBLUE), 0)
-
-// HACK: Define versionhelpers.h functions manually as MinGW lacks the header
-BOOL IsWindowsVersionOrGreater(WORD major, WORD minor, WORD sp)
-{
-  OSVERSIONINFOEXW osvi = { sizeof(osvi), major, minor, 0, 0,{ 0 }, sp };
-  DWORD mask = VER_MAJORVERSION | VER_MINORVERSION | VER_SERVICEPACKMAJOR;
-  ULONGLONG cond = VerSetConditionMask(0, VER_MAJORVERSION, VER_GREATER_EQUAL);
-  cond = VerSetConditionMask(cond, VER_MINORVERSION, VER_GREATER_EQUAL);
-  cond = VerSetConditionMask(cond, VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL);
-  return VerifyVersionInfoW(&osvi, mask, cond);
-}
 
 WindowsUtil::WindowsUtil() {
   shcore_lib_ = LoadLibraryA("shcore.dll");
@@ -66,11 +55,19 @@ WindowsUtil::WindowsUtil() {
     getDpiForMonitor_ = (FN_GetDpiForMonitor)
       GetProcAddress(shcore_lib_, "GetDpiForMonitor");
   }
+
+  ntdll_lib_ = LoadLibraryA("ntdll.dll");
+  if (ntdll_lib_) {
+    rtlVerifyVersionInfo_
+        = (FN_RtlVerifyVersionInfo)GetProcAddress(ntdll_lib_, "RtlVerifyVersionInfo");
+  }
 }
 
 WindowsUtil::~WindowsUtil() {
   if (shcore_lib_)
     FreeLibrary(shcore_lib_);
+  if (ntdll_lib_)
+    FreeLibrary(ntdll_lib_);
 }
 
 void WindowsUtil::EnableDPIAwareness() {
@@ -94,6 +91,38 @@ double WindowsUtil::GetMonitorDPI(HMONITOR monitor) {
 
   // We only care about DPI in x-dimension right now
   return xdpi / 96.f;
+}
+
+BOOL WindowsUtil::IsWindowsVersionOrGreaterWin32(WORD major, WORD minor, WORD sp) {
+  if (!rtlVerifyVersionInfo_)
+    return false;
+
+  OSVERSIONINFOEXW osvi = { sizeof(osvi), major, minor, 0, 0, { 0 }, sp };
+  DWORD mask = VER_MAJORVERSION | VER_MINORVERSION | VER_SERVICEPACKMAJOR;
+  ULONGLONG cond = VerSetConditionMask(0, VER_MAJORVERSION, VER_GREATER_EQUAL);
+  cond = VerSetConditionMask(cond, VER_MINORVERSION, VER_GREATER_EQUAL);
+  cond = VerSetConditionMask(cond, VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL);
+  // HACK: Use RtlVerifyVersionInfo instead of VerifyVersionInfoW as the
+  //       latter lies unless the user knew to embed a non-default manifest
+  //       announcing support for Windows 10 via supportedOS GUID
+  return rtlVerifyVersionInfo_(&osvi, mask, cond) == 0;
+}
+
+// Checks whether we are on at least the specified build of Windows 10
+//
+BOOL WindowsUtil::IsWindows10BuildOrGreaterWin32(WORD build) {
+  if (!rtlVerifyVersionInfo_)
+    return false;
+
+  OSVERSIONINFOEXW osvi = { sizeof(osvi), 10, 0, build };
+  DWORD mask = VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER;
+  ULONGLONG cond = VerSetConditionMask(0, VER_MAJORVERSION, VER_GREATER_EQUAL);
+  cond = VerSetConditionMask(cond, VER_MINORVERSION, VER_GREATER_EQUAL);
+  cond = VerSetConditionMask(cond, VER_BUILDNUMBER, VER_GREATER_EQUAL);
+  // HACK: Use RtlVerifyVersionInfo instead of VerifyVersionInfoW as the
+  //       latter lies unless the user knew to embed a non-default manifest
+  //       announcing support for Windows 10 via supportedOS GUID
+  return rtlVerifyVersionInfo_(&osvi, mask, cond) == 0;
 }
 
 }  // namespace ultralight

@@ -108,7 +108,7 @@ ID3D11RenderTargetView* SwapChainD3D11::render_target_view() { return back_buffe
 void SwapChainD3D11::PresentFrame() { swap_chain()->Present(enable_vsync_ ? 1 : 0, 0); }
 
 void SwapChainD3D11::Resize(int width, int height) {
-  return;
+  
   set_screen_size(width, height);
 
   context_->immediate_context()->OMSetRenderTargets(0, 0, 0);
