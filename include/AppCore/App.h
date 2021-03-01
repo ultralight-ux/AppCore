@@ -5,11 +5,11 @@
 ///
 /// @author
 ///
-/// This file is a part of Ultralight, a fast, lightweight, HTML UI engine
+/// This file is a part of Ultralight, a next-generation HTML renderer.
 ///
 /// Website: <http://ultralig.ht>
 ///
-/// Copyright (C) 2019 Ultralight, Inc. All rights reserved.
+/// Copyright (C) 2021 Ultralight, Inc. All rights reserved.
 ///
 #pragma once
 #include "Defines.h"
@@ -150,8 +150,6 @@ public:
 
   ///
   /// Run the main loop.
-  ///
-  /// @note  Make sure to call set_window before calling this.
   ///
   virtual void Run() = 0;
 

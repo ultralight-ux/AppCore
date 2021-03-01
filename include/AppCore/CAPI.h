@@ -5,11 +5,11 @@
 ///
 /// @author
 ///
-/// This file is a part of Ultralight, a fast, lightweight, HTML UI engine
+/// This file is a part of Ultralight, a next-generation HTML renderer.
 ///
 /// Website: <http://ultralig.ht>
 ///
-/// Copyright (C) 2020 Ultralight, Inc. All rights reserved.
+/// Copyright (C) 2021 Ultralight, Inc. All rights reserved.
 ///
 #ifndef APPCORE_CAPI_H
 #define APPCORE_CAPI_H
@@ -160,7 +160,7 @@ ACExport ULMonitor ulAppGetMainMonitor(ULApp app);
 ACExport ULRenderer ulAppGetRenderer(ULApp app);
 
 ///
-/// Run the main loop, make sure to call ulAppSetWindow before calling this.
+/// Run the main loop.
 ///
 ACExport void ulAppRun(ULApp app);
 

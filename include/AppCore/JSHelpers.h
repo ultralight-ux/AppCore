@@ -1,3 +1,8 @@
+/// This file is a part of Ultralight, a next-generation HTML renderer.
+///
+/// Website: <http://ultralig.ht>
+///
+/// Copyright (C) 2021 Ultralight, Inc. All rights reserved.
 #pragma once
 #include <AppCore/Defines.h>
 #include <JavaScriptCore/JavaScript.h>

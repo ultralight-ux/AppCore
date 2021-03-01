@@ -1,4 +1,8 @@
-// Copyright 2018 Ultralight, Inc. All rights reserved.
+/// This file is a part of Ultralight, a next-generation HTML renderer.
+///
+/// Website: <http://ultralig.ht>
+///
+/// Copyright (C) 2021 Ultralight, Inc. All rights reserved.
 #pragma once
 
 // Needed for limit defines, like INTMAX_MAX, which is used by the std C++ library
