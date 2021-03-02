@@ -29,8 +29,21 @@ void OverlayManager::Remove(Overlay* overlay) {
 }
 
 void OverlayManager::Render() {
-  for (auto& i : overlays_)
-    App::instance()->renderer()->RenderOnly(i->view());
+  if (overlays_.empty())
+    return;
+
+  size_t view_array_len = overlays_.size();
+  View** view_array = new View*[view_array_len];
+
+  size_t i = 0;
+  for (auto& overlay : overlays_) {
+    view_array[i] = overlay->view().ptr();
+    i++;
+  }
+
+  App::instance()->renderer()->RenderOnly(view_array, view_array_len);
+
+  delete[] view_array;
 }
 
 void OverlayManager::Paint() {
