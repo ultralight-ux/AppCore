@@ -276,7 +276,7 @@ void WindowGLFW::Repaint() {
   OverlayManager::Render();
   gpu_driver->EndSynchronize();
 
-  if (gpu_driver->HasCommandsPending() || window_needs_repaint_) {
+  if (gpu_driver->HasCommandsPending() || OverlayManager::NeedsRepaint() || window_needs_repaint_) {
     glfwMakeContextCurrent(window_);
     gpu_context->BeginDrawing();
     gpu_driver->DrawCommandList();

@@ -384,7 +384,8 @@ void WindowWin::Paint() {
   OverlayManager::Render();
   gpu_driver->EndSynchronize();
 
-  if (gpu_driver->HasCommandsPending() || (window_needs_repaint_ && !is_first_paint_)) {
+  if (gpu_driver->HasCommandsPending() || OverlayManager::NeedsRepaint() || 
+    (window_needs_repaint_ && !is_first_paint_)) {
     gpu_context->BeginDrawing();
     gpu_driver->DrawCommandList();
     OverlayManager::Paint();

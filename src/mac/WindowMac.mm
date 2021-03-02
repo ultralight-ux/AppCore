@@ -149,7 +149,7 @@ void WindowMac::OnPaint(CAMetalLayer* layer) {
   OverlayManager::Render();
   gpu_context->driver()->EndSynchronize();
 
-  if (gpu_context->driver()->HasCommandsPending()) {
+  if (gpu_context->driver()->HasCommandsPending() || OverlayManager::NeedsRepaint()) {
     gpu_context->BeginDrawing();
     gpu_context->driver()->DrawCommandList();
     OverlayManager::Paint();
