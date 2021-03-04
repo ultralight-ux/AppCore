@@ -30,9 +30,21 @@ public:
 
   virtual double scale() const override;
 
+  virtual void SetPosition(int x, int y) override;
+
+  virtual int position_x() const override;
+
+  virtual int position_y() const override;
+
   virtual void SetTitle(const char* title) override;
 
   virtual void SetCursor(ultralight::Cursor cursor) override;
+
+  virtual void Show() override;
+
+  virtual void Hide() override;
+
+  virtual bool is_visible() const override;
 
   virtual void Close() override;
 

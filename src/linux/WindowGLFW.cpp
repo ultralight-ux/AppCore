@@ -137,7 +137,10 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
 
-  glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+  if (!(kWindowFlags_Hidden & window_flags))
+    glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+  else
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
   auto gpu_context = static_cast<AppGLFW*>(App::instance())->gpu_context();
   auto gpu_driver = static_cast<AppGLFW*>(App::instance())->gpu_driver();
@@ -221,6 +224,22 @@ double WindowGLFW::scale() const {
   return monitor_->scale();
 }
 
+void WindowGLFW::SetPosition(int x, int y) {
+  glfwSetWindowPos(window_, x, y);
+}
+
+int WindowGLFW::position_x() const {
+  int xPos, yPos;
+  glfwGetWindowPos(window_, &xPos, &yPos);
+  return xPos;
+}
+
+int WindowGLFW::position_y() const {
+  int xPos, yPos;
+  glfwGetWindowPos(window_, &xPos, &yPos);
+  return yPos;
+}
+
 void WindowGLFW::SetTitle(const char* title) {
   glfwSetWindowTitle(window_, title);
 }
@@ -245,6 +264,18 @@ void WindowGLFW::SetCursor(ultralight::Cursor cursor) {
   default:
     glfwSetCursor(window_, nullptr);
   }
+}
+
+void WindowGLFW::Show() {
+  glfwShowWindow(window_);
+}
+
+void WindowGLFW::Hide() {
+  glfwHideWindow(window_);
+}
+
+bool WindowGLFW::is_visible() const {
+  return glfwGetWindowAttrib(window_, GLFW_VISIBLE);
 }
 
 void WindowGLFW::Close() {
