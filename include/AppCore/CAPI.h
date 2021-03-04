@@ -40,10 +40,11 @@ typedef struct C_Overlay* ULOverlay;
 /// Window creation flags. @see Window::Create
 ///
 typedef enum {
-  kWindowFlags_Borderless = 1 << 0,
-  kWindowFlags_Titled = 1 << 1,
-  kWindowFlags_Resizable = 1 << 2,
+  kWindowFlags_Borderless  = 1 << 0,
+  kWindowFlags_Titled      = 1 << 1,
+  kWindowFlags_Resizable   = 1 << 2,
   kWindowFlags_Maximizable = 1 << 3,
+  kWindowFlags_Hidden      = 1 << 4,
 } ULWindowFlags;
 
 ///
@@ -248,6 +249,23 @@ ACExport bool ulWindowIsFullscreen(ULWindow window);
 ACExport double ulWindowGetScale(ULWindow window);
 
 ///
+/// Set the position of the window in device coordinates relative to the top-left of the monitor.
+///
+ACExport void ulWindowSetPosition(ULWindow window, int x, int y);
+
+///
+/// Get the x-position of the window in device coordinates relative, to the top-left of the
+/// monitor.
+///
+ACExport int ulWindowGetPositionX(ULWindow window);
+
+///
+/// Get the y-position of the window in device coordinates relative, to the top-left of the
+/// monitor.
+///
+ACExport int ulWindowGetPositionY(ULWindow window);
+
+///
 /// Set the window title.
 ///
 ACExport void ulWindowSetTitle(ULWindow window, const char* title);
@@ -256,6 +274,21 @@ ACExport void ulWindowSetTitle(ULWindow window, const char* title);
 /// Set the cursor for a window.
 ///
 ACExport void ulWindowSetCursor(ULWindow window, ULCursor cursor);
+
+///
+/// Show the window (if it was previously hidden).
+///
+ACExport void ulWindowShow(ULWindow window);
+
+///
+/// Hide the window.
+///
+ACExport void ulWindowHide(ULWindow window);
+
+///
+/// Whether or not the window is currently visible (not hidden).
+///
+ACExport bool ulWindowIsVisible(ULWindow window);
 
 ///
 /// Close a window.

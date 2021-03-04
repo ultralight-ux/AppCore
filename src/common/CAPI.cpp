@@ -197,6 +197,12 @@ double ulWindowGetScale(ULWindow window) {
   return window->val->scale();
 }
 
+void ulWindowSetPosition(ULWindow window, int x, int y) { window->val->SetPosition(x, y); }
+
+int ulWindowGetPositionX(ULWindow window) { return window->val->position_x(); }
+
+int ulWindowGetPositionY(ULWindow window) { return window->val->position_y(); }
+
 void ulWindowSetTitle(ULWindow window, const char* title) {
   window->val->SetTitle(title);
 }
@@ -204,6 +210,12 @@ void ulWindowSetTitle(ULWindow window, const char* title) {
 void ulWindowSetCursor(ULWindow window, ULCursor cursor) {
   window->val->SetCursor((Cursor)cursor);
 }
+
+void ulWindowShow(ULWindow window) { window->val->Show(); }
+
+void ulWindowHide(ULWindow window) { window->val->Hide(); }
+
+bool ulWindowIsVisible(ULWindow window) { return window->val->is_visible(); }
 
 void ulWindowClose(ULWindow window) {
   window->val->Close();

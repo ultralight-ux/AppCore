@@ -204,25 +204,25 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool ful
     g_window_class_initialized = true;
   }
 
-  DWORD style = WS_SYSMENU;
+  style_ = WS_SYSMENU;
   if (window_flags & kWindowFlags_Borderless)
-    style |= WS_POPUP;
+    style_ |= WS_POPUP;
   else
-    style |= WS_BORDER;
+    style_ |= WS_BORDER;
   if (window_flags & kWindowFlags_Titled)
-    style |= WS_CAPTION;
+    style_ |= WS_CAPTION;
   if (window_flags & kWindowFlags_Resizable)
-    style |= WS_SIZEBOX;
+    style_ |= WS_SIZEBOX;
   if (window_flags & kWindowFlags_Maximizable)
-    style |= WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+    style_ |= WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 
   scale_ = monitor_->scale();
 
   // Create window
   RECT rc = { 0, 0, (LONG)DeviceToPixels(width), (LONG)DeviceToPixels(height) };
-  AdjustWindowRect(&rc, style, FALSE);
+  AdjustWindowRect(&rc, style_, FALSE);
   hwnd_ = ::CreateWindowEx(
-      NULL, class_name, _T(""), fullscreen ? (WS_EX_TOPMOST | WS_POPUP) : style,
+      NULL, class_name, _T(""), fullscreen ? (WS_EX_TOPMOST | WS_POPUP) : style_,
       fullscreen ? 0 : CW_USEDEFAULT, fullscreen ? 0 : CW_USEDEFAULT,
       fullscreen ? DeviceToPixels(width) : (rc.right - rc.left),
       fullscreen ? DeviceToPixels(height) : (rc.bottom - rc.top), NULL, NULL, hInstance, NULL);
@@ -240,9 +240,10 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool ful
 
   SetWindowLongPtr(hwnd_, GWLP_USERDATA, (LONG_PTR)&window_data_);
 
-  CenterHwndOnMainMonitor(hwnd_);
+  //CenterHwndOnMainMonitor(hwnd_);
 
-  ShowWindow(hwnd_, SW_SHOW);
+  if (!(window_flags & kWindowFlags_Hidden))
+    ShowWindow(hwnd_, SW_SHOW);
 
   // Set the thread affinity mask for better clock
   ::SetThreadAffinityMask(::GetCurrentThread(), 1);
@@ -306,6 +307,27 @@ uint32_t WindowWin::height() const {
 
 double WindowWin::scale() const { return scale_; }
 
+void WindowWin::SetPosition(int x, int y) {
+  RECT rect = { x, y, x, y };
+  AdjustWindowRect(&rect, style_, FALSE);
+  SetWindowPos(hwnd_, NULL, rect.left, rect.top, 0, 0,
+               SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
+}
+
+int WindowWin::position_x() const {
+  POINT pos = { 0, 0 };
+  ClientToScreen(hwnd_, &pos);
+
+  return pos.x;
+}
+
+int WindowWin::position_y() const {
+  POINT pos = { 0, 0 };
+  ClientToScreen(hwnd_, &pos);
+
+  return pos.y;
+}
+
 void WindowWin::SetTitle(const char* title) { SetWindowTextA(hwnd_, title); }
 
 void WindowWin::SetCursor(ultralight::Cursor cursor) {
@@ -326,6 +348,12 @@ void WindowWin::SetCursor(ultralight::Cursor cursor) {
 
   cur_cursor_ = cursor;
 }
+
+void WindowWin::Show() { ShowWindow(hwnd_, SW_SHOW); }
+
+void WindowWin::Hide() { ShowWindow(hwnd_, SW_HIDE); }
+
+bool WindowWin::is_visible() const { return IsWindowVisible(hwnd_); }
 
 void WindowWin::Close() { DestroyWindow(hwnd_); }
 

@@ -54,6 +54,7 @@ enum WindowFlags : uint8_t {
   kWindowFlags_Titled      = 1 << 1,
   kWindowFlags_Resizable   = 1 << 2,
   kWindowFlags_Maximizable = 1 << 3,
+  kWindowFlags_Hidden      = 1 << 4,
 };
 
 ///
@@ -121,6 +122,23 @@ public:
   virtual double scale() const = 0;
 
   ///
+  /// Set the position of the window in device coordinates relative to the top-left of the monitor.
+  //
+  virtual void SetPosition(int x, int y) = 0;
+
+  ///
+  /// Get the x-position of the window in device coordinates relative, to the top-left of the
+  /// monitor.
+  /// 
+  virtual int position_x() const = 0;
+
+  ///
+  /// Get the y-position of the window in device coordinates relative, to the top-left of the
+  /// monitor.
+  /// 
+  virtual int position_y() const = 0;
+
+  ///
   /// Set the window title.
   ///
   virtual void SetTitle(const char* title) = 0;
@@ -129,6 +147,21 @@ public:
   /// Set the cursor.
   ///
   virtual void SetCursor(ultralight::Cursor cursor) = 0;
+
+  ///
+  /// Show the window (if it was previously hidden).
+  ///
+  virtual void Show() = 0;
+
+  ///
+  /// Hide the window.
+  /// 
+  virtual void Hide() = 0;
+
+  ///
+  /// Whether or not the window is currently visible (not hidden).
+  ///
+  virtual bool is_visible() const = 0;
 
   ///
   /// Close the window.
