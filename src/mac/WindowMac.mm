@@ -9,6 +9,8 @@
 
 namespace ultralight {
 
+static CGPoint g_cascade_point = { 0.0f, 0.0f };
+
 WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
   bool fullscreen, unsigned int window_flags) : monitor_(monitor), is_fullscreen_(fullscreen) {
   NSRect frame = NSMakeRect(0, 0, width, height);
@@ -34,10 +36,14 @@ WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
   [window_ setDelegate:delegate_];
   
   [window_ center];
+  g_cascade_point =
+            NSPointToCGPoint([window_ cascadeTopLeftFromPoint:
+                              NSPointFromCGPoint(g_cascade_point)]);
   [window_ setBackgroundColor:[NSColor whiteColor]];
-  [window_ makeKeyAndOrderFront:NSApp];
-  [window_ setOrderedIndex:0];
-  [NSApp activateIgnoringOtherApps:YES];
+  if (!(window_flags & kWindowFlags_Hidden)) {
+    [window_ makeKeyAndOrderFront:NSApp];
+    [NSApp activateIgnoringOtherApps:YES];
+  }
   
   controller_ = [[ViewController alloc] init];
   [controller_ initWithWindow:this frame:frame];
@@ -90,6 +96,34 @@ double WindowMac::scale() const {
   return monitor_->scale();
 }
 
+// Transforms the specified y-coordinate between the CG display and NS screen
+// coordinate systems
+static float transformY(float y)
+{
+    return CGDisplayBounds(CGMainDisplayID()).size.height - y;
+}
+
+void WindowMac::SetPosition(int x, int y) {
+    const NSRect contentRect = [controller_.metalView frame];
+    const NSRect dummyRect = NSMakeRect(x, transformY(y + contentRect.size.height), 0, 0);
+    const NSRect frameRect = [window_ frameRectForContentRect:dummyRect];
+    [window_ setFrameOrigin:frameRect.origin];
+}
+
+int WindowMac::position_x() const {
+    const NSRect contentRect =
+        [window_ contentRectForFrameRect:[window_ frame]];
+
+    return contentRect.origin.x;
+}
+
+int WindowMac::position_y() const {
+    const NSRect contentRect =
+        [window_ contentRectForFrameRect:[window_ frame]];
+
+    return transformY(contentRect.origin.y + contentRect.size.height);
+}
+
 void WindowMac::SetTitle(const char* title) {
   window_.title = [NSString stringWithUTF8String:title];
 }
@@ -109,6 +143,20 @@ void WindowMac::SetCursor(ultralight::Cursor cursor) {
       break;
     }
   };
+}
+
+void WindowMac::Show() {
+  [window_ orderFront:nil];
+  [window_ makeKeyAndOrderFront:NSApp];
+  [NSApp activateIgnoringOtherApps:YES];
+}
+
+void WindowMac::Hide() {
+  [window_ orderOut:nil];
+}
+
+bool WindowMac::is_visible() const {
+  return [window_ isVisible];
 }
 
 void WindowMac::Close() {
