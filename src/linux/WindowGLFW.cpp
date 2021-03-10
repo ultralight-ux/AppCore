@@ -53,8 +53,8 @@ static void WindowGLFW_cursor_pos_callback(GLFWwindow* window, double xpos, doub
   ultralight::WindowGLFW* win = static_cast<ultralight::WindowGLFW*>(glfwGetWindowUserPointer(window));
   ultralight::MouseEvent evt;
   evt.type = ultralight::MouseEvent::kType_MouseMoved;
-  evt.x = win->PixelsToDevice((int)xpos);
-  evt.y = win->PixelsToDevice((int)ypos);
+  evt.x = win->PixelsToScreen((int)xpos);
+  evt.y = win->PixelsToScreen((int)ypos);
   evt.button = ultralight::MouseEvent::kButton_None;
   if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     evt.button = ultralight::MouseEvent::kButton_Left;
@@ -72,8 +72,8 @@ static void WindowGLFW_mouse_button_callback(GLFWwindow* window, int button, int
   evt.type = action == GLFW_PRESS ? ultralight::MouseEvent::kType_MouseDown : ultralight::MouseEvent::kType_MouseUp;
   double xpos, ypos;
   glfwGetCursorPos(window, &xpos, &ypos);
-  evt.x = win->PixelsToDevice((int)xpos);
-  evt.y = win->PixelsToDevice((int)ypos);
+  evt.x = win->PixelsToScreen((int)xpos);
+  evt.y = win->PixelsToScreen((int)ypos);
   evt.button = ultralight::MouseEvent::kButton_None;
   switch (button) {
   case GLFW_MOUSE_BUTTON_LEFT:
@@ -94,8 +94,8 @@ static void WindowGLFW_scroll_callback(GLFWwindow* window, double xoffset, doubl
   ultralight::WindowGLFW* win = static_cast<ultralight::WindowGLFW*>(glfwGetWindowUserPointer(window));
   ultralight::ScrollEvent evt;
   evt.type = ultralight::ScrollEvent::kType_ScrollByPixel;
-  evt.delta_x = win->PixelsToDevice((int)xoffset * 32);
-  evt.delta_y = win->PixelsToDevice((int)yoffset * 32);
+  evt.delta_x = win->PixelsToScreen((int)xoffset * 32);
+  evt.delta_y = win->PixelsToScreen((int)yoffset * 32);
   win->FireScrollEvent(evt);
 }
 
@@ -151,7 +151,7 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
   }
 
   // This window will share the GL context of GPUContextGL's offscreen window
-  GLFWwindow* win = glfwCreateWindow(DeviceToPixels(width), DeviceToPixels(height),
+  GLFWwindow* win = glfwCreateWindow(ScreenToPixels(width), ScreenToPixels(height),
     "", NULL, gpu_context->window());
 
   window_ = win;
@@ -206,17 +206,25 @@ WindowGLFW::~WindowGLFW() {
   }
 }
 
+uint32_t WindowGLFW::screen_width() const {
+  return PixelsToScreen(width());
+}
+
 uint32_t WindowGLFW::width() const {
   // Returns width in pixels
   int width, height;
-  glfwGetWindowSize(window_, &width, &height);
+  glfwGetFramebufferSize(window_, &width, &height);
   return (uint32_t)width;
+}
+
+uint32_t WindowGLFW::screen_height() const {
+  return PixelsToScreen(height());
 }
 
 uint32_t WindowGLFW::height() const {
   // Return height in pixels
   int width, height;
-  glfwGetWindowSize(window_, &width, &height);
+  glfwGetFramebufferSize(window_, &width, &height);
   return (uint32_t)height;
 }
 
@@ -224,20 +232,27 @@ double WindowGLFW::scale() const {
   return monitor_->scale();
 }
 
-void WindowGLFW::SetPosition(int x, int y) {
+void WindowGLFW::MoveTo(int x, int y) {
+  x = ScreenToPixels(x);
+  y = ScreenToPixels(y);
   glfwSetWindowPos(window_, x, y);
 }
 
-int WindowGLFW::position_x() const {
-  int xPos, yPos;
-  glfwGetWindowPos(window_, &xPos, &yPos);
-  return xPos;
+void WindowGLFW::MoveToCenter() {
+  MoveTo(PixelsToScreen(monitor_->width()) / 2 - screen_width() / 2,
+         PixelsToScreen(monitor_->height()) / 2 - screen_height() / 2);
 }
 
-int WindowGLFW::position_y() const {
+int WindowGLFW::x() const {
   int xPos, yPos;
   glfwGetWindowPos(window_, &xPos, &yPos);
-  return yPos;
+  return PixelsToScreen(xPos);
+}
+
+int WindowGLFW::y() const {
+  int xPos, yPos;
+  glfwGetWindowPos(window_, &xPos, &yPos);
+  return PixelsToScreen(yPos);
 }
 
 void WindowGLFW::SetTitle(const char* title) {
