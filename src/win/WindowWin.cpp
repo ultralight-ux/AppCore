@@ -94,8 +94,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
       WINDOW()->SetCursor(ultralight::kCursor_Pointer);
     }
     WINDOW()->FireMouseEvent(
-        { MouseEvent::kType_MouseMoved, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
+        { MouseEvent::kType_MouseMoved, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
     break;
   }
   case WM_LBUTTONDOWN:
@@ -103,38 +103,38 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Left;
     WINDOW()->FireMouseEvent(
-        { MouseEvent::kType_MouseDown, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
+        { MouseEvent::kType_MouseDown, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
     break;
   case WM_MBUTTONDOWN:
   case WM_MBUTTONDBLCLK:
     SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Middle;
     WINDOW()->FireMouseEvent(
-        { MouseEvent::kType_MouseDown, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
+        { MouseEvent::kType_MouseDown, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
     break;
   case WM_RBUTTONDOWN:
   case WM_RBUTTONDBLCLK:
     SetCapture(WINDOW()->hwnd());
     WINDOWDATA()->cur_btn = MouseEvent::kButton_Right;
     WINDOW()->FireMouseEvent(
-        { MouseEvent::kType_MouseDown, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
+        { MouseEvent::kType_MouseDown, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
     break;
   case WM_LBUTTONUP:
   case WM_MBUTTONUP:
   case WM_RBUTTONUP:
     ReleaseCapture();
     WINDOW()->FireMouseEvent(
-        { MouseEvent::kType_MouseUp, WINDOW()->PixelsToDevice(GET_X_LPARAM(lParam)),
-          WINDOW()->PixelsToDevice(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
+        { MouseEvent::kType_MouseUp, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
+          WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
     WINDOWDATA()->cur_btn = MouseEvent::kButton_None;
     break;
   case WM_MOUSEWHEEL:
     WINDOW()->FireScrollEvent(
         { ScrollEvent::kType_ScrollByPixel, 0,
-          static_cast<int>(WINDOW()->PixelsToDevice(GET_WHEEL_DELTA_WPARAM(wParam)) * 0.8) });
+          static_cast<int>(WINDOW()->PixelsToScreen(GET_WHEEL_DELTA_WPARAM(wParam)) * 0.8) });
     break;
   case WM_SETFOCUS:
     WINDOW()->SetWindowFocused(true);
@@ -219,13 +219,13 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool ful
   scale_ = monitor_->scale();
 
   // Create window
-  RECT rc = { 0, 0, (LONG)DeviceToPixels(width), (LONG)DeviceToPixels(height) };
+  RECT rc = { 0, 0, (LONG)ScreenToPixels(width), (LONG)ScreenToPixels(height) };
   AdjustWindowRect(&rc, style_, FALSE);
   hwnd_ = ::CreateWindowEx(
       NULL, class_name, _T(""), fullscreen ? (WS_EX_TOPMOST | WS_POPUP) : style_,
       fullscreen ? 0 : CW_USEDEFAULT, fullscreen ? 0 : CW_USEDEFAULT,
-      fullscreen ? DeviceToPixels(width) : (rc.right - rc.left),
-      fullscreen ? DeviceToPixels(height) : (rc.bottom - rc.top), NULL, NULL, hInstance, NULL);
+      fullscreen ? ScreenToPixels(width) : (rc.right - rc.left),
+      fullscreen ? ScreenToPixels(height) : (rc.bottom - rc.top), NULL, NULL, hInstance, NULL);
 
   if (!hwnd_) {
     MessageBoxW(NULL, (LPCWSTR)L"CreateWindowEx failed", (LPCWSTR)L"Notification", MB_OK);
@@ -293,11 +293,15 @@ WindowWin::~WindowWin() {
   }
 }
 
+uint32_t WindowWin::screen_width() const { return PixelsToScreen(width()); }
+
 uint32_t WindowWin::width() const {
   RECT rc;
   ::GetClientRect(hwnd_, &rc);
   return rc.right - rc.left;
 }
+
+uint32_t WindowWin::screen_height() const { return PixelsToScreen(height()); }
 
 uint32_t WindowWin::height() const {
   RECT rc;
@@ -307,25 +311,29 @@ uint32_t WindowWin::height() const {
 
 double WindowWin::scale() const { return scale_; }
 
-void WindowWin::SetPosition(int x, int y) {
+void WindowWin::MoveTo(int x, int y) {
+  x = ScreenToPixels(x);
+  y = ScreenToPixels(y);
   RECT rect = { x, y, x, y };
   AdjustWindowRect(&rect, style_, FALSE);
   SetWindowPos(hwnd_, NULL, rect.left, rect.top, 0, 0,
                SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
 }
 
-int WindowWin::position_x() const {
+void WindowWin::MoveToCenter() { CenterHwndOnMainMonitor(hwnd_); }
+
+int WindowWin::x() const {
   POINT pos = { 0, 0 };
   ClientToScreen(hwnd_, &pos);
 
-  return pos.x;
+  return PixelsToScreen(pos.x);
 }
 
-int WindowWin::position_y() const {
+int WindowWin::y() const {
   POINT pos = { 0, 0 };
   ClientToScreen(hwnd_, &pos);
 
-  return pos.y;
+  return PixelsToScreen(pos.y);
 }
 
 void WindowWin::SetTitle(const char* title) { SetWindowTextA(hwnd_, title); }

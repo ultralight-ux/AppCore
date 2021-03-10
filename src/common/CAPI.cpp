@@ -181,13 +181,25 @@ void ulWindowSetResizeCallback(ULWindow window, ULResizeCallback callback, void*
   window->resize_callback_data = user_data;
 }
 
-unsigned int ulWindowGetWidth(ULWindow window) {
-  return window->val->width();
+unsigned int ulWindowGetScreenWidth(ULWindow window) {
+  return window->val->screen_width();
 }
 
-unsigned int ulWindowGetHeight(ULWindow window) {
-  return window->val->height();
+unsigned int ulWindowGetWidth(ULWindow window) { return window->val->width(); }
+
+unsigned int ulWindowGetScreenHeight(ULWindow window) {
+  return window->val->screen_height();
 }
+
+unsigned int ulWindowGetHeight(ULWindow window) { return window->val->height(); }
+
+void ulWindowMoveTo(ULWindow window, int x, int y) { window->val->MoveTo(x, y); }
+
+void ulWindowMoveToCenter(ULWindow window) { window->val->MoveToCenter(); }
+
+int ulWindowGetPositionX(ULWindow window) { return window->val->x(); }
+
+int ulWindowGetPositionY(ULWindow window) { return window->val->y(); }
 
 bool ulWindowIsFullscreen(ULWindow window) {
   return window->val->is_fullscreen();
@@ -196,12 +208,6 @@ bool ulWindowIsFullscreen(ULWindow window) {
 double ulWindowGetScale(ULWindow window) {
   return window->val->scale();
 }
-
-void ulWindowSetPosition(ULWindow window, int x, int y) { window->val->SetPosition(x, y); }
-
-int ulWindowGetPositionX(ULWindow window) { return window->val->position_x(); }
-
-int ulWindowGetPositionY(ULWindow window) { return window->val->position_y(); }
 
 void ulWindowSetTitle(ULWindow window, const char* title) {
   window->val->SetTitle(title);
@@ -221,12 +227,12 @@ void ulWindowClose(ULWindow window) {
   window->val->Close();
 }
 
-int ulWindowDeviceToPixel(ULWindow window, int val) {
-  return window->val->DeviceToPixels(val);
+int ulWindowScreenToPixels(ULWindow window, int val) {
+  return window->val->ScreenToPixels(val);
 }
 
-int ulWindowPixelsToDevice(ULWindow window, int val) {
-  return window->val->PixelsToDevice(val);
+int ulWindowPixelsToScreen(ULWindow window, int val) {
+  return window->val->PixelsToScreen(val);
 }
 
 void* ulWindowGetNativeHandle(ULWindow window) {

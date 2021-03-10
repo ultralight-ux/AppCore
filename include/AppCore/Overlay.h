@@ -28,8 +28,7 @@ public:
   ///
   /// Create a new Overlay.
   ///
-  /// @param  window  The window to create the Overlay in. (we currently only
-  ///                 support one window per application)
+  /// @param  window  The window to create the Overlay in.
   ///
   /// @param  width   The width in pixels.
   ///
@@ -47,8 +46,7 @@ public:
   ///
   /// Create a new Overlay, wrapping an existing View.
   ///
-  /// @param  window  The window to create the Overlay in. (we currently only
-  ///                 support one window per application)
+  /// @param  window  The window to create the Overlay in.
   ///
   /// @param  view    The View to wrap (will use its width and height).
   ///

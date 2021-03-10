@@ -26,7 +26,11 @@ class WindowWin : public Window, public RefCountedImpl<WindowWin>, public Overla
 
   virtual WindowListener* listener() override { return listener_; }
 
+  virtual uint32_t screen_width() const override;
+
   virtual uint32_t width() const override;
+
+  virtual uint32_t screen_height() const override;
 
   virtual uint32_t height() const override;
 
@@ -40,11 +44,13 @@ class WindowWin : public Window, public RefCountedImpl<WindowWin>, public Overla
 
   virtual double scale() const override;
 
-  virtual void SetPosition(int x, int y) override;
+  virtual void MoveTo(int x, int y) override;
 
-  virtual int position_x() const override;
+  virtual void MoveToCenter() override;
 
-  virtual int position_y() const override;
+  virtual int x() const override;
+
+  virtual int y() const override;
 
   virtual void SetTitle(const char* title) override;
 
@@ -58,9 +64,9 @@ class WindowWin : public Window, public RefCountedImpl<WindowWin>, public Overla
 
   virtual void Close() override;
 
-  virtual int DeviceToPixels(int val) const override { return (int)round(val * scale()); }
+  virtual int ScreenToPixels(int val) const override { return (int)round(val * scale()); }
 
-  virtual int PixelsToDevice(int val) const override { return (int)round(val / scale()); }
+  virtual int PixelsToScreen(int val) const override { return (int)round(val / scale()); }
 
   virtual void DrawSurface(int x, int y, Surface* surface) override;
 

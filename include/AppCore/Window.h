@@ -43,7 +43,7 @@ public:
   ///
   /// @param  height  The new height (in pixels).
   ///
-  virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) = 0;
+  virtual void OnResize(ultralight::Window* window, uint32_t width_px, uint32_t height_px) = 0;
 };
 
 ///
@@ -67,13 +67,19 @@ public:
   ///
   /// @param  monitor       The monitor to create the Window on.
   ///
-  /// @param  width         The width (in device coordinates).
+  /// @param  width         The width (in screen coordinates).
   ///
-  /// @param  height        The height (in device coordinates).
+  /// @param  height        The height (in screen coordinates).
   ///
   /// @param  fullscreen    Whether or not the window is fullscreen.
   ///
   /// @param  window_flags  Various window flags.
+  /// 
+  /// @note  Windows are immediately shown by default unless kWindowFlags_Hidden is set in the
+  ///        window_flags parameter. (They can be shown later via Window::Show())
+  /// 
+  /// @note  Screen coordinates are device-scale-independent and have the following relationship
+  ///        to pixel coordinates:   pixel_coordinate = round(screen_coordinate * scale)
   ///
   static Ref<Window> Create(Monitor* monitor, uint32_t width, uint32_t height,
     bool fullscreen, unsigned int window_flags);
@@ -91,14 +97,47 @@ public:
   virtual WindowListener* listener() = 0;
 
   ///
+  /// Get the window width (in screen coordinates).
+  ///
+  virtual uint32_t screen_width() const = 0;
+
+  ///
   /// Get the window width (in pixels).
   ///
   virtual uint32_t width() const = 0;
 
   ///
+  /// Get the window height (in screen coordinates).
+  ///
+  virtual uint32_t screen_height() const = 0;
+
+  ///
   /// Get the window height (in pixels).
   ///
   virtual uint32_t height() const = 0;
+
+  ///
+  /// Move the window to a new position (in screen coordinates) relative to the top-left of the 
+  /// monitor area.
+  /// 
+  virtual void MoveTo(int x, int y) = 0;
+
+  ///
+  /// Move the window to the center of the monitor.
+  ///
+  virtual void MoveToCenter() = 0;
+
+  ///
+  /// Get the x-position of the window (in screen coordinates) relative to the top-left of the
+  /// monitor area.
+  ///
+  virtual int x() const = 0;
+
+  ///
+  /// Get the y-position of the window (in screen coordinates) relative to the top-left of the
+  /// monitor area.
+  ///
+  virtual int y() const = 0;
 
   ///
   /// Whether or not the window is fullscreen.
@@ -120,23 +159,6 @@ public:
   /// The DPI scale of the window.
   ///
   virtual double scale() const = 0;
-
-  ///
-  /// Set the position of the window in device coordinates relative to the top-left of the monitor.
-  //
-  virtual void SetPosition(int x, int y) = 0;
-
-  ///
-  /// Get the x-position of the window in device coordinates relative, to the top-left of the
-  /// monitor.
-  /// 
-  virtual int position_x() const = 0;
-
-  ///
-  /// Get the y-position of the window in device coordinates relative, to the top-left of the
-  /// monitor.
-  /// 
-  virtual int position_y() const = 0;
 
   ///
   /// Set the window title.
@@ -169,14 +191,14 @@ public:
   virtual void Close() = 0;
 
   ///
-  /// Convert device coordinates to pixels using the current DPI scale.
+  /// Convert screen coordinates to pixels using the current DPI scale.
   ///
-  virtual int DeviceToPixels(int val) const = 0;
+  virtual int ScreenToPixels(int val) const = 0;
 
   ///
-  /// Convert pixels to device coordinates using the current DPI scale.
+  /// Convert pixels to screen coordinates using the current DPI scale.
   ///
-  virtual int PixelsToDevice(int val) const = 0;
+  virtual int PixelsToScreen(int val) const = 0;
 
   ///
   /// Draw a surface directly to window, used only by CPU renderer

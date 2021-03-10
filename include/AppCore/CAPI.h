@@ -190,9 +190,9 @@ ACExport unsigned int ulMonitorGetHeight(ULMonitor monitor);
 ///
 /// @param  monitor       The monitor to create the Window on.
 ///
-/// @param  width         The width (in device coordinates).
+/// @param  width         The width (in screen coordinates).
 ///
-/// @param  height        The height (in device coordinates).
+/// @param  height        The height (in screen coordinates).
 ///
 /// @param  fullscreen    Whether or not the window is fullscreen.
 ///
@@ -229,14 +229,47 @@ ACExport void ulWindowSetResizeCallback(ULWindow window,
                                         void* user_data);
 
 ///
+/// Get window width (in screen coordinates).
+///
+ACExport unsigned int ulWindowGetScreenWidth(ULWindow window);
+
+///
 /// Get window width (in pixels).
 ///
 ACExport unsigned int ulWindowGetWidth(ULWindow window);
 
 ///
+/// Get window height (in screen coordinates).
+///
+ACExport unsigned int ulWindowGetScreenHeight(ULWindow window);
+
+///
 /// Get window height (in pixels).
 ///
 ACExport unsigned int ulWindowGetHeight(ULWindow window);
+
+///
+/// Move the window to a new position (in screen coordinates) relative to the top-left of the
+/// monitor area.
+///
+ACExport void ulWindowMoveTo(ULWindow window, int x, int y);
+
+///
+/// Move the window to the center of the monitor.
+///
+ACExport void ulWindowMoveToCenter(ULWindow);
+
+///
+/// Get the x-position of the window (in screen coordinates) relative to the top-left of the
+/// monitor area.
+///
+ACExport int ulWindowGetPositionX(ULWindow window);
+
+///
+/// Get the y-position of the window (in screen coordinates) relative to the top-left of the
+/// monitor area.
+///
+ACExport int ulWindowGetPositionY(ULWindow window);
 
 ///
 /// Get whether or not a window is fullscreen.
@@ -247,23 +280,6 @@ ACExport bool ulWindowIsFullscreen(ULWindow window);
 /// Get the DPI scale of a window.
 ///
 ACExport double ulWindowGetScale(ULWindow window);
-
-///
-/// Set the position of the window in device coordinates relative to the top-left of the monitor.
-///
-ACExport void ulWindowSetPosition(ULWindow window, int x, int y);
-
-///
-/// Get the x-position of the window in device coordinates relative, to the top-left of the
-/// monitor.
-///
-ACExport int ulWindowGetPositionX(ULWindow window);
-
-///
-/// Get the y-position of the window in device coordinates relative, to the top-left of the
-/// monitor.
-///
-ACExport int ulWindowGetPositionY(ULWindow window);
 
 ///
 /// Set the window title.
@@ -296,14 +312,14 @@ ACExport bool ulWindowIsVisible(ULWindow window);
 ACExport void ulWindowClose(ULWindow window);
 
 ///
-/// Convert device coordinates to pixels using the current DPI scale.
+/// Convert screen coordinates to pixels using the current DPI scale.
 ///
-ACExport int ulWindowDeviceToPixel(ULWindow window, int val);
+ACExport int ulWindowScreenToPixels(ULWindow window, int val);
 
 ///
-/// Convert pixels to device coordinates using the current DPI scale.
+/// Convert pixels to screen coordinates using the current DPI scale.
 ///
-ACExport int ulWindowPixelsToDevice(ULWindow window, int val);
+ACExport int ulWindowPixelsToScreen(ULWindow window, int val);
 
 ///
 /// Get the underlying native window handle.
@@ -317,12 +333,11 @@ ACExport void* ulWindowGetNativeHandle(ULWindow window);
 ///
 /// Create a new Overlay.
 ///
-/// @param  window  The window to create the Overlay in. (we currently only
-///                 support one window per application)
+/// @param  window  The window to create the Overlay in.
 ///
-/// @param  width   The width in device coordinates.
+/// @param  width   The width in pixels.
 ///
-/// @param  height  The height in device coordinates.
+/// @param  height  The height in pixels.
 ///
 /// @param  x       The x-position (offset from the left of the Window), in
 ///                 pixels.
