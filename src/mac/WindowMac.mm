@@ -84,8 +84,16 @@ WindowMac::~WindowMac() {
   [window_ setDelegate:nil];
 }
 
+uint32_t WindowMac::screen_width() const {
+  return PixelsToScreen(width());
+}
+
 uint32_t WindowMac::width() const {
   return (uint32_t)controller_.metalView.metalLayer.drawableSize.width;
+}
+
+uint32_t WindowMac::screen_height() const {
+  return PixelsToScreen(height());
 }
 
 uint32_t WindowMac::height() const {
@@ -103,21 +111,25 @@ static float transformY(float y)
     return CGDisplayBounds(CGMainDisplayID()).size.height - y;
 }
 
-void WindowMac::SetPosition(int x, int y) {
+void WindowMac::MoveTo(int x, int y) {
     const NSRect contentRect = [controller_.metalView frame];
     const NSRect dummyRect = NSMakeRect(x, transformY(y + contentRect.size.height), 0, 0);
     const NSRect frameRect = [window_ frameRectForContentRect:dummyRect];
     [window_ setFrameOrigin:frameRect.origin];
 }
 
-int WindowMac::position_x() const {
+void WindowMac::MoveToCenter() {
+    [window_ center];
+}
+
+int WindowMac::x() const {
     const NSRect contentRect =
         [window_ contentRectForFrameRect:[window_ frame]];
 
     return contentRect.origin.x;
 }
 
-int WindowMac::position_y() const {
+int WindowMac::y() const {
     const NSRect contentRect =
         [window_ contentRectForFrameRect:[window_ frame]];
 

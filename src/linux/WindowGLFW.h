@@ -18,9 +18,21 @@ public:
 
   virtual WindowListener* listener() override { return listener_; }
 
+  virtual uint32_t screen_width() const override;
+
   virtual uint32_t width() const override;
 
+  virtual uint32_t screen_height() const override;
+
   virtual uint32_t height() const override;
+
+  virtual void MoveTo(int x, int y) override;
+
+  virtual void MoveToCenter() override;
+
+  virtual int x() const override;
+
+  virtual int y() const override;
 
   virtual uint32_t render_buffer_id() const override { return 0; }
 
@@ -29,12 +41,6 @@ public:
   virtual bool is_fullscreen() const override { return is_fullscreen_; }
 
   virtual double scale() const override;
-
-  virtual void SetPosition(int x, int y) override;
-
-  virtual int position_x() const override;
-
-  virtual int position_y() const override;
 
   virtual void SetTitle(const char* title) override;
 
@@ -48,11 +54,11 @@ public:
 
   virtual void Close() override;
 
-  virtual int DeviceToPixels(int val) const override {
+  virtual int ScreenToPixels(int val) const override {
     return (int)round(val * scale());
   }
 
-  virtual int PixelsToDevice(int val) const override {
+  virtual int PixelsToScreen(int val) const override {
     return (int)round(val / scale());
   }
 
