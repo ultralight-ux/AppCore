@@ -427,7 +427,7 @@ void WindowWin::Paint() {
     OverlayManager::Paint();
     swap_chain_->PresentFrame();
     gpu_context->EndDrawing();
-    if (window_needs_repaint_ && !is_first_paint_)
+    if (is_first_paint_)
       is_first_paint_ = false;
   }
 
