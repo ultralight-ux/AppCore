@@ -205,6 +205,10 @@ bool ulWindowIsFullscreen(ULWindow window) {
   return window->val->is_fullscreen();
 }
 
+bool ulWindowIsAccelerated(ULWindow window) {
+  return window->val->is_accelerated();
+}
+
 double ulWindowGetScale(ULWindow window) {
   return window->val->scale();
 }

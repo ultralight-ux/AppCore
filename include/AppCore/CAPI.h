@@ -277,6 +277,11 @@ ACExport int ulWindowGetPositionY(ULWindow window);
 ACExport bool ulWindowIsFullscreen(ULWindow window);
 
 ///
+/// Whether or not the window is GPU accelerated.
+/// 
+ACExport bool ulWindowIsAccelerated(ULWindow window);
+
+///
 /// Get the DPI scale of a window.
 ///
 ACExport double ulWindowGetScale(ULWindow window);
