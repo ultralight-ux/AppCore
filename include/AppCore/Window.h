@@ -150,7 +150,7 @@ public:
   virtual bool is_accelerated() const = 0;
 
   ///
-  /// The render buffer id of the the window's backing texture.
+  /// The render buffer id of the window's backing texture.
   /// (This will be 0 if the window is not accelerated).
   /// 
   virtual uint32_t render_buffer_id() const = 0;
