@@ -65,10 +65,8 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
 
   // Determine resources path
   String executable_path = GetExecutableDirectory();
-  String resource_path = PlatformFileSystem::AppendPath(executable_path, "resources/");
 
   config.cache_path = cache_path.utf16();
-  config.resource_path = resource_path.utf16();
 
   glfwSetErrorCallback(GLFW_error_callback);
 
