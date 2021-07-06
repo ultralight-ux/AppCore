@@ -214,12 +214,12 @@ if(${BUILD_TESTS})
     # Copy assets to assets path
     add_custom_command(TARGET MiniBrowser POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniBrowser/assets/" "${RESOURCES_PATH}/assets/"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${RESOURCES_PATH}/resources/")
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${RESOURCES_PATH}/assets/resources/")
 
     if (APPLE)
         add_custom_command(TARGET MiniBrowser POST_BUILD 
             COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.dylib" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libWebCore.dylib" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/*.dylib" $<TARGET_FILE_DIR:MiniBrowser>
             COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.dylib" $<TARGET_FILE_DIR:MiniBrowser>)
     endif ()
 
@@ -228,7 +228,7 @@ if(${BUILD_TESTS})
 
         add_custom_command(TARGET MiniBrowser POST_BUILD 
             COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.so" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/libWebCore.so" $<TARGET_FILE_DIR:MiniBrowser>
+            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/lib*" $<TARGET_FILE_DIR:MiniBrowser>
             COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.so" $<TARGET_FILE_DIR:MiniBrowser>)
             
     endif ()

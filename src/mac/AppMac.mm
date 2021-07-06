@@ -88,10 +88,8 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
 
   // Determine resources path
   String bundle_resource_path = GetBundleResourcePath();
-  String resource_path = PlatformFileSystem::AppendPath(bundle_resource_path, "resources/");
 
   config.cache_path = cache_path.utf16();
-  config.resource_path = resource_path.utf16();
   //config.device_scale = main_monitor_.scale();
   config.face_winding = kFaceWinding_Clockwise;
   config.force_repaint = true;
