@@ -70,9 +70,6 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   // Get module path
   String module_path = GetModulePath();
 
-  String resource_path = PlatformFileSystem::AppendPath(module_path, "resources");
-  
-  config.resource_path = resource_path.utf16();
   config.cache_path = cache_path.utf16();
   config.face_winding = kFaceWinding_Clockwise;
   Platform::instance().set_config(config);
