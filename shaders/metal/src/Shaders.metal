@@ -671,7 +671,7 @@ void applyClip(float2 objCoord, constant Uniforms& u, thread float4& outColor) {
         if (abs(d_clip) < 1.0)
             outColor = float4(0.9, 1.0, 0.0, 1.0);
 #else
-        float alpha = antialias(-d_clip, AA_WIDTH, -AA_WIDTH);
+        float alpha = antialias(-d_clip, AA_WIDTH, 0.0);
         outColor = float4(outColor.rgb * alpha, outColor.a * alpha);
 #endif
     }
