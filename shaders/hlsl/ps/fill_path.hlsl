@@ -135,10 +135,8 @@ void Unpack(float4 x, out float4 a, out float4 b) {
   b = floor(x - a * s);
 }
 
-#define AA_WIDTH 0.354
-
-float antialias(in float d, in float width, in float median) {
-  return smoothstep(median - width, median + width, d);
+float antialias2(float d) {
+  return smoothstep(-0.6180469, 0.6180469, d/fwidth(d));
 }
 
 float4 GetCol(in matrix m, uint i) { return float4(m[0][i], m[1][i], m[2][i], m[3][i]); }
@@ -163,7 +161,7 @@ void applyClip(VS_OUTPUT input, inout float4 outColor) {
     if (abs(d_clip) < 3.0)
       outColor = float4(0.9, 1.0, 0.0, 1.0);
 #else
-    float alpha = antialias(-d_clip, AA_WIDTH, -AA_WIDTH);
+    float alpha = antialias2(-d_clip);
     outColor = float4(outColor.rgb * alpha, outColor.a * alpha);
 #endif
   }

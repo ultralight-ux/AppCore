@@ -270,7 +270,7 @@ void Unpack(float4 x, out float4 a, out float4 b) {
 }
 
 float antialias2(float d) {
-  return smoothstep(-AA_WIDTH, +AA_WIDTH, d);
+  return smoothstep(-0.6180469, 0.6180469, d/fwidth(d));
 }
 
 // Returns two values:
