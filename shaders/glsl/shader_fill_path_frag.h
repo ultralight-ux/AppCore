@@ -155,7 +155,7 @@ void applyClip() {
     p -= origin;
         
     float d_clip = sdRoundRect(p, size, radii_x, radii_y) * (inverse? -1.0 : 1.0);
-    float alpha = antialias(-d_clip, AA_WIDTH, -AA_WIDTH);
+    float alpha = antialias(-d_clip, AA_WIDTH, 0.0);
     out_Color = vec4(out_Color.rgb * alpha, out_Color.a * alpha);
     
     //if (abs(d_clip) < 2.0)
