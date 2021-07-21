@@ -18,7 +18,7 @@ protected:
 public:
   GPUContextVK(bool enable_vsync, bool enable_msaa);
 
-  virtual ~GPUContextVK() {}
+  virtual ~GPUContextVK();
 
   virtual ultralight::GPUDriverImpl* driver() const { return driver_.get(); }
 

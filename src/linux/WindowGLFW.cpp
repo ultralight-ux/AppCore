@@ -163,6 +163,16 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
     exit(EXIT_FAILURE);
   }
 
+  if (glfwVulkanSupported()){
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+	  VkResult ret = glfwCreateWindowSurface(((GPUContextVK*)gpu_context)->instance, window_, nullptr, &surface);
+	  if(ret != VK_SUCCESS) {
+	  	glfwTerminate();
+      exit(EXIT_FAILURE);
+	  }
+    this->surface = surface;
+  }
+
   glfwSetWindowUserPointer(window_, this);
 
   // Bind callbacks
