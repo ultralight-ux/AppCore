@@ -41,6 +41,7 @@ public:
 
   virtual GLFWwindow* active_window() { return active_window_; }
   
+  // Vulkan
   VkInstance instance;
   VkDevice device;
 };

@@ -213,6 +213,11 @@ WindowGLFW::~WindowGLFW() {
     glfwDestroyCursor(cursor_hresize_);
     glfwDestroyCursor(cursor_vresize_);
 
+    if(glfwVulkanSupported()){
+      GPUContextVK* gpu_context = (GPUContextVK*)static_cast<AppGLFW*>(App::instance())->gpu_context();
+      vkDestroySurfaceKHR(gpu_context->instance, this->surface, nullptr);
+    }
+
     glfwDestroyWindow(window_);
     static_cast<AppGLFW*>(App::instance())->RemoveWindow(this);
   }
