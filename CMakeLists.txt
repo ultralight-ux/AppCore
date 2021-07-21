@@ -61,6 +61,10 @@ if (PORT MATCHES "UltralightLinux")
     option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
     option(GLFW_INSTALL "Generate installation target" OFF)
 
+    option(GLFW_VULKAN_STATIC "Use the Vulkan loader statically linked into application" ON)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLFW_VULKAN_STATIC=1")
+
     set(GLFW_DIR "src/glfw")
     add_subdirectory(${GLFW_DIR})
 
@@ -74,7 +78,7 @@ if (PORT MATCHES "UltralightLinux")
     include_directories("${GLFW_DIR}/include")
     include_directories("${GLFW_DIR}/deps")
     
-    link_libraries(glfw fontconfig)
+    link_libraries(glfw fontconfig vulkan)
 elseif (PORT MATCHES "UltralightMac")
     link_directories("${ULTRALIGHTCORE_DIR}/bin"
                      "${WEBCORE_DIR}/bin"
