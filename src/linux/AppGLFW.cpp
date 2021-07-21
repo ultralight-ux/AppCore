@@ -1,4 +1,6 @@
 #include "AppGLFW.h"
+#include "vulkan/GPUContextVK.h"
+#include "vulkan/GPUDriverVK.h"
 #include "gl/GPUContextGL.h"
 #include "gl/GPUDriverGL.h"
 #include <Ultralight/platform/Platform.h>
@@ -100,8 +102,11 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
 
   clipboard_.reset(new ClipboardGLFW());
   Platform::instance().set_clipboard(clipboard_.get());
-
-  gpu_context_.reset(new GPUContextGL(true, false));
+  if (glfwVulkanSupported()){
+    gpu_context_.reset((GPUContextGL*)new GPUContextVK(true, false));
+  }else {
+    gpu_context_.reset(new GPUContextGL(true, false));
+  }
   Platform::instance().set_gpu_driver(gpu_context_->driver());
 
   // We use the GPUContext's global offscreen window to maintain

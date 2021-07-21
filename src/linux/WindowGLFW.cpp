@@ -149,7 +149,9 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
     glfwTerminate();
     exit(EXIT_FAILURE);
   }
-
+  if (glfwVulkanSupported()){
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // do not create GL context
+  }
   // This window will share the GL context of GPUContextGL's offscreen window
   GLFWwindow* win = glfwCreateWindow(ScreenToPixels(width), ScreenToPixels(height),
     "", NULL, gpu_context->window());
