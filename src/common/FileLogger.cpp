@@ -13,7 +13,7 @@ FileLogger::FileLogger(const String& log_path) : log_file_(log_path.utf8().data(
 FileLogger::~FileLogger() {
 }
 
-void FileLogger::LogMessage(LogLevel log_level, const String16& message) {
+void FileLogger::LogMessage(LogLevel log_level, const String& message) {
   if (!log_file_.is_open())
     return;
 

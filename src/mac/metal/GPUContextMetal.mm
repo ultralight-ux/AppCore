@@ -22,7 +22,7 @@ inline size_t hash_combine( size_t lhs, size_t rhs ) {
   return lhs;
 }
     
-RenderState::RenderState() : shader_type(kShaderType_Fill),
+RenderState::RenderState() : shader_type(ShaderType::Fill),
                              blend_enabled(true),
                              pixel_format(MTLPixelFormatBGRA8Unorm),
                              sample_count(1) {}
@@ -168,10 +168,10 @@ id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
   
   MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
   pipelineStateDescriptor.label = @"Ultralight RenderPipelineState";
-  if (render_state_.shader_type == kShaderType_Fill) {
+  if (render_state_.shader_type == ShaderType::Fill) {
     pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"vertexShader"];
     pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"fragmentShader"];
-  } else if (render_state_.shader_type == kShaderType_FillPath) {
+  } else if (render_state_.shader_type == ShaderType::FillPath) {
     pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"pathVertexShader"];
     pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"pathFragmentShader"];
   } else {

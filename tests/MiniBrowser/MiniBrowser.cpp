@@ -17,8 +17,10 @@ class MyApp : public WindowListener, public ViewListener {
  public:
   MyApp() {
     Settings s;
-    s.force_cpu_renderer = false;
-    app_ = App::Create(s);
+    s.force_cpu_renderer = true;
+    Config c;
+    c.force_repaint = true;
+    app_ = App::Create(s, c);
 
     CreateWindow();
     CreateWindow();
@@ -86,7 +88,7 @@ class MyApp : public WindowListener, public ViewListener {
     ///
     Window* window = nullptr;
     for (auto i : active_windows_) {
-      if (i.overlay_->view().ptr() == caller) {
+      if (i.overlay_->view().get() == caller) {
         window = i.window_.get();
         break;
       }

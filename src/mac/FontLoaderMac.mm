@@ -10,7 +10,7 @@ FontLoaderMac::FontLoaderMac() {}
 
 FontLoaderMac::~FontLoaderMac() {}
     
-String16 FontLoaderMac::fallback_font() const {
+String FontLoaderMac::fallback_font() const {
     return "Helvetica";
 }
     
@@ -23,10 +23,11 @@ static String16 ToString16(CFStringRef str) {
     return String16(buffer.data(), size);
 }
 
-String16 FontLoaderMac::fallback_font_for_characters(const String16& characters, int weight, bool italic) const {
-    CFStringRef str = CFStringCreateWithCharacters(kCFAllocatorDefault, reinterpret_cast<const UniChar*>(characters.data()), characters.length());
+String FontLoaderMac::fallback_font_for_characters(const String& characters, int weight, bool italic) const {
+    String16 characters16 = characters.utf16();
+    CFStringRef str = CFStringCreateWithCharacters(kCFAllocatorDefault, reinterpret_cast<const UniChar*>(characters16.data()), characters16.length());
     // Use Helvetica as our base font, go through its cascade list to find a system fallback that can display the given charachters
-    CTFontRef font = CTFontCreateForString(CTFontCreateWithName(CFSTR("Helvetica"), 12.0, NULL), str, {0, (CFIndex)characters.length()});
+    CTFontRef font = CTFontCreateForString(CTFontCreateWithName(CFSTR("Helvetica"), 12.0, NULL), str, {0, (CFIndex)characters16.length()});
     CFStringRef family = CTFontCopyFamilyName(font);
     String16 result = ToString16(family);
     if (result.empty())
@@ -98,8 +99,8 @@ static NSDictionary* createFontAttributes(NSString* family, int weight, bool ita
              (NSString*)kCTFontTraitsAttribute : traitsDictionary };
 }
 
-RefPtr<FontFile> FontLoaderMac::Load(const String16& family, int weight, bool italic) {
-    String16 family_name = family;
+RefPtr<FontFile> FontLoaderMac::Load(const String& family, int weight, bool italic) {
+    String16 family_name = family.utf16();
     if (Equals(family_name, String16("-apple-system")))
         family_name = String16(".AppleSystemUIFont");
     

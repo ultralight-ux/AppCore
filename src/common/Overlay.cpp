@@ -72,7 +72,7 @@ public:
       indices_.resize(6);
 
       auto& config = Platform::instance().config();
-      if (config.face_winding == kFaceWinding_Clockwise)
+      if (config.face_winding == FaceWinding::Clockwise)
         memcpy(indices_.data(), patternCW, sizeof(IndexType) * indices_.size());
       else
         memcpy(indices_.data(), patternCCW, sizeof(IndexType) * indices_.size());
@@ -86,7 +86,7 @@ public:
       gpu_state_.transform = identity.GetMatrix4x4();
       gpu_state_.enable_blend = true;
       gpu_state_.enable_texturing = true;
-      gpu_state_.shader_type = kShaderType_Fill;
+      gpu_state_.shader_type = ShaderType::Fill;
       gpu_state_.render_buffer_id = window_->render_buffer_id();
       gpu_state_.texture_1_id = target.texture_id;
 
@@ -144,7 +144,7 @@ public:
     vertices_[3] = v;
 
     ultralight::VertexBuffer vbuffer;
-    vbuffer.format = ultralight::kVertexBufferFormat_2f_4ub_2f_2f_28f;
+    vbuffer.format = ultralight::VertexBufferFormat::_2f_4ub_2f_2f_28f;
     vbuffer.size = static_cast<uint32_t>(sizeof(ultralight::Vertex_2f_4ub_2f_2f_28f) * vertices_.size());
     vbuffer.data = (uint8_t*)vertices_.data();
 
@@ -163,7 +163,7 @@ public:
     needs_update_ = false;
   }
 
-  virtual Ref<View> view() override { return *view_; }
+  virtual RefPtr<View> view() override { return view_; }
 
   virtual uint32_t width() const override { return width_; }
 
@@ -210,7 +210,7 @@ public:
   REF_COUNTED_IMPL(OverlayImpl);
 
 protected:
-  OverlayImpl(Ref<Window> window, uint32_t width, uint32_t height, int x, int y) :
+  OverlayImpl(RefPtr<Window> window, uint32_t width, uint32_t height, int x, int y) :
     window_(window), width_(width), height_(height), x_(x), y_(y), needs_update_(true),
     use_gpu_(Platform::instance().gpu_driver()) {
     if (use_gpu_)
@@ -224,7 +224,7 @@ protected:
     window_->overlay_manager()->Add(this);
   }
 
-  OverlayImpl(Ref<Window> window, Ref<View> view, int x, int y) :
+  OverlayImpl(RefPtr<Window> window, RefPtr<View> view, int x, int y) :
     window_(window), view_(view), width_(view->width()),
     height_(view->height()), x_(x), y_(y), needs_update_(true),
     use_gpu_(Platform::instance().gpu_driver()) {
@@ -243,7 +243,7 @@ protected:
     }
   }
 
-  Ref<Window> window_;
+  RefPtr<Window> window_;
   uint32_t width_;
   uint32_t height_;
   int x_;
@@ -263,7 +263,7 @@ protected:
   DISALLOW_COPY_AND_ASSIGN(OverlayImpl);
 };
 
-Ref<Overlay> Overlay::Create(Ref<Window> window, uint32_t width,
+RefPtr<Overlay> Overlay::Create(RefPtr<Window> window, uint32_t width,
                              uint32_t height, int x, int y) {
   // Clamp each dimension to 2
   width = width <= 2 ? 2 : width;
@@ -272,7 +272,7 @@ Ref<Overlay> Overlay::Create(Ref<Window> window, uint32_t width,
   return AdoptRef(*new OverlayImpl(window, width, height, x, y));
 }
 
-Ref<Overlay> Overlay::Create(Ref<Window> window, Ref<View> view, int x, int y) {
+RefPtr<Overlay> Overlay::Create(RefPtr<Window> window, RefPtr<View> view, int x, int y) {
   return AdoptRef(*new OverlayImpl(window, view, x, y));
 }
 

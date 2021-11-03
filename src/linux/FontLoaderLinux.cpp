@@ -68,9 +68,9 @@ static int fontWeightToFontconfigWeight(int weight)
     return FC_WEIGHT_ULTRABLACK;
 }
 
-String16 FontLoaderLinux::fallback_font() const { return "sans"; }
+String FontLoaderLinux::fallback_font() const { return "sans"; }
 
-String16 FontLoaderLinux::fallback_font_for_characters(const String16& characters, int weight, bool italic) const {
+String FontLoaderLinux::fallback_font_for_characters(const String& characters, int weight, bool italic) const {
   return fallback_font();
 }
 
@@ -97,11 +97,12 @@ static inline bool EqualsIgnoringCase(const char * s1, const char * s2) {
   return result == 0;
 }
 
-static inline std::string ToAscii(const String16& str) {
+static inline std::string ToAscii(const String& str) {
   std::string result;
-  for (size_t i = 0; i < str.size(); i++) {
-    if (str.data()[i] < 0x7F)
-      result += static_cast<char>(str.data()[i]);
+  String8 str8 = str.utf8();
+  for (size_t i = 0; i < str8.size(); i++) {
+    if (str8.data()[i] < 0x7F)
+      result += static_cast<char>(str8.data()[i]);
   }
   return result;
 }
@@ -336,13 +337,13 @@ FcUniquePtr<FcPattern> GetPatternForDescription(const std::string& family, int w
   return std::move(resultPattern);
 }
 
-RefPtr<FontFile> FontLoaderLinux::Load(const String16& family, int weight, bool italic) {
+RefPtr<FontFile> FontLoaderLinux::Load(const String& family, int weight, bool italic) {
   FcUniquePtr<FcPattern> pattern = GetPatternForDescription(ToAscii(family), weight, italic, 12.0);
 
   if (pattern) {
     FcChar8* filepath = NULL;
 	if (FcPatternGetString(pattern.get(), FC_FILE, 0, &filepath) == FcResultMatch) {
-      return FontFile::Create(String16((const char*)filepath));
+      return FontFile::Create(String((const char*)filepath));
     }
   }
 

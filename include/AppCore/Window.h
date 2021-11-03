@@ -81,7 +81,7 @@ public:
   /// @note  Screen coordinates are device-scale-independent and have the following relationship
   ///        to pixel coordinates:   pixel_coordinate = round(screen_coordinate * scale)
   ///
-  static Ref<Window> Create(Monitor* monitor, uint32_t width, uint32_t height,
+  static RefPtr<Window> Create(Monitor* monitor, uint32_t width, uint32_t height,
     bool fullscreen, unsigned int window_flags);
 
   ///

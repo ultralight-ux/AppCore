@@ -26,7 +26,7 @@ FileSystemBasic::FileSystemBasic(const char* baseDir) : baseDir_(baseDir) {
   }
 }
 
-std::string FileSystemBasic::getRelative(const String16& path) {
+std::string FileSystemBasic::getRelative(const String& path) {
   if (path.empty())
     return baseDir_;
 
@@ -41,7 +41,7 @@ std::string FileSystemBasic::getRelative(const String16& path) {
   return baseDir_ + relPath;
 }
 
-bool FileSystemBasic::FileExists(const String16& path) {
+bool FileSystemBasic::FileExists(const String& path) {
   std::ifstream filestream(getRelative(path));
   return filestream.good();
 }
@@ -58,15 +58,15 @@ bool FileSystemBasic::GetFileSize(FileHandle handle, int64_t& result) {
   return false;
 }
 
-bool FileSystemBasic::GetFileMimeType(const String16& path, String16& result) {
+bool FileSystemBasic::GetFileMimeType(const String& path, String& result) {
   String8 utf8 = String(path).utf8();
   std::string filepath(utf8.data(), utf8.length()); 
   std::string ext = filepath.substr(filepath.find_last_of(".") + 1);
-  result = String16(FileExtensionToMimeType(ext.c_str()));
+  result = String(FileExtensionToMimeType(ext.c_str()));
   return true;
 }
 
-FileHandle FileSystemBasic::OpenFile(const String16& path, bool open_for_writing) {
+FileHandle FileSystemBasic::OpenFile(const String& path, bool open_for_writing) {
   std::unique_ptr<std::ifstream> file(new std::ifstream(getRelative(path), std::ifstream::ate | std::ifstream::binary));
   if (!file->good())
     return invalidFileHandle;

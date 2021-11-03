@@ -366,7 +366,7 @@ bool WindowWin::is_visible() const { return IsWindowVisible(hwnd_); }
 void WindowWin::Close() { DestroyWindow(hwnd_); }
 
 /*
-void WindowWin::DrawBitmap(int x, int y, Ref<Bitmap> bitmap, IntRect rect) {
+void WindowWin::DrawBitmap(int x, int y, RefPtr<Bitmap> bitmap, IntRect rect) {
   if (bitmap->IsEmpty())
     return;
 
@@ -471,7 +471,7 @@ void WindowWin::OnChangeDPI(double scale, const RECT* suggested_rect) {
                SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
-Ref<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height, bool fullscreen,
+RefPtr<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height, bool fullscreen,
                            unsigned int window_flags) {
   return AdoptRef(*new WindowWin(monitor, width, height, fullscreen, window_flags));
 }

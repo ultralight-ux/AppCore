@@ -13,9 +13,9 @@ GPUDriverMetal::~GPUDriverMetal() {}
 void GPUDriverMetal::CreateTexture(uint32_t texture_id,
                                    Ref<Bitmap> bitmap) {
   MTLPixelFormat format;
-  if (bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB) {
+  if (bitmap->format() == BitmapFormat::BGRA8_UNORM_SRGB) {
     format = MTLPixelFormatBGRA8Unorm;
-  } else if (bitmap->format() == kBitmapFormat_A8_UNORM) {
+  } else if (bitmap->format() == BitmapFormat::A8_UNORM) {
     format = MTLPixelFormatA8Unorm;
   } else {
     NSLog(@"Failed to create texture, unhandled bitmap format.");

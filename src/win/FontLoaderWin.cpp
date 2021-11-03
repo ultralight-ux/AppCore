@@ -35,11 +35,11 @@ static DWRITE_FONT_WEIGHT toDWriteFontWeight(LONG fontWeight)
 
 namespace ultralight {
 
-String16 FontLoaderWin::fallback_font() const {
+String FontLoaderWin::fallback_font() const {
   return "Arial";
 }
 
-String16 FontLoaderWin::fallback_font_for_characters(const String16& characters,
+String FontLoaderWin::fallback_font_for_characters(const String& characters,
   int weight, bool italic) const {
   ComPtr<IDWriteFactory2> pDWriteFactory;
 
@@ -60,12 +60,15 @@ String16 FontLoaderWin::fallback_font_for_characters(const String16& characters,
 
   if (FAILED(hr)) return fallback_font();
 
-  TextAnalysisSource source(characters.data(), (UINT32)characters.length(), localeName, DWRITE_READING_DIRECTION_LEFT_TO_RIGHT);
+  String16 characters16 = characters.utf16();
+
+  TextAnalysisSource source(characters16.data(), (UINT32)characters16.length(), localeName,
+                            DWRITE_READING_DIRECTION_LEFT_TO_RIGHT);
 
   UINT32 mappedLength;
   ComPtr<IDWriteFont> pMappedFont;
   FLOAT fontScale = 1.0f;
-  hr = pFontFallback->MapCharacters(&source, 0, (UINT32)characters.length(), nullptr, nullptr,
+  hr = pFontFallback->MapCharacters(&source, 0, (UINT32)characters16.length(), nullptr, nullptr,
     toDWriteFontWeight(weight), italic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL,
     DWRITE_FONT_STRETCH_NORMAL, &mappedLength, &pMappedFont, &fontScale);
 
@@ -225,15 +228,15 @@ static RefPtr<FontFile> LoadFont(const String16& family, int weight, bool italic
 
   if (FAILED(hr)) return nullptr;
 
-  Ref<Buffer> result = Buffer::Create(fragmentStart, (size_t)fileSize);
+  RefPtr<Buffer> result = Buffer::Create(fragmentStart, (size_t)fileSize);
 
   pFontFileStream->ReleaseFileFragment(context);
 
   return FontFile::Create(result);
 }
 
-RefPtr<FontFile> FontLoaderWin::Load(const String16& family, int weight, bool italic) {
-  return LoadFont(family, weight, italic);
+RefPtr<FontFile> FontLoaderWin::Load(const String& family, int weight, bool italic) {
+  return LoadFont(family.utf16(), weight, italic);
 }
   
 // Called from Platform.cpp

@@ -112,14 +112,14 @@ FileSystemWin::FileSystemWin(LPCWSTR baseDir) {
 
 FileSystemWin::~FileSystemWin() {}
 
-bool FileSystemWin::FileExists(const String16& path) {
+bool FileSystemWin::FileExists(const String& path) {
   WIN32_FIND_DATAW findData;
   return getFindData(GetRelative(path).get(), findData);
 }
 
-bool FileSystemWin::GetFileMimeType(const String16& path, String16& result)
-{
-  LPWSTR ext = PathFindExtensionW(path.data());
+bool FileSystemWin::GetFileMimeType(const String& path, String& result) {
+  String16 path16 = path.utf16();
+  LPWSTR ext = PathFindExtensionW(path16.data());
   std::wstring mimetype = GetMimeType(ext);
   result = String16(mimetype.c_str(), mimetype.length());
   return true;
@@ -133,7 +133,7 @@ bool FileSystemWin::GetFileSize(FileHandle handle, int64_t& result) {
   return getFileSizeFromByHandleFileInformationStructure(fileInformation, result);
 }
 
-FileHandle FileSystemWin::OpenFile(const String16& path, bool open_for_writing) {
+FileHandle FileSystemWin::OpenFile(const String& path, bool open_for_writing) {
   DWORD desiredAccess = 0;
   DWORD creationDisposition = 0;
   DWORD shareMode = 0;
@@ -169,10 +169,11 @@ int64_t FileSystemWin::ReadFromFile(FileHandle handle, char* data, int64_t lengt
   return static_cast<int64_t>(bytesRead);
 }
 
-std::unique_ptr<WCHAR[]> FileSystemWin::GetRelative(const String16& path) {
+std::unique_ptr<WCHAR[]> FileSystemWin::GetRelative(const String& path) {
+  String16 path16 = path.utf16();
   std::unique_ptr<WCHAR[]> relPath(new WCHAR[_MAX_PATH]);
   memset(relPath.get(), 0, _MAX_PATH * sizeof(WCHAR));
-  PathCombineW(relPath.get(), baseDir_.get(), path.data());
+  PathCombineW(relPath.get(), baseDir_.get(), path16.data());
   return relPath;
 }
   

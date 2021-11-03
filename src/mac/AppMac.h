@@ -30,7 +30,7 @@ public:
 
   virtual Monitor* main_monitor() override;
 
-  virtual Ref<Renderer> renderer() override;
+  virtual RefPtr<Renderer> renderer() override;
 
   virtual void Run() override;
 

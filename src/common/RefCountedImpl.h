@@ -1,7 +1,9 @@
+// Copyright (C) 2021 Ultralight, Inc. All rights reserved.
 // Portions of this code Copyright (c) 2012 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in Chromium's LICENSE file.
 #pragma once
+#include <atomic>
 
 namespace ultralight {
 
@@ -31,7 +33,7 @@ public:
   }
 
 private:
-  mutable int ref_count_;
+  mutable std::atomic<int> ref_count_;
 };
 
 // A macro to disallow the copy constructor and operator= functions.

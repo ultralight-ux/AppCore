@@ -71,7 +71,7 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   String module_path = GetModulePath();
 
   config.cache_path = cache_path.utf16();
-  config.face_winding = kFaceWinding_Clockwise;
+  config.face_winding = FaceWinding::Clockwise;
   Platform::instance().set_config(config);
 
   if (!Platform::instance().font_loader()) {
@@ -127,8 +127,8 @@ Monitor* AppWin::main_monitor() {
   return main_monitor_.get();
 }
 
-Ref<Renderer> AppWin::renderer() {
-  return *renderer_.get();
+RefPtr<Renderer> AppWin::renderer() {
+  return renderer_;
 }
 
 void AppWin::Run() {
@@ -184,7 +184,7 @@ GPUDriverD3D11* AppWin::gpu_driver() { return gpu_driver_.get(); }
 
 static App* g_app_instance = nullptr;
 
-Ref<App> App::Create(Settings settings, Config config) {
+RefPtr<App> App::Create(Settings settings, Config config) {
   g_app_instance = new AppWin(settings, config);
   return AdoptRef(*g_app_instance);
 }

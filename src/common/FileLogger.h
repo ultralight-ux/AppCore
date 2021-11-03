@@ -12,7 +12,7 @@ public:
   FileLogger(const String& log_path);
   virtual ~FileLogger();
 
-  virtual void LogMessage(LogLevel log_level, const String16& message) override;
+  virtual void LogMessage(LogLevel log_level, const String& message) override;
 };
 
 }  // namespace ultralight

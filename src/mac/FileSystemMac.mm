@@ -86,19 +86,18 @@ static bool Equals(const String16& a, const String16& b) {
     return true;
 }
 
-FileSystemMac::FileSystemMac(const String16& baseDir) : base_dir_(baseDir) {
-
+FileSystemMac::FileSystemMac(const String& baseDir) : base_dir_(baseDir.utf16()) {
     if (Equals(base_dir_, String16("@resource_path")))
         base_dir_ = ToString16((__bridge CFStringRef)[[NSBundle mainBundle] resourcePath]);
 }
     
 FileSystemMac::~FileSystemMac() {}
 
-bool FileSystemMac::FileExists(const String16& path) {
+bool FileSystemMac::FileExists(const String& path) {
     if (path.empty())
         return false;
     
-    std::string fsRep = fileSystemRepresentation(getRelative(path));
+    std::string fsRep = fileSystemRepresentation(getRelative(path.utf16()));
     
     if (!fsRep.data() || fsRep.data()[0] == '\0')
         return false;
@@ -115,8 +114,8 @@ bool FileSystemMac::GetFileSize(FileHandle handle, int64_t& result) {
     return true;
 }
 
-bool FileSystemMac::GetFileMimeType(const String16& path, String16& result) {
-    auto pathStr = ToNSString(getRelative(path));
+bool FileSystemMac::GetFileMimeType(const String& path, String& result) {
+    auto pathStr = ToNSString(getRelative(path.utf16()));
     CFStringRef extension = (__bridge CFStringRef)[pathStr pathExtension];
     CFStringRef mime_type = NULL;
     CFStringRef identifier = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, extension, NULL);
@@ -127,8 +126,8 @@ bool FileSystemMac::GetFileMimeType(const String16& path, String16& result) {
     return !result.empty();
 }
 
-FileHandle FileSystemMac::OpenFile(const String16& path, bool open_for_writing) {
-    std::string fsRep = fileSystemRepresentation(getRelative(path));
+FileHandle FileSystemMac::OpenFile(const String& path, bool open_for_writing) {
+    std::string fsRep = fileSystemRepresentation(getRelative(path.utf16()));
     
     if (fsRep.empty())
         return invalidFileHandle;

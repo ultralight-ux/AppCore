@@ -37,7 +37,7 @@ void OverlayManager::Render() {
 
   size_t i = 0;
   for (auto& overlay : overlays_) {
-    view_array[i] = overlay->view().ptr();
+    view_array[i] = overlay->view().get();
     i++;
   }
 

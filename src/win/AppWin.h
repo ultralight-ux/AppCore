@@ -36,7 +36,7 @@ class AppWin : public App, public RefCountedImpl<AppWin> {
 
   virtual Monitor* main_monitor() override;
 
-  virtual Ref<Renderer> renderer() override;
+  virtual RefPtr<Renderer> renderer() override;
 
   virtual void Run() override;
 

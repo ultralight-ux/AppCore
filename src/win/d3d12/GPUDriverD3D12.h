@@ -26,10 +26,10 @@ public:
   // Inherited from GPUDriver:
 
   virtual void CreateTexture(uint32_t texture_id,
-    Ref<Bitmap> bitmap) override;
+    RefPtr<Bitmap> bitmap) override;
 
   virtual void UpdateTexture(uint32_t texture_id,
-    Ref<Bitmap> bitmap) override;
+    RefPtr<Bitmap> bitmap) override;
 
   virtual void DestroyTexture(uint32_t texture_id) override;
 
@@ -72,7 +72,7 @@ protected:
   void BindGeometry(uint32_t id);
   void SetViewport(float width, float height);
   void UpdateConstantBuffer(const GPUState& state);
-  void UpdateTextureResource(ID3D12Resource* resource, Ref<Bitmap> bitmap, bool is_msaa);
+  void UpdateTextureResource(ID3D12Resource* resource, RefPtr<Bitmap> bitmap, bool is_msaa);
   Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height);
 
   GPUContextD3D12* context_;

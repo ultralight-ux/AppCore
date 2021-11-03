@@ -209,12 +209,12 @@ void GPUDriverGL::CreateTexture(uint32_t texture_id,
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->row_bytes() / bitmap->bpp());
   CHECK_GL();
-  if (bitmap->format() == kBitmapFormat_A8_UNORM) {
+  if (bitmap->format() == BitmapFormat::A8_UNORM) {
     const void* pixels = bitmap->LockPixels();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, bitmap->width(), bitmap->height(), 0,
       GL_RED, GL_UNSIGNED_BYTE, pixels);
     bitmap->UnlockPixels();
-  } else if (bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB) {
+  } else if (bitmap->format() == BitmapFormat::BGRA8_UNORM_SRGB) {
     const void* pixels = bitmap->LockPixels();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bitmap->width(), bitmap->height(), 0,
       GL_BGRA, GL_UNSIGNED_BYTE, pixels);
@@ -238,12 +238,12 @@ void GPUDriverGL::UpdateTexture(uint32_t texture_id,
   glPixelStorei(GL_UNPACK_ROW_LENGTH, bitmap->row_bytes() / bitmap->bpp());
 
   if (!bitmap->IsEmpty()) {
-    if (bitmap->format() == kBitmapFormat_A8_UNORM) {
+    if (bitmap->format() == BitmapFormat::A8_UNORM) {
       const void* pixels = bitmap->LockPixels();
       glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, bitmap->width(), bitmap->height(), 0,
         GL_RED, GL_UNSIGNED_BYTE, pixels);
       bitmap->UnlockPixels();
-    } else if (bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB) {
+    } else if (bitmap->format() == BitmapFormat::BGRA8_UNORM_SRGB) {
       const void* pixels = bitmap->LockPixels();
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bitmap->width(), bitmap->height(), 0,
         GL_BGRA, GL_UNSIGNED_BYTE, pixels);
@@ -553,8 +553,8 @@ void GPUDriverGL::BindUltralightTexture(uint32_t ultralight_texture_id) {
 }
 
 void GPUDriverGL::LoadPrograms(void) {
-  LoadProgram(ultralight::kShaderType_Fill);
-  LoadProgram(ultralight::kShaderType_FillPath);
+  LoadProgram(ultralight::ShaderType::Fill);
+  LoadProgram(ultralight::ShaderType::FillPath);
 }
 
 void GPUDriverGL::DestroyPrograms(void) {
@@ -574,14 +574,14 @@ void GPUDriverGL::DestroyPrograms(void) {
 void GPUDriverGL::LoadProgram(ProgramType type) {
   GLenum ErrorCheckValue = glGetError();
   ProgramEntry prog;
-  if (type == kShaderType_Fill)
+  if (type == ShaderType::Fill)
   {
     prog.vert_shader_id = LoadShaderFromSource(GL_VERTEX_SHADER,
       shader_v2f_c4f_t2f_t2f_d28f_vert().c_str(), "shader_v2f_c4f_t2f_t2f_d28f.vert");
     prog.frag_shader_id = LoadShaderFromSource(GL_FRAGMENT_SHADER,
       shader_fill_frag().c_str(), "shader_fill.frag");
   }
-  else if (type == kShaderType_FillPath) {
+  else if (type == ShaderType::FillPath) {
     prog.vert_shader_id = LoadShaderFromSource(GL_VERTEX_SHADER,
       shader_v2f_c4f_t2f_vert().c_str(), "shader_v2f_c4f_t2f.vert");
     prog.frag_shader_id = LoadShaderFromSource(GL_FRAGMENT_SHADER,
@@ -596,7 +596,7 @@ void GPUDriverGL::LoadProgram(ProgramType type) {
   glBindAttribLocation(prog.program_id, 1, "in_Color");
   glBindAttribLocation(prog.program_id, 2, "in_TexCoord");
 
-  if (type == kShaderType_Fill) {
+  if (type == ShaderType::Fill) {
     glBindAttribLocation(prog.program_id, 3, "in_ObjCoord");
     glBindAttribLocation(prog.program_id, 4, "in_Data0");
     glBindAttribLocation(prog.program_id, 5, "in_Data1");
@@ -610,7 +610,7 @@ void GPUDriverGL::LoadProgram(ProgramType type) {
   glLinkProgram(prog.program_id);
   glUseProgram(prog.program_id);
 
-  if (type == kShaderType_Fill) {
+  if (type == ShaderType::Fill) {
     glUniform1i(glGetUniformLocation(prog.program_id, "Texture1"), 0);
     glUniform1i(glGetUniformLocation(prog.program_id, "Texture2"), 1);
     glUniform1i(glGetUniformLocation(prog.program_id, "Texture3"), 2);

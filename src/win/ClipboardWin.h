@@ -9,9 +9,9 @@ public:
 
   virtual void Clear() override;
 
-  virtual String16 ReadPlainText() override;
+  virtual String ReadPlainText() override;
 
-  virtual void WritePlainText(const String16& text) override;
+  virtual void WritePlainText(const String& text) override;
 };
 
 }  // namespace ultralight

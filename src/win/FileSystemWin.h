@@ -19,20 +19,20 @@ public:
 
   virtual ~FileSystemWin();
 
-  virtual bool FileExists(const String16& path) override;
+  virtual bool FileExists(const String& path) override;
 
   virtual bool GetFileSize(FileHandle handle, int64_t& result) override;
 
-  virtual bool GetFileMimeType(const String16& path, String16& result) override;
+  virtual bool GetFileMimeType(const String& path, String& result) override;
 
-  virtual FileHandle OpenFile(const String16& path, bool open_for_writing) override;
+  virtual FileHandle OpenFile(const String& path, bool open_for_writing) override;
 
   virtual void CloseFile(FileHandle& handle) override;
 
   virtual int64_t ReadFromFile(FileHandle handle, char* data, int64_t length) override;
 
 protected:
-  std::unique_ptr<WCHAR[]> GetRelative(const String16& path);
+  std::unique_ptr<WCHAR[]> GetRelative(const String& path);
 
   std::unique_ptr<WCHAR[]> baseDir_;
 };

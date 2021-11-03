@@ -26,17 +26,17 @@ void ClipboardMac::Clear() {
   [pasteboard clearContents];
 }
 
-String16 ClipboardMac::ReadPlainText() {
+String ClipboardMac::ReadPlainText() {
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
   NSString* str = [pasteboard stringForType:NSPasteboardTypeString];
   return ToString16((__bridge CFStringRef)str);
 }
 
-void ClipboardMac::WritePlainText(const String16& text) {
+void ClipboardMac::WritePlainText(const String& text) {
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
   [pasteboard clearContents];
   [pasteboard declareTypes:[NSArray arrayWithObjects:NSPasteboardTypeString, nil] owner:nil];
-  [pasteboard setString:ToNSString(text) forType:NSPasteboardTypeString];
+  [pasteboard setString:ToNSString(text.utf16()) forType:NSPasteboardTypeString];
 }
 
 }  // namespace ultralight

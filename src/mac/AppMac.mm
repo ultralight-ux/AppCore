@@ -124,8 +124,8 @@ Monitor* AppMac::main_monitor() {
   return &main_monitor_;
 }
 
-Ref<Renderer> AppMac::renderer() {
-  return *renderer_.get();
+RefPtr<Renderer> AppMac::renderer() {
+  return renderer_;
 }
 
 void AppMac::Run() {
@@ -167,7 +167,7 @@ GPUContextMetal* AppMac::gpu_context() {
 
 static App* g_app_instance = nullptr;
 
-Ref<App> App::Create(Settings settings, Config config) {
+RefPtr<App> App::Create(Settings settings, Config config) {
   g_app_instance = (App*)new AppMac(settings, config);
   return AdoptRef(*g_app_instance);
 }

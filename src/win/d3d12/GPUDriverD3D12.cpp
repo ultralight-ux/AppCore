@@ -113,7 +113,7 @@ GPUDriverD3D12::~GPUDriverD3D12() {
 }
 
 void GPUDriverD3D12::CreateTexture(uint32_t texture_id,
-  Ref<Bitmap> bitmap) {
+  RefPtr<Bitmap> bitmap) {
   auto i = textures_.find(texture_id);
   if (i != textures_.end()) {
     MessageBoxW(nullptr,
@@ -172,7 +172,7 @@ void GPUDriverD3D12::CreateTexture(uint32_t texture_id,
     UpdateTextureResource(entry.texture->GetResource(), bitmap, false);
   }
   else {
-    Ref<Bitmap> zeroBitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format());
+    RefPtr<Bitmap> zeroBitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format());
     zeroBitmap->Erase();
     UpdateTextureResource(entry.texture->GetResource(), zeroBitmap, entry.is_msaa_render_target);
   }
@@ -204,7 +204,7 @@ void GPUDriverD3D12::CreateTexture(uint32_t texture_id,
       nullptr));
     entry.resolve_texture.reset(alloc);
 
-    Ref<Bitmap> zeroBitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format());
+    RefPtr<Bitmap> zeroBitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format());
     zeroBitmap->Erase();
     UpdateTextureResource(entry.resolve_texture->GetResource(), zeroBitmap, false);
 
@@ -216,7 +216,7 @@ void GPUDriverD3D12::CreateTexture(uint32_t texture_id,
 }
 
 void GPUDriverD3D12::UpdateTexture(uint32_t texture_id,
-  Ref<Bitmap> bitmap) {
+  RefPtr<Bitmap> bitmap) {
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
     MessageBoxW(nullptr,
@@ -660,7 +660,7 @@ void GPUDriverD3D12::UpdateConstantBuffer(const GPUState& state) {
   cbv0_ = &cb->cbv_handle_;
 }
 
-void GPUDriverD3D12::UpdateTextureResource(ID3D12Resource* resource, Ref<Bitmap> bitmap, bool is_msaa) {
+void GPUDriverD3D12::UpdateTextureResource(ID3D12Resource* resource, RefPtr<Bitmap> bitmap, bool is_msaa) {
   // Ignore requests to update MSAA texture resources
   if (is_msaa)
     return;

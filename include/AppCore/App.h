@@ -107,7 +107,7 @@ public:
   /// @note  Certain Config options may be overridden during App creation,
   ///        most commonly Config::face_winding and Config::device_scale_hint.
   ///
-  static Ref<App> Create(Settings settings = Settings(), Config config = Config());
+  static RefPtr<App> Create(Settings settings = Settings(), Config config = Config());
 
   ///
   /// Get the App singleton.
@@ -146,7 +146,7 @@ public:
   ///
   /// Get the underlying Renderer instance.
   ///
-  virtual Ref<Renderer> renderer() = 0;
+  virtual RefPtr<Renderer> renderer() = 0;
 
   ///
   /// Run the main loop.

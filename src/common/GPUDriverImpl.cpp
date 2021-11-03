@@ -17,9 +17,9 @@ void GPUDriverImpl::DrawCommandList() {
   batch_count_ = 0;
 
   for (auto& cmd : command_list_) {
-    if (cmd.command_type == kCommandType_DrawGeometry)
+    if (cmd.command_type == CommandType::DrawGeometry)
       DrawGeometry(cmd.geometry_id, cmd.indices_count, cmd.indices_offset, cmd.gpu_state);
-    else if (cmd.command_type == kCommandType_ClearRenderBuffer)
+    else if (cmd.command_type == CommandType::ClearRenderBuffer)
       ClearRenderBuffer(cmd.gpu_state.render_buffer_id);
     batch_count_++;
   }

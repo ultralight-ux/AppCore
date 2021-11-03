@@ -9,17 +9,17 @@ ClipboardGLFW::ClipboardGLFW() {}
 void ClipboardGLFW::Clear() {
 }
 
-String16 ClipboardGLFW::ReadPlainText() {
+String ClipboardGLFW::ReadPlainText() {
     if (window_) {
-        return String16(glfwGetClipboardString(window_));
+        return glfwGetClipboardString(window_);
     }
 
-    return String16();
+    return String();
 }
   
-void ClipboardGLFW::WritePlainText(const String16& text) {
+void ClipboardGLFW::WritePlainText(const String& text) {
     if (window_) {
-        glfwSetClipboardString(window_, String(text).utf8().data());
+        glfwSetClipboardString(window_, text.utf8().data());
     }
 }
 

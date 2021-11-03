@@ -114,7 +114,7 @@ GPUDriverD3D11::GPUDriverD3D11(GPUContextD3D11* context) : context_(context) { }
 
 GPUDriverD3D11::~GPUDriverD3D11() { }
 
-void GPUDriverD3D11::CreateTexture(uint32_t texture_id, Ref<Bitmap> bitmap) {
+void GPUDriverD3D11::CreateTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap) {
   auto i = textures_.find(texture_id);
   if (i != textures_.end()) {
     MessageBoxW(nullptr, L"GPUDriverD3D11::CreateTexture, texture id already exists.", L"Error",
@@ -122,8 +122,8 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id, Ref<Bitmap> bitmap) {
     return;
   }
 
-  if (!(bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB
-        || bitmap->format() == kBitmapFormat_A8_UNORM)) {
+  if (!(bitmap->format() == BitmapFormat::BGRA8_UNORM_SRGB
+        || bitmap->format() == BitmapFormat::A8_UNORM)) {
     MessageBoxW(nullptr, L"GPUDriverD3D11::CreateTexture, unsupported format.", L"Error", MB_OK);
   }
 
@@ -132,7 +132,7 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id, Ref<Bitmap> bitmap) {
   desc.Width = bitmap->width();
   desc.Height = bitmap->height();
   desc.MipLevels = desc.ArraySize = 1;
-  desc.Format = bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB ? DXGI_FORMAT_B8G8R8A8_UNORM
+  desc.Format = bitmap->format() == BitmapFormat::BGRA8_UNORM_SRGB ? DXGI_FORMAT_B8G8R8A8_UNORM
                                                                    : DXGI_FORMAT_A8_UNORM;
   desc.SampleDesc.Count = 1;
   desc.Usage = D3D11_USAGE_DYNAMIC;
@@ -220,7 +220,7 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id, Ref<Bitmap> bitmap) {
 #endif
 }
 
-void GPUDriverD3D11::UpdateTexture(uint32_t texture_id, Ref<Bitmap> bitmap) {
+void GPUDriverD3D11::UpdateTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap) {
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
     MessageBoxW(nullptr, L"GPUDriverD3D11::UpdateTexture, texture id doesn't exist.", L"Error",
@@ -236,7 +236,7 @@ void GPUDriverD3D11::UpdateTexture(uint32_t texture_id, Ref<Bitmap> bitmap) {
     memcpy(res.pData, bitmap->LockPixels(), bitmap->size());
     bitmap->UnlockPixels();
   } else {
-    Ref<Bitmap> mapped_bitmap
+    RefPtr<Bitmap> mapped_bitmap
         = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format(), res.RowPitch,
                          res.pData, res.RowPitch * bitmap->height(), false);
     IntRect dest_rect = { 0, 0, (int)bitmap->width(), (int)bitmap->height() };
@@ -601,7 +601,7 @@ void GPUDriverD3D11::LoadShaders() {
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
   };
 
-  auto& shader_fill_path = shaders_[kShaderType_FillPath];
+  auto& shader_fill_path = shaders_[ShaderType::FillPath];
   if (App::instance()->settings().load_shaders_from_file_system) {
     LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f.hlsl", shader_fill_path.first.GetAddressOf(),
                      layout_2f_4ub_2f, ARRAYSIZE(layout_2f_4ub_2f),
@@ -640,7 +640,7 @@ void GPUDriverD3D11::LoadShaders() {
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
   };
 
-  auto& shader_fill = shaders_[kShaderType_Fill];
+  auto& shader_fill = shaders_[ShaderType::Fill];
   if (App::instance()->settings().load_shaders_from_file_system) {
     LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f_t2f_d28f.hlsl", shader_fill.first.GetAddressOf(),
                      layout_2f_4ub_2f_2f_28f, ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
@@ -655,19 +655,19 @@ void GPUDriverD3D11::LoadShaders() {
   }
 }
 
-void GPUDriverD3D11::BindShader(uint8_t shader) {
+void GPUDriverD3D11::BindShader(ShaderType shader) {
   LoadShaders();
 
   ShaderType shader_type = (ShaderType)shader;
   switch (shader_type) {
-  case kShaderType_Fill: {
-    auto& shader = shaders_[kShaderType_Fill];
+  case ShaderType::Fill : {
+    auto& shader = shaders_[ShaderType::Fill];
     context_->immediate_context()->VSSetShader(shader.first.Get(), nullptr, 0);
     context_->immediate_context()->PSSetShader(shader.second.Get(), nullptr, 0);
     break;
   }
-  case kShaderType_FillPath: {
-    auto& shader = shaders_[kShaderType_FillPath];
+  case ShaderType::FillPath: {
+    auto& shader = shaders_[ShaderType::FillPath];
     context_->immediate_context()->VSSetShader(shader.first.Get(), nullptr, 0);
     context_->immediate_context()->PSSetShader(shader.second.Get(), nullptr, 0);
     break;
@@ -679,10 +679,10 @@ void GPUDriverD3D11::BindVertexLayout(VertexBufferFormat format) {
   LoadShaders();
 
   switch (format) {
-  case kVertexBufferFormat_2f_4ub_2f:
+  case VertexBufferFormat::_2f_4ub_2f:
     context_->immediate_context()->IASetInputLayout(vertex_layout_2f_4ub_2f_.Get());
     break;
-  case kVertexBufferFormat_2f_4ub_2f_2f_28f:
+  case VertexBufferFormat::_2f_4ub_2f_2f_28f:
     context_->immediate_context()->IASetInputLayout(vertex_layout_2f_4ub_2f_2f_28f_.Get());
     break;
   };
@@ -696,7 +696,7 @@ void GPUDriverD3D11::BindGeometry(uint32_t id) {
   auto immediate_ctx = context_->immediate_context();
 
   auto& geometry = i->second;
-  UINT stride = geometry.format == kVertexBufferFormat_2f_4ub_2f ? sizeof(Vertex_2f_4ub_2f)
+  UINT stride = geometry.format == VertexBufferFormat::_2f_4ub_2f ? sizeof(Vertex_2f_4ub_2f)
                                                                  : sizeof(Vertex_2f_4ub_2f_2f_28f);
   UINT offset = 0;
   immediate_ctx->IASetVertexBuffers(0, 1, geometry.vertexBuffer.GetAddressOf(), &stride, &offset);
@@ -814,7 +814,8 @@ void GPUDriverD3D11::UpdateConstantBuffer(const GPUState& state) {
   uniforms.Scalar4[1] = { state.uniform_scalar[4], state.uniform_scalar[5], state.uniform_scalar[6],
                           state.uniform_scalar[7] };
   for (size_t i = 0; i < 8; ++i)
-    uniforms.Vector[i] = DirectX::XMFLOAT4(state.uniform_vector[i].value);
+    uniforms.Vector[i] = DirectX::XMFLOAT4(state.uniform_vector[i].x, state.uniform_vector[i].y,
+                                           state.uniform_vector[i].z, state.uniform_vector[i].w);
   uniforms.ClipSize = state.clip_size;
   for (size_t i = 0; i < state.clip_size; ++i)
     uniforms.Clip[i] = DirectX::XMMATRIX(state.clip[i].data);

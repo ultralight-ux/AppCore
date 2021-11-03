@@ -40,7 +40,7 @@ public:
   /// @param  y       The y-position (offset from the top of the Window), in
   ///                 pixels.
   ///
-  static Ref<Overlay> Create(Ref<Window> window, uint32_t width,
+  static RefPtr<Overlay> Create(RefPtr<Window> window, uint32_t width,
                              uint32_t height, int x, int y);
 
   ///
@@ -56,12 +56,12 @@ public:
   /// @param  y       The y-position (offset from the top of the Window), in
   ///                 pixels.
   ///
-  static Ref<Overlay> Create(Ref<Window> window, Ref<View> view, int x, int y);
+  static RefPtr<Overlay> Create(RefPtr<Window> window, RefPtr<View> view, int x, int y);
 
   ///
   /// Get the underlying View.
   ///
-  virtual ultralight::Ref<ultralight::View> view() = 0;
+  virtual ultralight::RefPtr<ultralight::View> view() = 0;
 
   ///
   /// Get the width (in pixels).

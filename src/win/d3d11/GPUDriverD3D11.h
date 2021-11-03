@@ -23,9 +23,9 @@ class GPUDriverD3D11 : public GPUDriverImpl {
 
   // Inherited from GPUDriver:
 
-  virtual void CreateTexture(uint32_t texture_id, Ref<Bitmap> bitmap) override;
+  virtual void CreateTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap) override;
 
-  virtual void UpdateTexture(uint32_t texture_id, Ref<Bitmap> bitmap) override;
+  virtual void UpdateTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap) override;
 
   virtual void DestroyTexture(uint32_t texture_id) override;
 
@@ -70,7 +70,7 @@ class GPUDriverD3D11 : public GPUDriverImpl {
   void LoadCompiledPixelShader(unsigned char* data, unsigned int len,
                                ID3D11PixelShader** ppPixelShader);
   void LoadShaders();
-  void BindShader(uint8_t shader);
+  void BindShader(ShaderType shader);
   void BindVertexLayout(VertexBufferFormat format);
   void BindGeometry(uint32_t id);
   ID3D11RenderTargetView* GetRenderTargetView(uint32_t render_buffer_id);

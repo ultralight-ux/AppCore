@@ -15,13 +15,13 @@ class FileSystemBasic : public FileSystem {
     FileSystemBasic(const char* baseDir);
     virtual ~FileSystemBasic() {}
     
-    virtual bool FileExists(const String16& path) override;
+    virtual bool FileExists(const String& path) override;
 
     virtual bool GetFileSize(FileHandle handle, int64_t& result) override;
 
-    virtual bool GetFileMimeType(const String16& path, String16& result) override;
+    virtual bool GetFileMimeType(const String& path, String& result) override;
 
-    virtual FileHandle OpenFile(const String16& path, bool open_for_writing) override;
+    virtual FileHandle OpenFile(const String& path, bool open_for_writing) override;
 
     virtual void CloseFile(FileHandle& handle) override;
 
@@ -29,7 +29,7 @@ class FileSystemBasic : public FileSystem {
 
 protected:
     std::string baseDir_;
-    std::string getRelative(const String16& path);
+    std::string getRelative(const String& path);
     FileHandle next_handle_ = 0;
     std::map<FileHandle, std::unique_ptr<std::ifstream>> open_files_;
 };

@@ -23,7 +23,7 @@ public:
 
   virtual ultralight::GPUDriverImpl* driver() const { return driver_.get(); }
 
-  virtual ultralight::FaceWinding face_winding() const { return ultralight::kFaceWinding_CounterClockwise; }
+  virtual ultralight::FaceWinding face_winding() const { return ultralight::FaceWinding::CounterClockwise; }
 
   virtual void BeginDrawing() {}
 

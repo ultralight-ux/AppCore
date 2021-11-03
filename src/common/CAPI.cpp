@@ -9,10 +9,10 @@ using namespace ultralight;
 ///
 /// Undocumented functions from Ultralight's CAPI
 ///
-ULExport ULRenderer C_WrapRenderer(Ref<Renderer> renderer); // Must be destroyed
-ULExport ULView C_WrapView(Ref<View> view); // Must be destroyed
-ULExport Ref<Renderer> C_UnwrapRenderer(ULRenderer renderer);
-ULExport Ref<View> C_UnwrapView(ULView view);
+ULExport ULRenderer C_WrapRenderer(RefPtr<Renderer> renderer); // Must be destroyed
+ULExport ULView C_WrapView(RefPtr<View> view); // Must be destroyed
+ULExport RefPtr<Renderer> C_UnwrapRenderer(ULRenderer renderer);
+ULExport RefPtr<View> C_UnwrapView(ULView view);
 
 #define ToULString(x) reinterpret_cast<ULString>(const_cast<ultralight::String*>(&x))
 #define ToString(x) (*reinterpret_cast<ultralight::String*>(x))
@@ -26,13 +26,13 @@ struct C_Config {
 };
 
 struct C_App : public AppListener {
-	Ref<App> val;
+	RefPtr<App> val;
   ULRenderer c_renderer = nullptr; // owned by C_App, destroyed in destructor
   ULWindow c_window = nullptr; // owned by user, cached in ULAppSetWindow
   ULUpdateCallback update_callback = nullptr;
   void* update_callback_data = nullptr;
 
-  C_App(Ref<App> app) : val(app) {
+  C_App(RefPtr<App> app) : val(app) {
     val->set_listener(this);
     c_renderer = C_WrapRenderer(app->renderer());
   }
@@ -49,13 +49,13 @@ struct C_App : public AppListener {
 };
 
 struct C_Window : public WindowListener {
-  Ref<Window> val;
+  RefPtr<Window> val;
   ULCloseCallback close_callback = nullptr;
   void* close_callback_data = nullptr;
   ULResizeCallback resize_callback = nullptr;
   void* resize_callback_data = nullptr;
 
-  C_Window(Ref<Window> window) : val(window) {
+  C_Window(RefPtr<Window> window) : val(window) {
     window->set_listener(this);
   }
 
@@ -75,10 +75,10 @@ struct C_Window : public WindowListener {
 };
 
 struct C_Overlay {
-  Ref<Overlay> val;
+  RefPtr<Overlay> val;
   ULView c_view = nullptr;
 
-  C_Overlay(Ref<Overlay> overlay) : val(overlay) {
+  C_Overlay(RefPtr<Overlay> overlay) : val(overlay) {
     c_view = C_WrapView(val->view());
   }
 

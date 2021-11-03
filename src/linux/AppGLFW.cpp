@@ -120,8 +120,8 @@ Monitor* AppGLFW::main_monitor() {
   return main_monitor_.get();
 }
 
-Ref<Renderer> AppGLFW::renderer() {
-  return *renderer_.get();
+RefPtr<Renderer> AppGLFW::renderer() {
+  return renderer_;
 }
 
 void AppGLFW::Run() {
@@ -205,8 +205,8 @@ void AppGLFW::Update() {
 
 static App* g_app_instance = nullptr;
 
-Ref<App> App::Create(Settings settings, Config config) {
-  g_app_instance = new AppGLFW(settings, config);
+RefPtr<App> App::Create(Settings settings, Config config) {
+  g_app_instance = (App*)new AppGLFW(settings, config);
   return AdoptRef(*g_app_instance);
 }
 
