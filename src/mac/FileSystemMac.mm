@@ -41,7 +41,7 @@ static String16 GetPathByAppendingComponent(const String16& path, const String16
     return path + suffix;
   
   const char* pathSeparator = "/";
-  return path + String16(pathSeparator) + suffix;
+  return path + String(pathSeparator).utf16() + suffix;
 }
 
 std::string fileSystemRepresentation(const String16& str) {
@@ -87,7 +87,7 @@ static bool Equals(const String16& a, const String16& b) {
 }
 
 FileSystemMac::FileSystemMac(const String& baseDir) : base_dir_(baseDir.utf16()) {
-    if (Equals(base_dir_, String16("@resource_path")))
+    if (Equals(base_dir_, String("@resource_path").utf16()))
         base_dir_ = ToString16((__bridge CFStringRef)[[NSBundle mainBundle] resourcePath]);
 }
     

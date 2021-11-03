@@ -19,10 +19,10 @@ class GPUDriverMetal : public GPUDriverImpl {
   // Inherited from GPUDriver:
   
   virtual void CreateTexture(uint32_t texture_id,
-                             Ref<Bitmap> bitmap) override;
+                             RefPtr<Bitmap> bitmap) override;
   
   virtual void UpdateTexture(uint32_t texture_id,
-                             Ref<Bitmap> bitmap) override;
+                             RefPtr<Bitmap> bitmap) override;
   
 
   virtual void DestroyTexture(uint32_t texture_id) override;
@@ -69,7 +69,7 @@ protected:
   
   void ApplyScissor(const GPUState& state);
   
-  void UpdateTextureResource(id<MTLTexture> texture, Ref<Bitmap> bitmap);
+  void UpdateTextureResource(id<MTLTexture> texture, RefPtr<Bitmap> bitmap);
   
   GPUContextMetal* context_;
   

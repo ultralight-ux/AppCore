@@ -334,9 +334,9 @@ void WindowGLFW::Repaint() {
   window_needs_repaint_ = false;
 }
 
-Ref<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height,
+RefPtr<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height,
   bool fullscreen, unsigned int window_flags) {
-  return AdoptRef(*new WindowGLFW(monitor, width, height, fullscreen, window_flags));
+  return AdoptRef(*static_cast<Window*>(new WindowGLFW(monitor, width, height, fullscreen, window_flags)));
 }
 
 Window::~Window() {}

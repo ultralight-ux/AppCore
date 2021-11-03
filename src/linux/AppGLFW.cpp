@@ -75,7 +75,7 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
 
   main_monitor_.reset(new MonitorGLFW());
 
-  config.face_winding = kFaceWinding_Clockwise;
+  config.face_winding = FaceWinding::Clockwise;
   Platform::instance().set_config(config);
 
   if (!Platform::instance().file_system()) {

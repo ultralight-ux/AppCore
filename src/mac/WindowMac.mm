@@ -223,9 +223,9 @@ CAMetalLayer* WindowMac::layer() {
   return controller_.metalView.metalLayer;
 }
 
-Ref<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height,
+RefPtr<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height,
   bool fullscreen, unsigned int window_flags) {
-  return AdoptRef(*new WindowMac(monitor, width, height, fullscreen, window_flags));
+  return AdoptRef(*static_cast<Window*>(new WindowMac(monitor, width, height, fullscreen, window_flags)));
 }
 
 Window::~Window() {}

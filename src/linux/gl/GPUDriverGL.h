@@ -34,10 +34,10 @@ public:
 #endif
 
   virtual void CreateTexture(uint32_t texture_id,
-    Ref<Bitmap> bitmap) override;
+    RefPtr<Bitmap> bitmap) override;
 
   virtual void UpdateTexture(uint32_t texture_id,
-    Ref<Bitmap> bitmap) override;
+    RefPtr<Bitmap> bitmap) override;
 
   virtual void BindTexture(uint8_t texture_unit,
     uint32_t texture_id) override;
@@ -89,7 +89,7 @@ public:
 protected:
   Matrix ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height, bool flip_y);
 
-  void CreateFBOTexture(uint32_t texture_id, Ref<Bitmap> bitmap);
+  void CreateFBOTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap);
 
   struct TextureEntry {
     GLuint tex_id = 0; // GL Texture ID

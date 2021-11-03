@@ -187,7 +187,7 @@ void GPUDriverGL::SetRenderBufferBitmapDirty(uint32_t render_buffer_id,
 #endif
 
 void GPUDriverGL::CreateTexture(uint32_t texture_id,
-  Ref<Bitmap> bitmap) {
+  RefPtr<Bitmap> bitmap) {
   if (bitmap->IsEmpty()) {
     CreateFBOTexture(texture_id, bitmap);
     return;
@@ -229,7 +229,7 @@ void GPUDriverGL::CreateTexture(uint32_t texture_id,
 }
 
 void GPUDriverGL::UpdateTexture(uint32_t texture_id,
-  Ref<Bitmap> bitmap) {
+  RefPtr<Bitmap> bitmap) {
   glActiveTexture(GL_TEXTURE0 + 0);
   TextureEntry& entry = texture_map[texture_id];
   glBindTexture(GL_TEXTURE_2D, entry.tex_id);
@@ -693,7 +693,7 @@ Matrix GPUDriverGL::ApplyProjection(const Matrix4x4& transform, float screen_wid
   return result;
 }
 
-void GPUDriverGL::CreateFBOTexture(uint32_t texture_id, Ref<Bitmap> bitmap) {
+void GPUDriverGL::CreateFBOTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap) {
   CHECK_GL();
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

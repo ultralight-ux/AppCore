@@ -101,8 +101,8 @@ static NSDictionary* createFontAttributes(NSString* family, int weight, bool ita
 
 RefPtr<FontFile> FontLoaderMac::Load(const String& family, int weight, bool italic) {
     String16 family_name = family.utf16();
-    if (Equals(family_name, String16("-apple-system")))
-        family_name = String16(".AppleSystemUIFont");
+    if (Equals(family_name, String("-apple-system").utf16()))
+        family_name = String(".AppleSystemUIFont").utf16();
     
     CTFontDescriptorRef descriptor = CTFontDescriptorCreateWithAttributes(
       (CFDictionaryRef)createFontAttributes(ToNSString(family_name), weight, italic, 12.0));
@@ -114,7 +114,7 @@ RefPtr<FontFile> FontLoaderMac::Load(const String& family, int weight, bool ital
     NSString* fontPath = [NSString stringWithString:[(__bridge NSURL *)url path]];
     CFRelease(descriptor);
   
-    ultralight::String16 filepath([fontPath UTF8String]);
+    ultralight::String8 filepath([fontPath UTF8String]);
     return FontFile::Create(filepath);
 }
 

@@ -11,7 +11,7 @@ GPUDriverMetal::~GPUDriverMetal() {}
 // Textures
 
 void GPUDriverMetal::CreateTexture(uint32_t texture_id,
-                                   Ref<Bitmap> bitmap) {
+                                   RefPtr<Bitmap> bitmap) {
   MTLPixelFormat format;
   if (bitmap->format() == BitmapFormat::BGRA8_UNORM_SRGB) {
     format = MTLPixelFormatBGRA8Unorm;
@@ -42,7 +42,7 @@ void GPUDriverMetal::CreateTexture(uint32_t texture_id,
       textureDescriptor.textureType = MTLTextureType2D;
       texture_entry.resolve_texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
     
-      Ref<Bitmap> zeroBitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format());
+      RefPtr<Bitmap> zeroBitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format());
       zeroBitmap->Erase();
     
       UpdateTextureResource(texture_entry.resolve_texture_, zeroBitmap);
@@ -53,7 +53,7 @@ void GPUDriverMetal::CreateTexture(uint32_t texture_id,
       auto& texture_entry = textures_[texture_id];
       texture_entry.texture_ = [context_->device() newTextureWithDescriptor:textureDescriptor];
     
-      Ref<Bitmap> zeroBitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format());
+      RefPtr<Bitmap> zeroBitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format());
       zeroBitmap->Erase();
     
       UpdateTextureResource(texture_entry.texture_, zeroBitmap);
@@ -73,7 +73,7 @@ void GPUDriverMetal::CreateTexture(uint32_t texture_id,
 }
 
 void GPUDriverMetal::UpdateTexture(uint32_t texture_id,
-                                   Ref<Bitmap> bitmap) {
+                                   RefPtr<Bitmap> bitmap) {
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
     NSLog(@"Texture ID doesn't exist.");
@@ -465,7 +465,7 @@ void GPUDriverMetal::ApplyScissor(const GPUState& state) {
   [render_encoder_ setScissorRect:rect];
 }
     
-void GPUDriverMetal::UpdateTextureResource(id<MTLTexture> texture, Ref<Bitmap> bitmap) {
+void GPUDriverMetal::UpdateTextureResource(id<MTLTexture> texture, RefPtr<Bitmap> bitmap) {
   id <MTLBuffer> uploadBuffer;
   uploadBuffer = [context_->device() newBufferWithBytes:bitmap->raw_pixels()
                                        length:bitmap->size()

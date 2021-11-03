@@ -33,7 +33,7 @@ class GPUContextMetal {
   virtual ultralight::GPUDriverImpl* driver() const { return (GPUDriverImpl*)driver_.get(); }
   
   virtual ultralight::FaceWinding face_winding() const {
-    return ultralight::kFaceWinding_CounterClockwise;
+    return ultralight::FaceWinding::CounterClockwise;
   }
   
   virtual void BeginDrawing();

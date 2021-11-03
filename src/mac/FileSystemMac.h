@@ -23,7 +23,7 @@ class FileSystemMac : public FileSystem {
 protected:
     String16 base_dir_;
     
-    String16 getRelative(const String& path);
+    String16 getRelative(const String16& path);
 };
     
 }  // namespace ultralight
