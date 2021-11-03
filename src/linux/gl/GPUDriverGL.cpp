@@ -220,7 +220,7 @@ void GPUDriverGL::CreateTexture(uint32_t texture_id,
       GL_BGRA, GL_UNSIGNED_BYTE, pixels);
     bitmap->UnlockPixels();
   } else {
-    FATAL("Unhandled texture format: " << bitmap->format())
+    FATAL("Unhandled texture format: " << (int)bitmap->format())
   }
 
   CHECK_GL();
@@ -249,7 +249,7 @@ void GPUDriverGL::UpdateTexture(uint32_t texture_id,
         GL_BGRA, GL_UNSIGNED_BYTE, pixels);
       bitmap->UnlockPixels();
     } else {
-      FATAL("Unhandled texture format: " << bitmap->format());
+      FATAL("Unhandled texture format: " << (int)bitmap->format());
     }
 
     CHECK_GL();
@@ -507,10 +507,10 @@ void GPUDriverGL::DrawCommandList() {
 
   for (auto i = command_list_.begin(); i != command_list_.end(); ++i) {
     switch (i->command_type) {
-    case kCommandType_DrawGeometry:
+    case CommandType::DrawGeometry:
       DrawGeometry(i->geometry_id, i->indices_count, i->indices_offset, i->gpu_state);
       break;
-    case kCommandType_ClearRenderBuffer:
+    case CommandType::ClearRenderBuffer:
       ClearRenderBuffer(i->gpu_state.render_buffer_id);
       break;
     };
@@ -628,7 +628,7 @@ void GPUDriverGL::SelectProgram(ProgramType type) {
     cur_program_id_ = i->second.program_id;
     glUseProgram(i->second.program_id);
   } else {
-    FATAL("Missing shader type: " << type);
+    FATAL("Missing shader type: " << (int)type);
   }
 }
 
@@ -644,7 +644,7 @@ void GPUDriverGL::UpdateUniforms(const GPUState& state) {
   CHECK_GL();
   SetUniform4fv("Scalar4", 2, &state.uniform_scalar[0]);
   CHECK_GL();
-  SetUniform4fv("Vector", 8, &state.uniform_vector[0].value[0]);
+  SetUniform4fv("Vector", 8, &state.uniform_vector[0].x);
   CHECK_GL();
   SetUniform1ui("ClipSize", state.clip_size);
   CHECK_GL();
@@ -820,7 +820,7 @@ void GPUDriverGL::CreateVAOIfNeededForActiveContext(uint32_t geometry_id) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry_entry.vbo_indices);
   CHECK_GL();
 
-  if (geometry_entry.vertex_format == kVertexBufferFormat_2f_4ub_2f_2f_28f) {
+  if (geometry_entry.vertex_format == VertexBufferFormat::_2f_4ub_2f_2f_28f) {
     GLsizei stride = 140;
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (GLvoid*)0);
@@ -848,7 +848,7 @@ void GPUDriverGL::CreateVAOIfNeededForActiveContext(uint32_t geometry_id) {
     glEnableVertexAttribArray(10);
 
     CHECK_GL();
-  } else if (geometry_entry.vertex_format == kVertexBufferFormat_2f_4ub_2f) {
+  } else if (geometry_entry.vertex_format == VertexBufferFormat::_2f_4ub_2f) {
     GLsizei stride = 20;
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (GLvoid*)0);
@@ -861,7 +861,7 @@ void GPUDriverGL::CreateVAOIfNeededForActiveContext(uint32_t geometry_id) {
 
     CHECK_GL();
   } else {
-    FATAL("Unhandled vertex format: " << geometry_entry.vertex_format);
+    FATAL("Unhandled vertex format: " << (int)geometry_entry.vertex_format);
   }
 
   glBindVertexArray(0);

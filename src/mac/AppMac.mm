@@ -68,9 +68,6 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   AppDelegate *appDelegate = [[AppDelegate alloc] init];
   [NSApp setDelegate:appDelegate];
 
-  // Force GPU renderer by default until we support CPU drawing in this port
-  //config.use_gpu_renderer = true;
-
   // Generate cache path
   String cache_path = GetSystemCachePath();
   String cache_dirname = "com." + settings_.developer_name + "." +
@@ -90,9 +87,8 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   String bundle_resource_path = GetBundleResourcePath();
 
   config.cache_path = cache_path.utf16();
-  //config.device_scale = main_monitor_.scale();
-  config.face_winding = kFaceWinding_Clockwise;
-  config.force_repaint = true;
+  config.face_winding = FaceWinding::Clockwise;
+  //config.force_repaint = true;
   Platform::instance().set_config(config);
 
   if (!Platform::instance().file_system()) {
