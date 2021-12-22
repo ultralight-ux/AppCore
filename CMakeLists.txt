@@ -1,27 +1,21 @@
-cmake_minimum_required(VERSION 3.3.2)
+cmake_minimum_required(VERSION 3.15.0)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+
+include(common)
+
 project(AppCore C CXX)
 set_property(DIRECTORY . PROPERTY FOLDER "AppCore")
 
-include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
+include(ExternalProject)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(AppCore)
-
 add_definitions(-DAPPCORE_IMPLEMENTATION)
 
-if (UNIX)
-    if (APPLE)
-		set(PORT UltralightMac)
-    else ()
-		set(PORT UltralightLinux)
-    endif ()
-elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
-	set(PORT UltralightWin)
-else ()
-    message(FATAL_ERROR "Unknown OS '${CMAKE_SYSTEM_NAME}'")
+# This should be set in platform toolchain.
+if (NOT PORT)
+    message(FATAL_ERROR "Unknown PORT '${PORT}'")
 endif ()
 
 include(Deps.cmake)
@@ -42,7 +36,7 @@ if (PORT MATCHES "UltralightLinux")
                      "${WEBCORE_DIR}/bin"
                      "${ULTRALIGHT_DIR}/bin")
 
-    if (${BUILD_DBG})
+    if (CMAKE_BUILD_TYPE MATCHES "Debug")
         # Debug Config
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG -ffunction-sections -fdata-sections -fPIC -std=c++14 -Wno-trigraphs -fno-exceptions -Wno-missing-field-initializers -Wnon-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wsign-compare -Wno-shorten-64-to-32 -Wno-c++11-extensions -DU_DISABLE_RENAMING=1 -DU_SHOW_CPLUSPLUS_API=0 -DU_STATIC_IMPLEMENTATION=1 -Wdeprecated-declarations -Winvalid-offsetof -fvisibility=hidden -fno-threadsafe-statics -Wno-sign-conversion -Winfinite-recursion -Wno-strict-prototypes")
     else ()
@@ -80,7 +74,7 @@ elseif (PORT MATCHES "UltralightMac")
                      "${WEBCORE_DIR}/bin"
                      "${ULTRALIGHT_DIR}/bin")
 
-    if (${BUILD_DBG})
+    if (CMAKE_BUILD_TYPE MATCHES "Debug")
         # Debug Config
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -arch x86_64 -g -DNDEBUG -fPIC -std=gnu++14 -stdlib=libc++ -Wno-trigraphs -fno-exceptions -Wno-missing-field-initializers -Wnon-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wsign-compare -Wno-shorten-64-to-32 -Wno-c++11-extensions -DU_DISABLE_RENAMING=1 -DU_SHOW_CPLUSPLUS_API=0 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk -Wdeprecated-declarations -Winvalid-offsetof -fvisibility=hidden -fno-threadsafe-statics -Wno-sign-conversion -Winfinite-recursion -Wmove -Wno-comma -Wblock-capture-autoreleasing -Wno-strict-prototypes -Wno-nonportable-include-path -frtti")
     else ()
@@ -101,17 +95,15 @@ elseif (PORT MATCHES "UltralightWin")
                      "${ULTRALIGHT_DIR}/lib")
 
     load_sources(AppCore_SOURCES "src/win")
-
-    if (STATIC_BUILD)
-        add_definitions(-DULTRALIGHT_STATIC_BUILD)
-    endif ()
     
-    if (${USE_D3D12})
+    if (UL_D3D_DRIVER STREQUAL "d3d11")
+        add_definitions(-DDRIVER_D3D11)
+        link_libraries("d3d11.lib" "d3dcompiler.lib")
+    elseif (UL_D3D_DRIVER STREQUAL "d3d12")
         add_definitions(-DDRIVER_D3D12)
         link_libraries("d3d12.lib" "dxgi.lib" "d3dcompiler.lib")
     else ()
-        add_definitions(-DDRIVER_D3D11)
-        link_libraries("d3d11.lib" "d3dcompiler.lib")
+        message(FATAL_ERROR "Unknown UL_D3D_DRIVER '${UL_D3D_DRIVER}'")
     endif ()
     
     add_definitions(-D_UNICODE -DUNICODE -DNOMINMAX)
@@ -127,34 +119,36 @@ elseif (PORT MATCHES "UltralightWin")
         string(REGEX REPLACE "/MDd" "/MD" ${flag_var} "${${flag_var}}")
         string(REGEX REPLACE "/D_DEBUG" "" ${flag_var} "${${flag_var}}")
 
-        if (${STATIC_CRT})
+        if (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded")
             string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-        endif ()
-
-        if (${DEBUG_CRT})
+        elseif (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL")
+            # no-op, already /MD
+        elseif(CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDebug")
+            string(REGEX REPLACE "/MD" "/MTd" ${flag_var} "${${flag_var}}")
+        elseif(CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDebugDLL")
             string(REGEX REPLACE "/MD" "/MDd" ${flag_var} "${${flag_var}}")
-            string(REGEX REPLACE "/MT" "/MTd" ${flag_var} "${${flag_var}}")
-        endif ()
+        else()
+            message(FATAL_ERROR "Unknown MSVC runtime library: '${CMAKE_MSVC_RUNTIME_LIBRARY}'")
+        endif()
     endforeach ()
 
-    if (${STATIC_CRT})
-        if (${DEBUG_CRT})
-            message(STATUS "Building projects with MultiThreaded Static Debug Runtime (/MTd)")
-        else ()
-            message(STATUS "Building projects with MultiThreaded Static Runtime (/MT)")
-        endif ()
-    else ()
-        if (${DEBUG_CRT})
-            message(STATUS "Building projects with MuliThreaded DLL Debug Runtime (/MDd)")
-        else ()
-            message(STATUS "Building projects with MultiThreaded DLL Runtime (/MD)")
-        endif ()
-    endif ()
+    if (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded")
+        message(STATUS "Building projects with MultiThreaded Static Runtime (/MT)")
+    elseif (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL")
+        message(STATUS "Building projects with MultiThreaded DLL Runtime (/MD)")
+    elseif(CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDebug")
+        message(STATUS "Building projects with MultiThreaded Static Debug Runtime (/MTd)")
+    elseif(CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDebugDLL")
+        message(STATUS "Building projects with MultiThreaded DLL Debug Runtime (/MDd)")
+    else()
+        message(FATAL_ERROR "Unknown MSVC runtime library: '${CMAKE_MSVC_RUNTIME_LIBRARY}'")
+    endif()
 endif ()
 
 link_libraries(UltralightCore WebCore Ultralight)
 
-if (STATIC_BUILD)
+if (UL_ENABLE_STATIC_BUILD)
+    add_definitions(-DULTRALIGHT_STATIC_BUILD)
     add_library(AppCore STATIC ${AppCore_SOURCES})
 else ()
     add_library(AppCore SHARED ${AppCore_SOURCES})
@@ -167,7 +161,7 @@ if (PORT MATCHES "UltralightMac")
     set_property (TARGET AppCore APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
 endif ()
 
-if(${BUILD_TESTS})
+if(UL_ENABLE_TESTS)
     if (PORT MATCHES "UltralightLinux")
         SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
         SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
@@ -184,6 +178,66 @@ if(${BUILD_TESTS})
     
     add_dependencies(MiniBrowser UltralightCoreBin WebCoreBin UltralightBin)
 
+    if (UL_ENABLE_STATIC_BUILD)
+        if (NOT ALLINONE_BUILD)
+            message(FATAL_ERROR "Static build of MiniBrowser is only supported in all-in-one builds.")
+        endif ()
+
+        target_link_libraries(MiniBrowser
+            WTF
+            JavaScriptCore
+            PAL
+            skia
+            mimalloc
+            icuin
+            icuuc
+            icudt
+            brotlicommon
+            brotlidec
+            brotlienc
+            crypto
+            freetype
+            harfbuzz
+            harfbuzz-icu
+            jpeg-static
+            libcurl
+            libpng16_static
+            nghttp2_static
+            sqlite3
+            ssl
+            tls
+            xml2
+            xslt
+            zlibstatic
+        )
+
+        if (UL_ENABLE_VIDEO)
+            target_link_libraries(MiniBrowser
+                gstreamer-full-1.0
+                gio-2.0
+                glib-2.0
+                gmodule-2.0
+                gobject-2.0)
+        endif ()
+
+        if (PORT MATCHES "UltralightWin")
+            target_link_libraries(MiniBrowser
+                comctl32
+                crypt32
+                iphlpapi
+                normaliz
+                rpcrt4
+                shlwapi
+                usp10
+                version
+                winmm
+                wldap32
+                ws2_32
+                bcrypt
+            )
+        endif ()
+    endif ()
+
     if (APPLE)
       # Enable High-DPI on macOS through our custom Info.plist template
       set_target_properties(MiniBrowser PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniBrowser/Info.plist.in") 
@@ -195,14 +249,13 @@ if(${BUILD_TESTS})
       # Tell MSVC to use main instead of WinMain for Windows subsystem executables
       set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
       
-      add_custom_command(TARGET MiniBrowser POST_BUILD
-          #COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHTCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
-          #COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
-          #COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
-          COMMAND xcopy /E /Q /D /Y $<1:"${ULTRALIGHTCORE_DIR}bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
-          COMMAND xcopy /E /Q /D /Y $<1:"${WEBCORE_DIR}bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
-          COMMAND xcopy /E /Q /D /Y $<1:"${ULTRALIGHT_DIR}bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
-      )
+      if (NOT ${ALLINONE_BUILD})
+        add_custom_command(TARGET MiniBrowser POST_BUILD
+            COMMAND xcopy /E /Q /D /Y $<1:"${ULTRALIGHTCORE_DIR}/bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
+            COMMAND xcopy /E /Q /D /Y $<1:"${WEBCORE_DIR}/bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
+            COMMAND xcopy /E /Q /D /Y $<1:"${ULTRALIGHT_DIR}/bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
+        )
+      endif()
     endif()
 
     if (APPLE)
@@ -217,21 +270,32 @@ if(${BUILD_TESTS})
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${RESOURCES_PATH}/assets/resources/")
 
     if (APPLE)
-        add_custom_command(TARGET MiniBrowser POST_BUILD 
-            COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.dylib" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/*.dylib" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.dylib" $<TARGET_FILE_DIR:MiniBrowser>)
+        if (NOT ${ALLINONE_BUILD})
+            add_custom_command(TARGET MiniBrowser POST_BUILD 
+                COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.dylib" $<TARGET_FILE_DIR:MiniBrowser>
+                COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/*.dylib" $<TARGET_FILE_DIR:MiniBrowser>
+                COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.dylib" $<TARGET_FILE_DIR:MiniBrowser>)
+        endif()
     endif ()
 
     if (PORT MATCHES "UltralightLinux")
         set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "-Wl,-rpath-link,${WEBCORE_DIR}/bin/")
 
-        add_custom_command(TARGET MiniBrowser POST_BUILD 
-            COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.so" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/lib*" $<TARGET_FILE_DIR:MiniBrowser>
-            COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.so" $<TARGET_FILE_DIR:MiniBrowser>)
-            
+        if (NOT ${ALLINONE_BUILD})
+            add_custom_command(TARGET MiniBrowser POST_BUILD 
+                COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.so" $<TARGET_FILE_DIR:MiniBrowser>
+                COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/lib*" $<TARGET_FILE_DIR:MiniBrowser>
+                COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.so" $<TARGET_FILE_DIR:MiniBrowser>)
+        endif()
     endif ()
+
+    if (${ALLINONE_BUILD})
+        add_custom_command(TARGET MiniBrowser POST_BUILD 
+            COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:MiniBrowser>" ${CMAKE_INSTALL_PREFIX}/bin)
+        add_custom_command(TARGET MiniBrowser POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniBrowser/assets/" "${CMAKE_INSTALL_PREFIX}/bin/assets"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${CMAKE_INSTALL_PREFIX}/bin/assets/resources/")
+    endif()
 endif ()
 
 include(CreateSDK.cmake)

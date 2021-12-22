@@ -27,28 +27,27 @@
 #   error This project can only be compiled with a compiler that supports C++11
 #endif
 
-
-#if defined(__WIN32__) || defined(_WIN32)
-#  if defined(ULTRALIGHT_STATIC_BUILD)
-#    define AExport 
-#  else
+#if defined(ULTRALIGHT_STATIC_BUILD)
+#  define AExport 
+#else
+#  if defined(__WIN32__) || defined(_WIN32)
 #    if defined(APPCORE_IMPLEMENTATION)
 #      define AExport __declspec(dllexport)
 #    else
 #      define AExport __declspec(dllimport)
 #    endif
-#  endif
-#define _thread_local __declspec(thread)
-#ifndef _NATIVE_WCHAR_T_DEFINED
-#define DISABLE_NATIVE_WCHAR_T
-#endif
-#else
-#  if defined(ULTRALIGHT_STATIC_BUILD)
-#    define AExport 
 #  else
 #    define AExport __attribute__((visibility("default")))
 #  endif
-#define _thread_local __thread
+#endif
+
+#if defined(__WIN32__) || defined(_WIN32)
+#  define _thread_local __declspec(thread)
+#  ifndef _NATIVE_WCHAR_T_DEFINED
+#    define DISABLE_NATIVE_WCHAR_T
+#  endif
+#else
+#  define _thread_local __thread
 #endif
 
 #endif

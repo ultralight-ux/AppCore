@@ -16,14 +16,18 @@
 
 #include <Ultralight/CAPI.h>
 
-#if defined(__WIN32__) || defined(_WIN32)
-#  if defined(APPCORE_IMPLEMENTATION)
-#    define ACExport __declspec(dllexport)
-#  else
-#    define ACExport __declspec(dllimport)
-#  endif
+#if defined(ULTRALIGHT_STATIC_BUILD)
+#  define ACExport 
 #else
-#  define ACExport __attribute__((visibility("default")))
+#  if defined(__WIN32__) || defined(_WIN32)
+#    if defined(APPCORE_IMPLEMENTATION)
+#      define ACExport __declspec(dllexport)
+#    else
+#      define ACExport __declspec(dllimport)
+#    endif
+#  else
+#    define ACExport __attribute__((visibility("default")))
+#  endif
 #endif
 
 #ifdef __cplusplus

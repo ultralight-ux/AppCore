@@ -76,7 +76,7 @@ make release x64
 To build AppCore with debug symbols:
 
 ```
-make full_debug x64
+make debug x64
 ```
 
 #### Building on Windows with locally-built dependencies
