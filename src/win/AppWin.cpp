@@ -13,6 +13,7 @@
 #include <Ultralight/platform/Logger.h>
 #include <Ultralight/private/util/Debug.h>
 #include <Ultralight/private/PlatformFileSystem.h>
+#include <Ultralight/private/tracy/Tracy.hpp>
 #include <AppCore/Platform.h>
 #include "DIBSurface.h"
 #include <Shlwapi.h>
@@ -175,7 +176,11 @@ void AppWin::Update() {
   if (listener_)
     listener_->OnUpdate();
 
+  const char* frame_mark_update = "Update";
+
+  FrameMarkStart(frame_mark_update);
   renderer()->Update();
+  FrameMarkEnd(frame_mark_update);
 }
 
 GPUContextD3D11* AppWin::gpu_context() { return gpu_context_.get(); }

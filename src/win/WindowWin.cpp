@@ -4,6 +4,7 @@
 #include "AppCore/Overlay.h"
 #include "Windowsx.h"
 #include <AppCore/Monitor.h>
+#include <Ultralight/private/tracy/Tracy.hpp>
 #include <ShellScalingAPI.h>
 #include <Windows.h>
 #include <tchar.h>
@@ -407,11 +408,17 @@ void WindowWin::DrawSurface(int x, int y, Surface* surface) {
 void* WindowWin::native_handle() const { return hwnd_; }
 
 void WindowWin::Paint() {
+  const char* frame_mark_paint = "Paint";
+
   if (!is_accelerated()) {
+    FrameMarkStart(frame_mark_paint);
     OverlayManager::Render();
     OverlayManager::Paint();
+    FrameMarkEnd(frame_mark_paint);
     return;
   }
+
+  FrameMarkStart(frame_mark_paint);
 
   auto gpu_context = static_cast<AppWin*>(App::instance())->gpu_context();
   auto gpu_driver = static_cast<AppWin*>(App::instance())->gpu_driver();
@@ -432,6 +439,8 @@ void WindowWin::Paint() {
   }
 
   window_needs_repaint_ = false;
+
+  FrameMarkEnd(frame_mark_paint);
 }
 
 void WindowWin::OnClose() {

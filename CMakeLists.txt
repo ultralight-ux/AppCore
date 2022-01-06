@@ -145,6 +145,12 @@ elseif (PORT MATCHES "UltralightWin")
     endif()
 endif ()
 
+if (UL_ENABLE_PROFILER)
+    add_definitions(-DTRACY_ENABLE)
+    add_definitions(-DTRACY_MODULE_APPCORE)
+    add_definitions(-DTRACY_IMPORTS)
+endif ()
+
 link_libraries(UltralightCore WebCore Ultralight)
 
 if (UL_ENABLE_STATIC_BUILD)
