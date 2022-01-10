@@ -17,12 +17,9 @@ class MyApp : public WindowListener, public ViewListener {
  public:
   MyApp() {
     Settings s;
-    s.force_cpu_renderer = true;
     Config c;
-    c.force_repaint = true;
     app_ = App::Create(s, c);
 
-    CreateWindow();
     CreateWindow();
   }
 
