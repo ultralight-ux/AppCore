@@ -444,6 +444,9 @@ void WindowWin::Paint() {
 }
 
 void WindowWin::OnClose() {
+  // Keep window alive in case user-callbacks release our reference.
+  RefPtr<WindowWin> retain(this);
+
   if (listener_)
     listener_->OnClose(this);
   if (app_listener_)
@@ -451,6 +454,9 @@ void WindowWin::OnClose() {
 }
 
 void WindowWin::OnResize(uint32_t width, uint32_t height) {
+  // Keep window alive in case user-callbacks release our reference.
+  RefPtr<WindowWin> retain(this);
+
   if (swap_chain_)
     swap_chain_->Resize(width, height);
 

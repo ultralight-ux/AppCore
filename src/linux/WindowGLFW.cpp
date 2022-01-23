@@ -302,11 +302,17 @@ void* WindowGLFW::native_handle() const {
 }
 
 void WindowGLFW::OnClose() {
+  // Keep window alive in case user-callbacks release our reference.
+  RefPtr<WindowGLFW> retain(this);
+
   if (listener_)
     listener_->OnClose(this);
 }
 
 void WindowGLFW::OnResize(uint32_t width, uint32_t height) {
+  // Keep window alive in case user-callbacks release our reference.
+  RefPtr<WindowGLFW> retain(this);
+
   if (listener_)
     listener_->OnResize(this, width, height);
 }

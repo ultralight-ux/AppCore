@@ -180,6 +180,9 @@ void* WindowMac::native_handle() const {
 }
 
 void WindowMac::OnClose() {
+  // Keep window alive in case user-callbacks release our reference.
+  RefPtr<WindowMac> retain(this);
+
   if (listener_)
     listener_->OnClose(this);
   if (app_listener_)
@@ -187,6 +190,9 @@ void WindowMac::OnClose() {
 }
 
 void WindowMac::OnResize(uint32_t width, uint32_t height) {
+  // Keep window alive in case user-callbacks release our reference.
+  RefPtr<WindowMac> retain(this);
+
   if (app_listener_)
     app_listener_->OnResize(this, width, height);
   if (listener_)
