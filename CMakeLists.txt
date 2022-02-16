@@ -145,10 +145,19 @@ elseif (PORT MATCHES "UltralightWin")
     endif()
 endif ()
 
-if (UL_ENABLE_PROFILER)
+if (UL_PROFILE_PERFORMANCE OR UL_PROFILE_MEMORY)
     add_definitions(-DTRACY_ENABLE)
-    add_definitions(-DTRACY_MODULE_APPCORE)
     add_definitions(-DTRACY_IMPORTS)
+    add_definitions(-DTRACY_MODULE_APPCORE)
+    add_definitions(-DTRACY_CALLSTACK_DEPTH=${UL_CALLSTACK_DEPTH})
+endif ()
+
+if (UL_PROFILE_PERFORMANCE)
+    add_definitions(-DTRACY_PROFILE_PERFORMANCE)
+endif ()
+
+if (UL_PROFILE_MEMORY)
+    add_definitions(-DTRACY_PROFILE_MEMORY)
 endif ()
 
 link_libraries(UltralightCore WebCore Ultralight)
