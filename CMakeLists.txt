@@ -261,17 +261,17 @@ if(UL_ENABLE_TESTS)
     endif()
 
     if (MSVC)
-      # Tell MSVC to use main instead of WinMain for Windows subsystem executables
-      set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
+        # Tell MSVC to use main instead of WinMain for Windows subsystem executables
+        set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
       
-      if (NOT ${ALLINONE_BUILD})
-        add_custom_command(TARGET MiniBrowser POST_BUILD
-            COMMAND xcopy /E /Q /D /Y $<1:"${ULTRALIGHTCORE_DIR}/bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
-            COMMAND xcopy /E /Q /D /Y $<1:"${WEBCORE_DIR}/bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
-            COMMAND xcopy /E /Q /D /Y $<1:"${ULTRALIGHT_DIR}/bin"> $<1:"$<TARGET_FILE_DIR:MiniBrowser>">
-        )
-      endif()
+        if (NOT ${ALLINONE_BUILD})
+            add_custom_command(TARGET MiniBrowser POST_BUILD 
+                COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHTCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
+                COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
+                COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>)
+        endif()
     endif()
+    
 
     if (APPLE)
       set(RESOURCES_PATH "$<TARGET_FILE_DIR:MiniBrowser>/../Resources") 
