@@ -45,16 +45,16 @@ public:
   /// Create from Ultralight String
   JSString(const String& str);
 
-  /// Take ownership of existing JSStringRef (will not increase ref-count)
+  /// Create from existing JSStringRef
   JSString(JSStringRef str);
 
-  /// Copy constructor (will increase ref-count)
+  /// Copy constructor 
   JSString(const JSString& other);
 
   /// Destructor
   ~JSString();
 
-  /// Assignment operator (will increase ref-count)
+  /// Assignment operator 
   JSString& operator=(const JSString& other);
 
   /// Cast to String

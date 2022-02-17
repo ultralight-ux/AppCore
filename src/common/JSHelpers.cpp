@@ -25,6 +25,7 @@ JSString::JSString(const String& str) {
 
 JSString::JSString(JSStringRef str) {
   instance_ = str;
+  JSStringRetain(instance_);
 }
 
 JSString::JSString(const JSString& other) : instance_(other.instance_) {
