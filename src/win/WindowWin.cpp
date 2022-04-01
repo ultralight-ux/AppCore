@@ -241,7 +241,7 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool ful
 
   SetWindowLongPtr(hwnd_, GWLP_USERDATA, (LONG_PTR)&window_data_);
 
-  //CenterHwndOnMainMonitor(hwnd_);
+  // CenterHwndOnMainMonitor(hwnd_);
 
   if (!(window_flags & kWindowFlags_Hidden))
     ShowWindow(hwnd_, SW_SHOW);
@@ -317,8 +317,7 @@ void WindowWin::MoveTo(int x, int y) {
   y = ScreenToPixels(y);
   RECT rect = { x, y, x, y };
   AdjustWindowRect(&rect, style_, FALSE);
-  SetWindowPos(hwnd_, NULL, rect.left, rect.top, 0, 0,
-               SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
+  SetWindowPos(hwnd_, NULL, rect.left, rect.top, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
 }
 
 void WindowWin::MoveToCenter() { CenterHwndOnMainMonitor(hwnd_); }
@@ -427,8 +426,8 @@ void WindowWin::Paint() {
   OverlayManager::Render();
   gpu_driver->EndSynchronize();
 
-  if (gpu_driver->HasCommandsPending() || OverlayManager::NeedsRepaint() || 
-    (window_needs_repaint_ && !is_first_paint_)) {
+  if (gpu_driver->HasCommandsPending() || OverlayManager::NeedsRepaint()
+      || (window_needs_repaint_ && !is_first_paint_)) {
     gpu_context->BeginDrawing();
     gpu_driver->DrawCommandList();
     OverlayManager::Paint();
@@ -442,6 +441,32 @@ void WindowWin::Paint() {
 
   FrameMarkEnd(frame_mark_paint);
 }
+
+void WindowWin::FireKeyEvent(const ultralight::KeyEvent& evt) {
+  if (listener())
+    if (!listener()->OnKeyEvent(evt))
+      return;
+
+  OverlayManager::FireKeyEvent(evt);
+}
+
+void WindowWin::FireMouseEvent(const ultralight::MouseEvent& evt) {
+  if (listener())
+    if (!listener()->OnMouseEvent(evt))
+      return;
+
+  OverlayManager::FireMouseEvent(evt);
+}
+
+
+void WindowWin::FireScrollEvent(const ultralight::ScrollEvent& evt) {
+  if (listener())
+    if (!listener()->OnScrollEvent(evt))
+      return;
+
+  OverlayManager::FireScrollEvent(evt);
+}
+
 
 void WindowWin::OnClose() {
   // Keep window alive in case user-callbacks release our reference.
@@ -467,7 +492,7 @@ void WindowWin::OnResize(uint32_t width, uint32_t height) {
     app_listener_->OnResize(this, width, height);
 }
 
-void WindowWin::OnChangeDPI(double scale, const RECT* suggested_rect) { 
+void WindowWin::OnChangeDPI(double scale, const RECT* suggested_rect) {
   scale_ = scale;
 
   SetWindowScale(scale_);
@@ -487,7 +512,7 @@ void WindowWin::OnChangeDPI(double scale, const RECT* suggested_rect) {
 }
 
 RefPtr<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height, bool fullscreen,
-                           unsigned int window_flags) {
+                              unsigned int window_flags) {
   return AdoptRef(*new WindowWin(monitor, width, height, fullscreen, window_flags));
 }
 

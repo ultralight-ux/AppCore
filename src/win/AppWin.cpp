@@ -120,6 +120,11 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
 
 AppWin::~AppWin() {
   Platform::instance().set_gpu_driver(nullptr);
+  Platform::instance().set_clipboard(nullptr);
+  Platform::instance().set_file_system(nullptr);
+  Platform::instance().set_font_loader(nullptr);
+  Platform::instance().set_logger(nullptr);
+  Platform::instance().set_surface_factory(nullptr);
   gpu_driver_.reset();
   gpu_context_.reset();
 }

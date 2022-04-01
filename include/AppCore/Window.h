@@ -16,6 +16,9 @@
 #include <Ultralight/RefPtr.h>
 #include <Ultralight/Listener.h>
 #include <Ultralight/Bitmap.h>
+#include <Ultralight/KeyEvent.h>
+#include <Ultralight/MouseEvent.h>
+#include <Ultralight/ScrollEvent.h>
 
 namespace ultralight {
 
@@ -34,7 +37,7 @@ public:
   ///
   /// Called when the Window is closed.
   ///
-  virtual void OnClose(ultralight::Window* window) = 0;
+  virtual void OnClose(ultralight::Window* window) { }
 
   ///
   /// Called when the Window is resized.
@@ -43,7 +46,34 @@ public:
   ///
   /// @param  height  The new height (in pixels).
   ///
-  virtual void OnResize(ultralight::Window* window, uint32_t width_px, uint32_t height_px) = 0;
+  virtual void OnResize(ultralight::Window* window, uint32_t width_px, uint32_t height_px) { }
+
+  ///
+  /// Called when a keyboard event is fired.
+  /// 
+  /// @param  evt  Details for the event.
+  /// 
+  /// @return  Return false to consume the event and prevent it from propagating further.
+  /// 
+  virtual bool OnKeyEvent(const ultralight::KeyEvent& evt) { return true; }
+
+  ///
+  /// Called when a mouse event is fired.
+  ///
+  /// @param  evt  Details for the event.
+  ///
+  /// @return  Return false to consume the event and prevent it from propagating further.
+  /// 
+  virtual bool OnMouseEvent(const ultralight::MouseEvent& evt) { return true; }
+
+  ///
+  /// Called when a scroll event is fired.
+  ///
+  /// @param  evt  Details for the event.
+  ///
+  /// @return  Return false to consume the event and prevent it from propagating further.
+  /// 
+  virtual bool OnScrollEvent(const ultralight::ScrollEvent& evt) { return true; }
 };
 
 ///

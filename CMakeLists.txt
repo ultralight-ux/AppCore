@@ -145,10 +145,11 @@ elseif (PORT MATCHES "UltralightWin")
     endif()
 endif ()
 
+add_definitions(-DULTRALIGHT_MODULE_APPCORE)
+
 if (UL_PROFILE_PERFORMANCE OR UL_PROFILE_MEMORY)
     add_definitions(-DTRACY_ENABLE)
     add_definitions(-DTRACY_IMPORTS)
-    add_definitions(-DTRACY_MODULE_APPCORE)
     add_definitions(-DTRACY_CALLSTACK_DEPTH=${UL_CALLSTACK_DEPTH})
 endif ()
 
@@ -158,6 +159,15 @@ endif ()
 
 if (UL_PROFILE_MEMORY)
     add_definitions(-DTRACY_PROFILE_MEMORY)
+endif ()
+
+if (UL_ENABLE_MEMORY_STATS)
+    add_definitions(-DULTRALIGHT_ENABLE_MEMORY_STATS)
+endif ()
+
+if (UL_PROFILE_MEMORY OR UL_ENABLE_MEMORY_STATS)
+    # Disable exceptions for allocator shim
+    add_compile_options(/EHa- /EHc- /EHs- /fp:except-)
 endif ()
 
 link_libraries(UltralightCore WebCore Ultralight)
@@ -311,6 +321,104 @@ if(UL_ENABLE_TESTS)
             COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniBrowser/assets/" "${CMAKE_INSTALL_PREFIX}/bin/assets"
             COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${CMAKE_INSTALL_PREFIX}/bin/assets/resources/")
     endif()
+
+    ###############################
+
+    if (PORT MATCHES "UltralightWin" AND (UL_PROFILE_MEMORY OR UL_ENABLE_MEMORY_STATS))
+
+        add_executable(MiniProfiler "tests/MiniProfiler/MiniProfiler.cpp" ${AppCore_SOURCES})
+        
+        add_dependencies(MiniProfiler UltralightCoreBin WebCoreBin UltralightBin)
+
+        if (UL_ENABLE_STATIC_BUILD)
+            if (NOT ALLINONE_BUILD)
+                message(FATAL_ERROR "Static build of MiniProfiler is only supported in all-in-one builds.")
+            endif ()
+
+            target_link_libraries(MiniProfiler
+                WTF
+                JavaScriptCore
+                PAL
+                skia
+                mimalloc
+                icuin
+                icuuc
+                icudt
+                brotlicommon
+                brotlidec
+                brotlienc
+                crypto
+                freetype
+                harfbuzz
+                harfbuzz-icu
+                jpeg-static
+                libcurl
+                libpng16_static
+                nghttp2_static
+                sqlite3
+                ssl
+                tls
+                xml2
+                xslt
+                zlibstatic
+            )
+
+            if (UL_ENABLE_VIDEO)
+                target_link_libraries(MiniProfiler
+                    gstreamer-full-1.0
+                    gio-2.0
+                    glib-2.0
+                    gmodule-2.0
+                    gobject-2.0)
+            endif ()
+
+            if (PORT MATCHES "UltralightWin")
+                target_link_libraries(MiniProfiler
+                    comctl32
+                    crypt32
+                    iphlpapi
+                    normaliz
+                    rpcrt4
+                    shlwapi
+                    usp10
+                    version
+                    winmm
+                    wldap32
+                    ws2_32
+                    bcrypt
+                )
+            endif ()
+        endif ()
+
+        if (MSVC)
+            # Tell MSVC to use main instead of WinMain for Windows subsystem executables
+            set_target_properties(MiniProfiler PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
+        
+            if (NOT ${ALLINONE_BUILD})
+                add_custom_command(TARGET MiniProfiler POST_BUILD 
+                    COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHTCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniProfiler>
+                    COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniProfiler>
+                    COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniProfiler>)
+            endif()
+        endif()
+    
+        set(RESOURCES_PATH "$<TARGET_FILE_DIR:MiniProfiler>") 
+
+        # Copy assets to assets path
+        add_custom_command(TARGET MiniProfiler POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniProfiler/assets/" "${RESOURCES_PATH}/assets/"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${RESOURCES_PATH}/assets/resources/")
+
+
+        if (${ALLINONE_BUILD})
+            add_custom_command(TARGET MiniProfiler POST_BUILD 
+                COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:MiniProfiler>" ${CMAKE_INSTALL_PREFIX}/bin)
+            add_custom_command(TARGET MiniProfiler POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniProfiler/assets/" "${CMAKE_INSTALL_PREFIX}/bin/assets"
+                COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${CMAKE_INSTALL_PREFIX}/bin/assets/resources/")
+        endif()
+
+    endif ()
 endif ()
 
 include(CreateSDK.cmake)

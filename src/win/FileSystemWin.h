@@ -19,17 +19,13 @@ public:
 
   virtual ~FileSystemWin();
 
-  virtual bool FileExists(const String& path) override;
+  virtual bool FileExists(const String& file_path) override;
 
-  virtual bool GetFileSize(FileHandle handle, int64_t& result) override;
+  virtual String GetFileMimeType(const String& file_path) override;
 
-  virtual bool GetFileMimeType(const String& path, String& result) override;
+  virtual String GetFileCharset(const String& file_path) override;
 
-  virtual FileHandle OpenFile(const String& path, bool open_for_writing) override;
-
-  virtual void CloseFile(FileHandle& handle) override;
-
-  virtual int64_t ReadFromFile(FileHandle handle, char* data, int64_t length) override;
+  virtual RefPtr<Buffer> OpenFile(const String& file_path) override;
 
 protected:
   std::unique_ptr<WCHAR[]> GetRelative(const String& path);

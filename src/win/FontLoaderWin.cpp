@@ -203,12 +203,12 @@ static RefPtr<FontFile> LoadFont(const String16& family, int weight, bool italic
 
     if (FAILED(hr)) return nullptr;
 
-    WCHAR* path = new WCHAR[pathLength + 1];
+    std::unique_ptr<WCHAR[]> path(new WCHAR[(size_t)pathLength + 1]);
 
-    hr = localFileLoader->GetFilePathFromKey(referenceKey, refKeySize, path, pathLength + 1);
+    hr = localFileLoader->GetFilePathFromKey(referenceKey, refKeySize, path.get(), pathLength + 1);
     if (FAILED(hr)) return nullptr;
 
-    ultralight::String16 pathStr(path, pathLength);
+    ultralight::String16 pathStr(path.get(), pathLength);
     return FontFile::Create(pathStr);
   }
 
@@ -228,7 +228,7 @@ static RefPtr<FontFile> LoadFont(const String16& family, int weight, bool italic
 
   if (FAILED(hr)) return nullptr;
 
-  RefPtr<Buffer> result = Buffer::Create(fragmentStart, (size_t)fileSize);
+  RefPtr<Buffer> result = Buffer::CreateFromCopy(fragmentStart, (size_t)fileSize);
 
   pFontFileStream->ReleaseFileFragment(context);
 

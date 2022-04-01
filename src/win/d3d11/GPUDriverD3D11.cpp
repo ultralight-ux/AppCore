@@ -86,24 +86,18 @@ HRESULT CompileShaderFromFile(const char* path,
 
   if (!fs) {
     OutputDebugStringA("Could not load shaders, null FileSystem instance.");
-    return -1;
+    return E_FAIL;
   }
 
-  ultralight::FileHandle handle = fs->OpenFile(path, false);
+  ultralight::RefPtr<ultralight::Buffer> buffer = fs->OpenFile(path);
 
-  if (handle == ultralight::invalidFileHandle) {
+  if (!buffer) {
     OutputDebugStringA("Could not load shaders, file not found.");
-    return -1;
+    return E_FAIL;
   }
 
-  int64_t file_size = 0;
-  fs->GetFileSize(handle, file_size);
-
-  std::unique_ptr<char[]> buffer(new char[file_size]);
-  fs->ReadFromFile(handle, buffer.get(), file_size);
-
-  return CompileShaderFromSource(buffer.get(), file_size, path, szEntryPoint, szShaderModel,
-                                 ppBlobOut);
+  return CompileShaderFromSource((char*)buffer->data(), buffer->size(), path, szEntryPoint,
+                                 szShaderModel, ppBlobOut);
 }
 
 } // namespace

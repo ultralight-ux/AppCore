@@ -77,6 +77,12 @@ class WindowWin : public Window, public RefCountedImpl<WindowWin>, public Overla
   // Inherited from OverlayManager
   virtual void Paint() override;
 
+  virtual void FireKeyEvent(const ultralight::KeyEvent& evt) override;
+
+  virtual void FireMouseEvent(const ultralight::MouseEvent& evt) override;
+
+  virtual void FireScrollEvent(const ultralight::ScrollEvent& evt) override;
+
   REF_COUNTED_IMPL(WindowWin);
 
   HWND hwnd() { return hwnd_; }
