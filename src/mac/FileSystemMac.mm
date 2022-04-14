@@ -8,6 +8,7 @@
 #include <vector>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include <libgen.h>
 #include <fnmatch.h>
@@ -105,54 +106,77 @@ bool FileSystemMac::FileExists(const String& path) {
     return access(fsRep.data(), F_OK) != -1;
 }
 
-bool FileSystemMac::GetFileSize(FileHandle handle, int64_t& result) {
-    struct stat fileInfo;
-    if (fstat((int)handle, &fileInfo))
-        return false;
-    
-    result = fileInfo.st_size;
-    return true;
-}
-
-bool FileSystemMac::GetFileMimeType(const String& path, String& result) {
-    auto pathStr = ToNSString(getRelative(path.utf16()));
+String FileSystemMac::GetFileMimeType(const String& file_path) {
+    auto pathStr = ToNSString(getRelative(file_path.utf16()));
     CFStringRef extension = (__bridge CFStringRef)[pathStr pathExtension];
     CFStringRef mime_type = NULL;
     CFStringRef identifier = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, extension, NULL);
     if (identifier)
         mime_type = UTTypeCopyPreferredTagWithClass(identifier, kUTTagClassMIMEType);
     CFRelease(identifier);
-    result = ToString16(mime_type);
-    return !result.empty();
+    return ToString16(mime_type);
 }
 
-FileHandle FileSystemMac::OpenFile(const String& path, bool open_for_writing) {
-    std::string fsRep = fileSystemRepresentation(getRelative(path.utf16()));
+String FileSystemMac::GetFileCharset(const String& file_path) {
+    return "utf-8";
+}
+
+struct FileSystemMac_BufferData {
+  int file_handle;
+  size_t file_size;
+  void* file_map;
+};
+
+void FileSystemMac_DestroyBufferCallback(void* user_data, void* data) {
+  FileSystemMac_BufferData* buffer_data = reinterpret_cast<FileSystemMac_BufferData*>(user_data);
+  munmap(buffer_data->file_map, buffer_data->file_size);
+  close(buffer_data->file_handle);
+  delete buffer_data;
+}
+
+RefPtr<Buffer> FileSystemMac::OpenFile(const String& file_path) {
+    std::string fsRep = fileSystemRepresentation(getRelative(file_path.utf16()));
     
     if (fsRep.empty())
-        return invalidFileHandle;
-    
-    int platformFlag = 0;
-    platformFlag |= open_for_writing? (O_WRONLY | O_CREAT | O_TRUNC) : O_RDONLY;
-    
-    int handle = open(fsRep.data(), platformFlag, 0666);
-    
-    return handle;
-}
+        return nullptr;
 
-void FileSystemMac::CloseFile(FileHandle& handle) {
-    if (handle != invalidFileHandle)
-        close((int)handle);
-    handle = invalidFileHandle;
-}
+    int file_handle = open(fsRep.data(), O_RDONLY);
 
-int64_t FileSystemMac::ReadFromFile(FileHandle handle, char* data, int64_t length) {
-    do {
-        auto bytesRead = read((int)handle, data, static_cast<size_t>(length));
-        if (bytesRead >= 0)
-            return bytesRead;
-    } while (errno == EINTR);
-    return -1;
+    if (file_handle == -1) {
+        // Error: Could not open file for reading
+        return nullptr;
+    }
+
+    struct stat file_info = {0};
+    
+    if (fstat(file_handle, &file_info) == -1) {
+        // Error: Could not get the file size
+        close(file_handle);
+        return nullptr;
+    }
+
+    size_t file_size = file_info.st_size;
+
+    if (file_size == 0) {
+        // Error: File is empty
+        close(file_handle);
+        return nullptr;
+    }
+
+    void* file_map = mmap(0, file_size, PROT_READ, MAP_SHARED, file_handle, 0);
+
+    if (file_map == MAP_FAILED) {
+        // Error: File mapping failed
+        close(file_handle);
+        return nullptr;
+    }
+
+    FileSystemMac_BufferData* buffer_data = new FileSystemMac_BufferData();
+    buffer_data->file_handle = file_handle;
+    buffer_data->file_size = file_size;
+    buffer_data->file_map = file_map;
+
+    return Buffer::Create(file_map, file_size, buffer_data, FileSystemMac_DestroyBufferCallback);
 }
 
 String16 FileSystemMac::getRelative(const ultralight::String16 &path) {

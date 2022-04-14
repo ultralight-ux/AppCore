@@ -54,21 +54,18 @@ GPUContextMetal::GPUContextMetal(id<MTLDevice> device, bool enable_vsync, bool e
       [alert runModal];
       exit(-1);
     }
-    ultralight::FileHandle handle = fs->OpenFile("shaders/metal/src/Shaders.metal", false);
+    ultralight::RefPtr<ultralight::Buffer> fileContents = fs->OpenFile("shaders/metal/src/Shaders.metal");
   
-    if (handle == ultralight::invalidFileHandle) {
+    if (!fileContents) {
       NSAlert *alert = [[NSAlert alloc] init];
       [alert setMessageText:@"Could not load shaders, 'shaders/metal/src/Shaders.metal' not found in FileSystem."];
       [alert runModal];
       exit(-1);
     }
   
-    int64_t file_size = 0;
-    fs->GetFileSize(handle, file_size);
+    size_t file_size = fileContents->size();
     std::unique_ptr<char[]> buffer(new char[file_size + 1]);
-    fs->ReadFromFile(handle, buffer.get(), file_size);
-    buffer[file_size] = '\0';
-    fs->CloseFile(handle);
+    memcpy(buffer.get(), fileContents->data(), file_size);
   
     NSError* compileError;
     library_ = [device_ newLibraryWithSource:[NSString stringWithUTF8String:buffer.get()] options:nil error:&compileError];

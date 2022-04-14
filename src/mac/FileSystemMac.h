@@ -8,17 +8,13 @@ class FileSystemMac : public FileSystem {
     FileSystemMac(const String& baseDir);
     virtual ~FileSystemMac();
     
-    virtual bool FileExists(const String& path);
+    virtual bool FileExists(const String& path) override;
 
-    virtual bool GetFileSize(FileHandle handle, int64_t& result);
+    virtual String GetFileMimeType(const String& file_path) override;
 
-    virtual bool GetFileMimeType(const String& path, String& result);
+    virtual String GetFileCharset(const String& file_path) override;
 
-    virtual FileHandle OpenFile(const String& path, bool open_for_writing);
-
-    virtual void CloseFile(FileHandle& handle);
-
-    virtual int64_t ReadFromFile(FileHandle handle, char* data, int64_t length);
+    virtual RefPtr<Buffer> OpenFile(const String& file_path) override;
   
 protected:
     String16 base_dir_;
