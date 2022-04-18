@@ -301,6 +301,30 @@ void* WindowGLFW::native_handle() const {
   return window_;
 }
 
+void WindowGLFW::FireKeyEvent(const ultralight::KeyEvent& evt) {
+  if (listener())
+    if (!listener()->OnKeyEvent(evt))
+      return;
+
+  OverlayManager::FireKeyEvent(evt);
+}
+
+void WindowGLFW::FireMouseEvent(const ultralight::MouseEvent& evt) {
+  if (listener())
+    if (!listener()->OnMouseEvent(evt))
+      return;
+
+  OverlayManager::FireMouseEvent(evt);
+}
+
+void WindowGLFW::FireScrollEvent(const ultralight::ScrollEvent& evt) {
+  if (listener())
+    if (!listener()->OnScrollEvent(evt))
+      return;
+
+  OverlayManager::FireScrollEvent(evt);
+}
+
 void WindowGLFW::OnClose() {
   // Keep window alive in case user-callbacks release our reference.
   RefPtr<WindowGLFW> retain(this);

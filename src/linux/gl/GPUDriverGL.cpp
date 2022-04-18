@@ -48,15 +48,16 @@ static void ReadFile(const char* filepath, std::string& result) {
   if (!fs)
     FATAL("No FileSystem defined.");
 
-  auto handle = fs->OpenFile(filepath, false);
-  if (handle == ultralight::invalidFileHandle)
+  if (!fs->FileExists(filepath))
+    FATAL("Error loading shader from file path: " << filepath);
+
+  ultralight::RefPtr<ultralight::Buffer> buffer = fs->OpenFile(filepath);
+  if (!buffer)
     FATAL("Could not open file path: " << filepath);
 
-  int64_t fileSize = 0;
-  fs->GetFileSize(handle, fileSize);
-  result.resize((size_t)fileSize);
-  fs->ReadFromFile(handle, &result[0], fileSize);
-  fs->CloseFile(handle);
+  size_t fileSize = buffer->size();
+  result.resize(fileSize);
+  memcpy(&result[0], buffer->data(), fileSize);
 }
 
 inline char const* glErrorString(GLenum const err) noexcept

@@ -66,6 +66,12 @@ public:
 
   virtual OverlayManager* overlay_manager() const override { return const_cast<WindowGLFW*>(this); }
 
+  virtual void FireKeyEvent(const ultralight::KeyEvent& evt) override;
+
+  virtual void FireMouseEvent(const ultralight::MouseEvent& evt) override;
+
+  virtual void FireScrollEvent(const ultralight::ScrollEvent& evt) override;
+
   REF_COUNTED_IMPL(WindowGLFW);
 
   void set_app_listener(WindowListener* listener) { app_listener_ = listener; }
