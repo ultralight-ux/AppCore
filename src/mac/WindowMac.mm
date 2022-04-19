@@ -179,6 +179,30 @@ void* WindowMac::native_handle() const {
   return (__bridge void *)window_;
 }
 
+void WindowMac::FireKeyEvent(const ultralight::KeyEvent& evt) {
+  if (listener())
+    if (!listener()->OnKeyEvent(evt))
+      return;
+
+  OverlayManager::FireKeyEvent(evt);
+}
+
+void WindowMac::FireMouseEvent(const ultralight::MouseEvent& evt) {
+  if (listener())
+    if (!listener()->OnMouseEvent(evt))
+      return;
+
+  OverlayManager::FireMouseEvent(evt);
+}
+
+void WindowMac::FireScrollEvent(const ultralight::ScrollEvent& evt) {
+  if (listener())
+    if (!listener()->OnScrollEvent(evt))
+      return;
+
+  OverlayManager::FireScrollEvent(evt);
+}
+
 void WindowMac::OnClose() {
   // Keep window alive in case user-callbacks release our reference.
   RefPtr<WindowMac> retain(this);
