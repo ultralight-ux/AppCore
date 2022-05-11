@@ -107,7 +107,11 @@
         th.appendChild(document.createTextNode("Category"));
         tr.appendChild(th);
         th = _th_.cloneNode(false);
-        th.appendChild(document.createTextNode("Total Size"));
+        th.appendChild(document.createTextNode("Allocations"));
+        th.classList.add('is-selected');
+        tr.appendChild(th);
+        th = _th_.cloneNode(false);
+        th.appendChild(document.createTextNode("Memory Size"));
         th.classList.add('is-selected');
         tr.appendChild(th);
         table.appendChild(tr);
@@ -118,7 +122,11 @@
           td.appendChild(document.createTextNode(row[0]));
           tr.appendChild(td);
           td = _td_.cloneNode(false);
-          td.appendChild(document.createTextNode(humanFileSize(row[1])));
+          td.appendChild(document.createTextNode(row[1]));
+          td.classList.add('is-selected');
+          tr.appendChild(td);
+          td = _td_.cloneNode(false);
+          td.appendChild(document.createTextNode(humanFileSize(row[2])));
           td.classList.add('is-selected');
           tr.appendChild(td);
           table.appendChild(tr);
@@ -149,27 +157,33 @@
       <table id="stats" class="table is-narrow">
           <tr>
             <th>Category</th>
-            <th class="is-selected">Total Size</th>
+            <th class="is-selected">Allocations</th>
+            <th class="is-selected">Memory Size</th>
           </tr>
 
           <tr>
             <td> App </td>
+            <td class="is-selected"> 10 </td>
             <td class="is-selected"> 2.0 MB </td>
           </tr>
           <tr>
             <td> JavaScript </td>
+            <td class="is-selected"> 10 </td>
             <td class="is-selected"> 27.5 MB </td>
           </tr>
           <tr>
             <td> JavaScript_Bytecode </td>
+            <td class="is-selected"> 10 </td>
             <td class="is-selected"> 15.1 MB </td>
           </tr>
           <tr>
             <td> WebCore </td>
+            <td class="is-selected"> 10 </td>
             <td class="is-selected"> 8.3 MB </td>
           </tr>
           <tr>
             <td> Resource </td>
+            <td class="is-selected"> 10 </td>
             <td class="is-selected"> 4.2 MB </td>
           </tr>
 

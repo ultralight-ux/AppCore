@@ -105,7 +105,8 @@ inline void* ProfiledHeapAlloc(size_t size) {
   if (alloc) {
     static_cast<TagStorage*>(paddedAlloc)->val = currentMemoryTag;
     ProfileAlloc(alloc, size, MemoryTagToString(currentMemoryTag));
-    UpdateMemoryStats(currentMemoryTag, (int64_t)size);
+    MemoryStats::UpdateAllocatedBytes(currentMemoryTag, (int64_t)size);
+    MemoryStats::UpdateAllocationCount(currentMemoryTag, 1);
   }
 
   return alloc;
@@ -116,7 +117,8 @@ inline void ProfiledHeapFree(void* alloc) {
   MemoryTag tag = static_cast<TagStorage*>(paddedAlloc)->val;
   size_t paddedSize = HeapSize(get_heap_handle(), 0, paddedAlloc);
   ProfileFree(alloc, MemoryTagToString(tag));
-  UpdateMemoryStats(tag, (int64_t)(paddedSize - TagSize()) * -1);
+  MemoryStats::UpdateAllocatedBytes(tag, (int64_t)(paddedSize - TagSize()) * -1);
+  MemoryStats::UpdateAllocationCount(tag, -1);
   HeapFree(get_heap_handle(), 0, paddedAlloc);
 }
 
@@ -129,11 +131,13 @@ inline void* ProfiledHeapReAlloc(void* alloc, size_t size) {
       = newPaddedAlloc ? static_cast<uint8_t*>(newPaddedAlloc) + TagSize() : newPaddedAlloc;
 
   ProfileFree(alloc, MemoryTagToString(oldTag));
-  UpdateMemoryStats(oldTag, (int64_t)(oldPaddedSize - TagSize()) * -1);
+  MemoryStats::UpdateAllocatedBytes(oldTag, (int64_t)(oldPaddedSize - TagSize()) * -1);
+  MemoryStats::UpdateAllocationCount(oldTag, -1);
 
   if (newPaddedAlloc) {
     ProfileAlloc(newAlloc, size, MemoryTagToString(currentMemoryTag));
-    UpdateMemoryStats(currentMemoryTag, (int64_t)size);
+    MemoryStats::UpdateAllocatedBytes(currentMemoryTag, (int64_t)size);
+    MemoryStats::UpdateAllocationCount(currentMemoryTag, 1);
 
     static_cast<TagStorage*>(newPaddedAlloc)->val = currentMemoryTag;
   }
@@ -152,10 +156,12 @@ inline void* ProfiledHeapReAllocInPlace(void* alloc, size_t size) {
 
   if (newPaddedAlloc) {
     ProfileFree(alloc, MemoryTagToString(oldTag));
-    UpdateMemoryStats(oldTag, (int64_t)(oldPaddedSize - TagSize()) * -1);
+    MemoryStats::UpdateAllocatedBytes(oldTag, (int64_t)(oldPaddedSize - TagSize()) * -1);
+    MemoryStats::UpdateAllocationCount(oldTag, -1);
 
     ProfileAlloc(newAlloc, size, MemoryTagToString(currentMemoryTag));
-    UpdateMemoryStats(currentMemoryTag, (int64_t)size);
+    MemoryStats::UpdateAllocatedBytes(currentMemoryTag, (int64_t)size);
+    MemoryStats::UpdateAllocationCount(currentMemoryTag, 1);
 
     static_cast<TagStorage*>(newPaddedAlloc)->val = currentMemoryTag;
   }

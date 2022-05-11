@@ -205,19 +205,22 @@ class MyApp : public WindowListener,
 
     size_t tag_count = static_cast<size_t>(MemoryTag::Count);
     int64_t totalBytes = 0;
+    int64_t totalAllocations = 0;
     for (size_t i = 0; i < tag_count; i++) {
       MemoryTag tag = static_cast<MemoryTag>(i);
-      int64_t bytes = GetMemoryStats(tag);
+      int64_t bytes = MemoryStats::GetAllocatedBytes(tag);
+      int64_t allocations = MemoryStats::GetAllocationCount(tag);
       totalBytes += bytes;
+      totalAllocations += allocations;
 
       // Only show tags that have > 100 KB allocated.
       if (bytes < 100 * 1024)
         continue;
 
-      data.push(JSValue(JSArray({ MemoryTagToString(tag), bytes })));
+      data.push(JSValue(JSArray({ MemoryTagToString(tag), allocations, bytes })));
     }
 
-    data.push(JSValue(JSArray({ "Total Tracked: ", totalBytes })));
+    data.push(JSValue(JSArray({ "Total Tracked: ", totalAllocations, totalBytes })));
 
     updateStats({ JSValue(data) });
 
@@ -258,9 +261,10 @@ class MyApp : public WindowListener,
   }
 };
 
-#include <Windows.h>
+//#include <Windows.h>
 
 int main() {
+  //MessageBoxA(NULL, "Pause", "Caption", MB_OKCANCEL);
 
   MyApp app;
   app.Run();
