@@ -14,7 +14,7 @@ endif ()
 
 set(ULTRALIGHTCORE_REV "e630aae6")
 set(WEBCORE_REV "5679b461")
-set(ULTRALIGHT_REV "1bfd45ed")
+set(ULTRALIGHT_REV "9d1a0d5e")
 
 get_filename_component(ULTRALIGHTCORE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/UltralightCore" REALPATH)
 get_filename_component(WEBCORE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/WebCore" REALPATH)
