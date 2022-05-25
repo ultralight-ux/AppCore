@@ -13,6 +13,11 @@
 #include <ctime>
 #include <queue>
 
+namespace WebCore {
+// Destroys the VM singleton, if previously created.
+JS_EXPORT void resetCommonVM();
+} // namespace WebCore
+
 #define ENABLE_PERIODIC_MEMORY_SHRINK 0
 
 using namespace ultralight;
@@ -35,17 +40,22 @@ class MyApp : public WindowListener,
   std::chrono::steady_clock::time_point lastUpdate_;
   std::chrono::steady_clock::time_point lastShrink_;
   std::queue<String> logQueue_;
+  bool pendingReset_;
+  bool pendingCreate_;
 
  public:
   MyApp() {
     lastUpdate_ = std::chrono::steady_clock::now();
     lastShrink_ = std::chrono::steady_clock::now();
+    pendingReset_ = false;
+    pendingCreate_ = false;
 
     Platform::instance().set_logger(this);
 
     Settings s;
     s.force_cpu_renderer = true;
     Config c;
+    c.bitmap_alignment = 0;
     app_ = App::Create(s, c);
     app_->set_listener(this);
 
@@ -60,6 +70,24 @@ class MyApp : public WindowListener,
     window_->set_listener(this);
     window_->SetTitle("Ultralight - MiniProfiler");
 
+    CreateViews();
+  }
+
+  void DestroyViews() {
+    stats_->view()->set_view_listener(nullptr);
+    stats_->view()->set_load_listener(nullptr);
+    stats_ = nullptr;
+
+    content_->view()->set_load_listener(nullptr);
+    content_->view()->set_view_listener(nullptr);
+    content_ = nullptr;
+
+    updateStats = JSFunction();
+    addMessage = JSFunction();
+    logQueue_.swap(std::queue<String>());
+  }
+
+  void CreateViews() {
     ViewConfig viewConfig;
     viewConfig.initial_device_scale = window_->scale();
     auto session = app_->renderer()->CreateSession(false, "");
@@ -78,6 +106,18 @@ class MyApp : public WindowListener,
   }
 
   virtual void OnUpdate() override {
+    if (pendingReset_) {
+      DestroyViews();
+      pendingReset_ = false;
+      pendingCreate_ = true;
+      _sleep(1000);
+      return;
+    } else if (pendingCreate_) {
+      CreateViews();
+      pendingCreate_ = false;
+      return;
+    }
+
     auto sinceLastUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - lastUpdate_);
 
@@ -165,6 +205,7 @@ class MyApp : public WindowListener,
       updateStats = global["updateStats"];
       addMessage = global["addMessage"];
       global["ResetView"] = BindJSCallback(&MyApp::ResetView);
+      global["ResetVM"] = BindJSCallback(&MyApp::ResetVM);
     }
   }
 
@@ -195,6 +236,10 @@ class MyApp : public WindowListener,
     content_->view()->LoadURL("file:///home.html");
 
     OnResize(window_.get(), window_->width(), window_->height());
+  }
+
+  void ResetVM(const JSObject& thisObject, const JSArgs& args) {
+    pendingReset_ = true;
   }
 
   void UpdateStats() {
@@ -256,15 +301,13 @@ class MyApp : public WindowListener,
 #endif
   }
 
-  void Run() {
-    app_->Run();
-  }
+  void Run() { app_->Run(); }
 };
 
 //#include <Windows.h>
 
 int main() {
-  //MessageBoxA(NULL, "Pause", "Caption", MB_OKCANCEL);
+  // MessageBoxA(NULL, "Pause", "Caption", MB_OKCANCEL);
 
   MyApp app;
   app.Run();

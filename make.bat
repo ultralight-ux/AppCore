@@ -38,7 +38,9 @@ if "%1"=="debug" (
 
 set "FLAGS=%FLAGS% -DUWP_PLATFORM=0 -DWINDOWS_DESKTOP_PLATFORM=1"
 
-set PROFILER=0
+set PROFILE_PERF=0
+set PROFILE_MEM=0
+set MEM_STATS=0
 set USE_LOCAL_DEPS=0
 set USE_D3D12=0
 set D3D_DRIVER="d3d11"
@@ -51,17 +53,35 @@ if not "%3" == "" (
   if "%3"=="use_d3d12" (
     set USE_D3D12=1
   )
-  if "%3"=="profiler" ( 
-    set PROFILER=1
+  if "%3"=="profile_perf" ( 
+    set PROFILE_PERF=1
+  )
+  if "%3"=="profile_mem" ( 
+    set PROFILE_MEM=1
+  )
+  if "%3"=="mem_stats" ( 
+    set MEM_STATS=1
   )
   shift
   goto PROCESS_ARG
 )
 
-if %PROFILER%==1 (
-  echo Enabling Tracy Profiler
-  set "FLAGS=%FLAGS% -DUL_ENABLE_PROFILER=1"
-  set "DIRNAME=%DIRNAME%_profiler"
+if %PROFILE_PERF%==1 (
+  echo Enabling Tracy Performance Profiling
+  set "FLAGS=%FLAGS% -DUL_PROFILE_PERFORMANCE=1"
+  set "DIRNAME=%DIRNAME%_profile_perf"
+)
+
+if %PROFILE_MEM%==1 (
+  echo Enabling Tracy Memory Profiling
+  set "FLAGS=%FLAGS% -DUL_PROFILE_MEMORY=1 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"
+  set "DIRNAME=%DIRNAME%_profile_mem"
+)
+
+if %MEM_STATS%==1 (
+  echo Enabling Memory Statistics
+  set "FLAGS=%FLAGS% -DUL_ENABLE_MEMORY_STATS=1 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"
+  set "DIRNAME=%DIRNAME%_mem_stats"
 )
 
 if %USE_LOCAL_DEPS%==1 (
@@ -93,7 +113,7 @@ ninja
 GOTO FINISH
 :SYNTAX
 echo.
-echo usage: make [ release ^| release_min ^| release_dbg ^| debug ^| vs ]  [ x64 ] [ local ] [ profiler ] [ use_d3d12 ]
+echo usage: make [ release ^| release_min ^| release_dbg ^| debug ^| vs ]  [ x64 ] [ local ] [ profile_perf ^| profile_mem ^| mem_stats ] [ use_d3d12 ]
 echo.
 echo Build type parameter descriptions:
 echo.
@@ -109,8 +129,10 @@ echo     x64         Compile binaries for the x64 (amd64) platform.
 echo.
 echo Additional, optional build options:
 echo.
-echo     local       Use local dependencies in deps folder (don't fetch from server).
-echo     profiler    Whether or not to enable runtime profiling via Tracy. (Other modules must be built with profiler enabled.)
-echo     use_d3d12   Whether the D3D12 driver should be used instead of D3D11. Only compatible with vs2019.
+echo     local          Use local dependencies in deps folder (don't fetch from server).
+echo     profile_perf   Whether or not to enable runtime performance profiling.
+echo     profile_mem    Whether or not to enable runtime memory profiling.
+echo     mem_stats      Whether or not to enable runtime memory statistics.
+echo     use_d3d12      Whether the D3D12 driver should be used instead of D3D11. Only compatible with vs2019.
 :FINISH
 cd ..
