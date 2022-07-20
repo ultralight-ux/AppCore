@@ -25,7 +25,7 @@ bool UI::OnKeyEvent(const ultralight::KeyEvent& evt) {
   // Consume all F2 key events
   if (evt.virtual_key_code == KeyCodes::GK_F2) {
     if (evt.type == KeyEvent::kType_RawKeyDown) {
-      App::instance()->renderer()->StartRemoteInspectorServer("127.0.0.1", 7676);
+      App::instance()->renderer()->StartRemoteInspectorServer("0.0.0.0", 7676);
     }
     return false;
   }

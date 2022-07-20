@@ -54,7 +54,7 @@ void Page::Resize(uint32_t width, uint32_t height) {
 
   uint32_t content_height = container_height_;
   if (inspector_overlay_ && !inspector_overlay_->is_hidden()) {
-    uint32_t inspector_height_px = (uint32_t)std::round(INSPECTOR_HEIGHT * ui_->window_->scale());
+    uint32_t inspector_height_px = content_height * 0.85;
     inspector_overlay_->Resize(container_width_, inspector_height_px);
     content_height -= inspector_height_px;
   }
@@ -105,6 +105,11 @@ RefPtr<View> Page::OnCreateInspectorView(ultralight::View* caller, bool is_local
     return nullptr;
 
   inspector_overlay_ = Overlay::Create(ui_->window_, 10, 10, 0, 0);
+
+  // Force resize to update layout
+  Resize(container_width_, container_height_);
+  inspector_overlay_->Show();
+
   return inspector_overlay_->view();
 }
 
