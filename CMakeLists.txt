@@ -186,239 +186,28 @@ if (PORT MATCHES "UltralightMac")
     set_property (TARGET AppCore APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
 endif ()
 
+if (PORT MATCHES "UltralightLinux")
+    SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    SET(CMAKE_INSTALL_RPATH "$\{ORIGIN\}")
+endif ()
+
+if (PORT MATCHES "UltralightMac")
+    SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    SET(CMAKE_INSTALL_RPATH "@executable_path/")
+endif ()
+
 if(UL_ENABLE_TESTS)
-    if (PORT MATCHES "UltralightLinux")
-        SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-        SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-        SET(CMAKE_INSTALL_RPATH "$\{ORIGIN\}")
-    endif ()
+    include(CreateTestApp.cmake)
 
-    if (PORT MATCHES "UltralightMac")
-        SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-        SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-        SET(CMAKE_INSTALL_RPATH "@executable_path/")
-    endif ()
-
-    add_executable(MiniBrowser MACOSX_BUNDLE "tests/MiniBrowser/MiniBrowser.cpp" ${AppCore_SOURCES})
-    
-    add_dependencies(MiniBrowser UltralightCoreBin WebCoreBin UltralightBin)
-
-    if (UL_ENABLE_STATIC_BUILD)
-        if (NOT ALLINONE_BUILD)
-            message(FATAL_ERROR "Static build of MiniBrowser is only supported in all-in-one builds.")
-        endif ()
-
-        target_link_libraries(MiniBrowser
-            WTF
-            JavaScriptCore
-            PAL
-            skia
-            mimalloc
-            icuin
-            icuuc
-            icudt
-            brotlicommon
-            brotlidec
-            brotlienc
-            crypto
-            freetype
-            harfbuzz
-            harfbuzz-icu
-            jpeg-static
-            libcurl
-            libpng16_static
-            nghttp2_static
-            sqlite3
-            ssl
-            tls
-            xml2
-            xslt
-            zlibstatic
-        )
-
-        if (UL_ENABLE_VIDEO)
-            target_link_libraries(MiniBrowser
-                gstreamer-full-1.0
-                gio-2.0
-                glib-2.0
-                gmodule-2.0
-                gobject-2.0)
-        endif ()
-
-        if (PORT MATCHES "UltralightWin")
-            target_link_libraries(MiniBrowser
-                comctl32
-                crypt32
-                iphlpapi
-                normaliz
-                rpcrt4
-                shlwapi
-                usp10
-                version
-                winmm
-                wldap32
-                ws2_32
-                bcrypt
-            )
-        endif ()
-    endif ()
-
-    if (APPLE)
-      # Enable High-DPI on macOS through our custom Info.plist template
-      set_target_properties(MiniBrowser PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniBrowser/Info.plist.in") 
-      set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework QuartzCore -framework MetalKit")
-      set_property (TARGET MiniBrowser APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
-    endif()
-
-    if (MSVC)
-        # Tell MSVC to use main instead of WinMain for Windows subsystem executables
-        set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
-      
-        if (NOT ${ALLINONE_BUILD})
-            add_custom_command(TARGET MiniBrowser POST_BUILD 
-                COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHTCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
-                COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>
-                COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniBrowser>)
-        endif()
-    endif()
-    
-
-    if (APPLE)
-      set(RESOURCES_PATH "$<TARGET_FILE_DIR:MiniBrowser>/../Resources") 
-    else ()
-      set(RESOURCES_PATH "$<TARGET_FILE_DIR:MiniBrowser>") 
-    endif ()
-
-    # Copy assets to assets path
-    add_custom_command(TARGET MiniBrowser POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniBrowser/assets/" "${RESOURCES_PATH}/assets/"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${RESOURCES_PATH}/assets/resources/")
-
-    if (APPLE)
-        if (NOT ${ALLINONE_BUILD})
-            add_custom_command(TARGET MiniBrowser POST_BUILD 
-                COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.dylib" $<TARGET_FILE_DIR:MiniBrowser>
-                COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/*.dylib" $<TARGET_FILE_DIR:MiniBrowser>
-                COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.dylib" $<TARGET_FILE_DIR:MiniBrowser>)
-        endif()
-    endif ()
-
-    if (PORT MATCHES "UltralightLinux")
-        set_target_properties(MiniBrowser PROPERTIES LINK_FLAGS "-Wl,-rpath-link,${WEBCORE_DIR}/bin/")
-
-        if (NOT ${ALLINONE_BUILD})
-            add_custom_command(TARGET MiniBrowser POST_BUILD 
-                COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHTCORE_DIR}/bin/libUltralightCore.so" $<TARGET_FILE_DIR:MiniBrowser>
-                COMMAND ${CMAKE_COMMAND} -E copy "${WEBCORE_DIR}/bin/lib*" $<TARGET_FILE_DIR:MiniBrowser>
-                COMMAND ${CMAKE_COMMAND} -E copy "${ULTRALIGHT_DIR}/bin/libUltralight.so" $<TARGET_FILE_DIR:MiniBrowser>)
-        endif()
-    endif ()
-
-    if (${ALLINONE_BUILD})
-        add_custom_command(TARGET MiniBrowser POST_BUILD 
-            COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:MiniBrowser>" ${CMAKE_INSTALL_PREFIX}/bin)
-        add_custom_command(TARGET MiniBrowser POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniBrowser/assets/" "${CMAKE_INSTALL_PREFIX}/bin/assets"
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${CMAKE_INSTALL_PREFIX}/bin/assets/resources/")
-    endif()
-
-    ###############################
+    CreateTestApp("MiniTester")
+    CreateTestApp("MiniBrowser")
 
     if (PORT MATCHES "UltralightWin" AND (UL_PROFILE_MEMORY OR UL_ENABLE_MEMORY_STATS))
-
-        add_executable(MiniProfiler "tests/MiniProfiler/MiniProfiler.cpp" ${AppCore_SOURCES})
-        
-        add_dependencies(MiniProfiler UltralightCoreBin WebCoreBin UltralightBin)
-
-        if (UL_ENABLE_STATIC_BUILD)
-            if (NOT ALLINONE_BUILD)
-                message(FATAL_ERROR "Static build of MiniProfiler is only supported in all-in-one builds.")
-            endif ()
-
-            target_link_libraries(MiniProfiler
-                WTF
-                JavaScriptCore
-                PAL
-                skia
-                mimalloc
-                icuin
-                icuuc
-                icudt
-                brotlicommon
-                brotlidec
-                brotlienc
-                crypto
-                freetype
-                harfbuzz
-                harfbuzz-icu
-                jpeg-static
-                libcurl
-                libpng16_static
-                nghttp2_static
-                sqlite3
-                ssl
-                tls
-                xml2
-                xslt
-                zlibstatic
-            )
-
-            if (UL_ENABLE_VIDEO)
-                target_link_libraries(MiniProfiler
-                    gstreamer-full-1.0
-                    gio-2.0
-                    glib-2.0
-                    gmodule-2.0
-                    gobject-2.0)
-            endif ()
-
-            if (PORT MATCHES "UltralightWin")
-                target_link_libraries(MiniProfiler
-                    comctl32
-                    crypt32
-                    iphlpapi
-                    normaliz
-                    rpcrt4
-                    shlwapi
-                    usp10
-                    version
-                    winmm
-                    wldap32
-                    ws2_32
-                    bcrypt
-                )
-            endif ()
-        endif ()
-
-        if (MSVC)
-            # Tell MSVC to use main instead of WinMain for Windows subsystem executables
-            set_target_properties(MiniProfiler PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
-        
-            if (NOT ${ALLINONE_BUILD})
-                add_custom_command(TARGET MiniProfiler POST_BUILD 
-                    COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHTCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniProfiler>
-                    COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/" $<TARGET_FILE_DIR:MiniProfiler>
-                    COMMAND ${CMAKE_COMMAND} -E copy_directory "${ULTRALIGHT_DIR}/bin/" $<TARGET_FILE_DIR:MiniProfiler>)
-            endif()
-        endif()
-    
-        set(RESOURCES_PATH "$<TARGET_FILE_DIR:MiniProfiler>") 
-
-        # Copy assets to assets path
-        add_custom_command(TARGET MiniProfiler POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniProfiler/assets/" "${RESOURCES_PATH}/assets/"
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${RESOURCES_PATH}/assets/resources/")
-
-
-        if (${ALLINONE_BUILD})
-            add_custom_command(TARGET MiniProfiler POST_BUILD 
-                COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:MiniProfiler>" ${CMAKE_INSTALL_PREFIX}/bin)
-            add_custom_command(TARGET MiniProfiler POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/tests/MiniProfiler/assets/" "${CMAKE_INSTALL_PREFIX}/bin/assets"
-                COMMAND ${CMAKE_COMMAND} -E copy_directory "${WEBCORE_DIR}/bin/resources/" "${CMAKE_INSTALL_PREFIX}/bin/assets/resources/")
-        endif()
-
+        CreateTestApp("MiniProfiler")
     endif ()
+
 endif ()
 
 include(CreateSDK.cmake)
