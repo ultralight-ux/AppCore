@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-#define INSPECTOR_HEIGHT 400
+#define INSPECTOR_DRAG_HANDLE_HEIGHT 10
 
 Page::Page(UI* ui, uint32_t width, uint32_t height, int x, int y) 
   : ui_(ui), container_width_(width), container_height_(height) {
@@ -48,14 +48,52 @@ void Page::ToggleInspector() {
   Resize(container_width_, container_height_);
 }
 
+bool Page::IsInspectorShowing() const {
+  if (!inspector_overlay_)
+    return false;
+
+  return !inspector_overlay_->is_hidden();
+}
+
+IntRect Page::GetInspectorResizeDragHandle() const {
+  if (!IsInspectorShowing())
+    return IntRect::MakeEmpty();
+
+  int drag_handle_height_px = (uint32_t)std::round(INSPECTOR_DRAG_HANDLE_HEIGHT * ui_->window()->scale());
+
+  // This drag handle should span the width of the UI and be centered vertically at the boundary between
+  // the page overlay and inspector overlay.
+
+  int drag_handle_x = (int)inspector_overlay_->x();
+  int drag_handle_y = (int)inspector_overlay_->y() - drag_handle_height_px / 2;
+
+  return { drag_handle_x, drag_handle_y, drag_handle_x + (int)inspector_overlay_->width(),
+           drag_handle_y + drag_handle_height_px };
+}
+
+int Page::GetInspectorHeight() const {
+  if (inspector_overlay_)
+    return inspector_overlay_->height();
+
+  return 0;
+}
+
+void Page::SetInspectorHeight(int height) {
+  if (height > 2) {
+    inspector_overlay_->Resize(inspector_overlay_->width(), height);
+
+    // Trigger a resize to perform re-layout / re-size of content overlay
+    Resize(container_width_, container_height_);
+  }
+}
+
 void Page::Resize(uint32_t width, uint32_t height) {
   container_width_ = width;
   container_height_ = height;
 
   uint32_t content_height = container_height_;
   if (inspector_overlay_ && !inspector_overlay_->is_hidden()) {
-    uint32_t inspector_height_px = content_height * 0.85;
-    inspector_overlay_->Resize(container_width_, inspector_height_px);
+    uint32_t inspector_height_px = inspector_overlay_->height();
     content_height -= inspector_height_px;
   }
   
@@ -104,7 +142,7 @@ RefPtr<View> Page::OnCreateInspectorView(ultralight::View* caller, bool is_local
   if (inspector_overlay_)
     return nullptr;
 
-  inspector_overlay_ = Overlay::Create(ui_->window_, 10, 10, 0, 0);
+  inspector_overlay_ = Overlay::Create(ui_->window_, container_width_, container_height_ / 2, 0, 0);
 
   // Force resize to update layout
   Resize(container_width_, container_height_);

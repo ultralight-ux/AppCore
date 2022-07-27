@@ -252,7 +252,12 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool ful
   cursor_hand_ = ::LoadCursor(NULL, IDC_HAND);
   cursor_arrow_ = ::LoadCursor(NULL, IDC_ARROW);
   cursor_ibeam_ = ::LoadCursor(NULL, IDC_IBEAM);
-  cur_cursor_ = ultralight::kCursor_Hand;
+  cursor_size_all_ = ::LoadCursor(NULL, IDC_SIZEALL);
+  cursor_size_north_east_ = ::LoadCursor(NULL, IDC_SIZENESW);
+  cursor_size_north_south_ = ::LoadCursor(NULL, IDC_SIZENS);
+  cursor_size_north_west_ = ::LoadCursor(NULL, IDC_SIZENWSE);
+  cursor_size_west_east_ = ::LoadCursor(NULL, IDC_SIZEWE);
+  cur_cursor_ = ultralight::kCursor_Pointer;
 
   SetWindowScale(scale());
 
@@ -282,6 +287,12 @@ WindowWin::~WindowWin() {
   DestroyCursor(cursor_hand_);
   DestroyCursor(cursor_arrow_);
   DestroyCursor(cursor_ibeam_);
+  DestroyCursor(cursor_size_all_);
+  DestroyCursor(cursor_size_north_east_);
+  DestroyCursor(cursor_size_north_south_);
+  DestroyCursor(cursor_size_north_west_);
+  DestroyCursor(cursor_size_west_east_);
+
   if (App::instance()) {
     static_cast<AppWin*>(App::instance())->RemoveWindow(this);
 
@@ -350,6 +361,34 @@ void WindowWin::SetCursor(ultralight::Cursor cursor) {
   }
   case ultralight::kCursor_IBeam: {
     ::SetCursor(cursor_ibeam_);
+    break;
+  }
+  case ultralight::kCursor_Move: {
+    ::SetCursor(cursor_size_all_);
+    break;
+  }
+  case ultralight::kCursor_NorthEastResize:
+  case ultralight::kCursor_SouthWestResize:
+  case ultralight::kCursor_NorthEastSouthWestResize: {
+    ::SetCursor(cursor_size_north_east_);
+    break;
+  }
+  case ultralight::kCursor_NorthResize:
+  case ultralight::kCursor_SouthResize:
+  case ultralight::kCursor_NorthSouthResize: {
+    ::SetCursor(cursor_size_north_south_);
+    break;
+  }
+  case ultralight::kCursor_NorthWestResize:
+  case ultralight::kCursor_SouthEastResize:
+  case ultralight::kCursor_NorthWestSouthEastResize: {
+    ::SetCursor(cursor_size_north_east_);
+    break;
+  }
+  case ultralight::kCursor_WestResize:
+  case ultralight::kCursor_EastResize:
+  case ultralight::kCursor_EastWestResize: {
+    ::SetCursor(cursor_size_west_east_);
     break;
   }
   };

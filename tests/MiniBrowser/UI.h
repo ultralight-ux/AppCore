@@ -23,6 +23,7 @@ class UI : public WindowListener,
                
   // Inherited from WindowListener
   virtual bool OnKeyEvent(const ultralight::KeyEvent& evt) override;
+  virtual bool OnMouseEvent(const ultralight::MouseEvent& evt) override;
   virtual void OnClose(ultralight::Window* window) override;
   virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override;
 
@@ -40,6 +41,8 @@ class UI : public WindowListener,
   void OnStop(const JSObject& obj, const JSArgs& args);
   void OnToggleTools(const JSObject& obj, const JSArgs& args);
   void OnRequestChangeURL(const JSObject& obj, const JSArgs& args);
+
+  RefPtr<Window> window() { return window_; }
 
 protected:
   void CreatePage();
@@ -64,6 +67,10 @@ protected:
 
   std::unique_ptr<Page> page_;
   Cursor cur_cursor_;
+  bool is_resizing_inspector_;
+  bool is_over_inspector_resize_drag_handle_;
+  int inspector_resize_begin_height_;
+  int inspector_resize_begin_mouse_y_;
 
   JSFunction updateBack;
   JSFunction updateForward;

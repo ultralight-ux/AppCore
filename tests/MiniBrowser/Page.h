@@ -24,6 +24,14 @@ public:
   void Hide();
 
   void ToggleInspector();
+
+  bool IsInspectorShowing() const;
+
+  IntRect GetInspectorResizeDragHandle() const;
+
+  int GetInspectorHeight() const;
+
+  void SetInspectorHeight(int height);
                 
   void Resize(uint32_t width, uint32_t height);
 

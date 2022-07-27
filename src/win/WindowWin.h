@@ -118,6 +118,11 @@ class WindowWin : public Window, public RefCountedImpl<WindowWin>, public Overla
   HCURSOR cursor_hand_;
   HCURSOR cursor_arrow_;
   HCURSOR cursor_ibeam_;
+  HCURSOR cursor_size_all_;
+  HCURSOR cursor_size_north_east_;
+  HCURSOR cursor_size_north_south_;
+  HCURSOR cursor_size_north_west_;
+  HCURSOR cursor_size_west_east_;
   Cursor cur_cursor_;
   WindowData window_data_;
   DWORD style_;
