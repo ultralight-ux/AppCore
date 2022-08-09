@@ -9,10 +9,28 @@ void PauseForDebugger() { MessageBoxA(NULL, "Pause", "Caption", MB_OKCANCEL); }
 void PauseForDebugger() {}
 #endif
 
+#if defined(_WIN32)
+#include "ThreadManagerWin.h"
+#include <Ultralight/platform/Platform.h>
+#endif
+
 int main() {
   PauseForDebugger();
+
+#if defined(_WIN32)
+  ThreadManagerWin* thread_manager = new ThreadManagerWin();
+  ultralight::Platform::instance().set_thread_manager(thread_manager);
+#endif
   
-  Browser browser;
-  browser.Run();
+  {
+    Browser browser;
+    browser.Run();
+  }
+
+#if defined(_WIN32)
+  ultralight::Platform::instance().set_thread_manager(nullptr);
+  delete thread_manager;
+#endif
+
   return 0;
 }
