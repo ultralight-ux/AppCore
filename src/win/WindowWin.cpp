@@ -550,11 +550,23 @@ void WindowWin::OnChangeDPI(double scale, const RECT* suggested_rect) {
                SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
+void WindowWin::CleanupWindowClass() {
+  HINSTANCE hInstance = GetModuleHandle(NULL);
+  TCHAR* class_name = _T("UltralightWindow");
+
+  if (g_window_class_initialized) {
+    UnregisterClass(class_name, hInstance);
+    g_window_class_initialized = false;
+  }
+}
+
 RefPtr<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height, bool fullscreen,
                               unsigned int window_flags) {
   return AdoptRef(*new WindowWin(monitor, width, height, fullscreen, window_flags));
 }
 
 Window::~Window() { }
+
+
 
 } // namespace ultralight

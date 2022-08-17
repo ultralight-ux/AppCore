@@ -170,6 +170,14 @@ if (UL_PROFILE_MEMORY OR UL_ENABLE_MEMORY_STATS)
     add_compile_options(/EHa- /EHc- /EHs- /fp:except-)
 endif ()
 
+if (UL_ENABLE_ALLOCATOR_OVERRIDE)
+    if (UL_PROFILE_MEMORY OR UL_ENABLE_MEMORY_STATS)
+        message(FATAL_ERROR "Allocator override cannot be used when memory profiling or memory stats is enabled.")
+    endif ()
+
+    add_definitions(-DULTRALIGHT_ENABLE_ALLOCATOR_OVERRIDE)
+endif ()
+
 link_libraries(UltralightCore WebCore Ultralight)
 
 if (UL_ENABLE_STATIC_BUILD)
@@ -208,6 +216,9 @@ if(UL_ENABLE_TESTS)
         CreateTestApp("MiniProfiler")
     endif ()
 
+    include(CreateTestLib.cmake)
+
+    CreateTestLib("MiniBrowserLib")
 endif ()
 
 include(CreateSDK.cmake)

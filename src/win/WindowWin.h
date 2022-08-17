@@ -96,6 +96,9 @@ class WindowWin : public Window, public RefCountedImpl<WindowWin>, public Overla
 
   void InvalidateWindow() { window_needs_repaint_ = true; }
 
+  // Should be called at end of app lifetime to cleanup WINAPI window class
+  static void CleanupWindowClass();
+
  protected:
   WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool fullscreen,
             unsigned int window_flags);

@@ -1,3 +1,5 @@
+#ifndef BUILDING_AS_LIBRARY
+
 #include "Browser.h"
 
 #define ENABLE_PAUSE_FOR_DEBUGGER 0
@@ -32,5 +34,9 @@ int main() {
   delete thread_manager;
 #endif
 
+  PauseForDebugger();
+
   return 0;
 }
+
+#endif

@@ -127,6 +127,7 @@ AppWin::~AppWin() {
   Platform::instance().set_surface_factory(nullptr);
   gpu_driver_.reset();
   gpu_context_.reset();
+  WindowWin::CleanupWindowClass();
 }
 
 Monitor* AppWin::main_monitor() {
