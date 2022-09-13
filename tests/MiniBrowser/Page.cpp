@@ -10,11 +10,13 @@ Page::Page(UI* ui, uint32_t width, uint32_t height, int x, int y)
   overlay_ = Overlay::Create(ui->window_, width, height, x, y);
   view()->set_view_listener(this);
   view()->set_load_listener(this);
+  view()->set_download_listener(this);
 }
 
 Page::~Page() {
   view()->set_view_listener(nullptr);
   view()->set_load_listener(nullptr);
+  view()->set_download_listener(nullptr);
 }
 
 void Page::Show() {
@@ -171,7 +173,7 @@ void Page::OnFinishLoading(View* caller, uint64_t frame_id, bool is_main_frame, 
 
 void Page::OnFailLoading(View* caller, uint64_t frame_id, bool is_main_frame, const String& url,
   const String& description, const String& error_domain, int error_code) {
-  if (is_main_frame) {
+  if (is_main_frame && error_code != 102) {
     char error_code_str[16]; 
     sprintf(error_code_str,"%d", error_code);
 
@@ -214,4 +216,51 @@ void Page::OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_
 
 void Page::OnUpdateHistory(View* caller) {
   ui_->UpdatePageNavigation(caller->is_loading(), caller->CanGoBack(), caller->CanGoForward());
+}
+
+bool Page::OnRequestDownload(ultralight::View* caller, DownloadId id, const String& url) {
+  std::cout << "[OnRequestDownload]" << std::endl;
+  return true;
+}
+
+void Page::OnBeginDownload(ultralight::View* caller, DownloadId id, const String& url,
+                           const String& filename, int64_t expected_content_length) {
+  std::cout << "[OnBeginDownload] id: " << id << ", url: " << url.utf8().data()
+            << ", filename: " << filename.utf8().data() << ", length: " << expected_content_length
+            << std::endl;
+
+  std::ofstream outFile;
+  outFile.open(filename.utf8().data(), std::ios::out | std::ios::app | std::ios::binary); 
+
+  // TODO: Write downloads to actual download folder instead of current working directory
+  if (outFile.is_open()) {
+    active_downloads_.insert({ id, std::move(outFile) });
+  } else {
+    std::cout << "Error: Unable to open file for writing: " << filename.utf8().data() << std::endl;
+  }
+}
+
+void Page::OnReceiveDataForDownload(ultralight::View* caller, DownloadId id,
+                                    RefPtr<Buffer> data) { 
+  //std::cout << "[OnReceiveDataForDownload] id: " << id << std::endl;
+  auto download = active_downloads_.find(id);
+  if (download != active_downloads_.end()) {
+    download->second.write((const char*)data->data(), data->size());
+  }
+}
+
+void Page::OnFinishDownload(ultralight::View* caller, DownloadId id) {
+  std::cout << "[OnFinishDownload] id: " << id << std::endl;
+  auto download = active_downloads_.find(id);
+  if (download != active_downloads_.end()) {
+    download->second.close();
+  }
+}
+
+void Page::OnFailDownload(ultralight::View* caller, DownloadId id) {
+  std::cout << "[OnFailDownload] id: " << id << std::endl;
+  auto download = active_downloads_.find(id);
+  if (download != active_downloads_.end()) {
+    download->second.close();
+  }
 }
