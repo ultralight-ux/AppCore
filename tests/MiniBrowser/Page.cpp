@@ -11,12 +11,14 @@ Page::Page(UI* ui, uint32_t width, uint32_t height, int x, int y)
   view()->set_view_listener(this);
   view()->set_load_listener(this);
   view()->set_download_listener(this);
+  view()->set_network_listener(this);
 }
 
 Page::~Page() {
   view()->set_view_listener(nullptr);
   view()->set_load_listener(nullptr);
   view()->set_download_listener(nullptr);
+  view()->set_network_listener(nullptr);
 }
 
 void Page::Show() {
@@ -263,4 +265,9 @@ void Page::OnFailDownload(ultralight::View* caller, DownloadId id) {
   if (download != active_downloads_.end()) {
     download->second.close();
   }
+}
+
+bool Page::OnNetworkRequest(ultralight::View* caller, NetworkRequest& request) {
+  std::cout << "[OnNetworkRequest] url: " << request.url().utf8().data() << std::endl;
+  return true;
 }

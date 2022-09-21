@@ -12,7 +12,8 @@ using namespace ultralight;
 */
 class Page : public ViewListener,
              public LoadListener,
-             public DownloadListener {
+             public DownloadListener,
+             public NetworkListener {
 public:
   Page(UI* ui, uint32_t width, uint32_t height, int x, int y);
   ~Page();
@@ -75,6 +76,9 @@ public:
                                         RefPtr<Buffer> data) override;
   virtual void OnFinishDownload(ultralight::View* caller, DownloadId id) override;
   virtual void OnFailDownload(ultralight::View* caller, DownloadId id) override;
+
+  // Inherited from NetworkListener
+  virtual bool OnNetworkRequest(ultralight::View* caller, NetworkRequest& request) override;
 
 protected:
   UI* ui_;
