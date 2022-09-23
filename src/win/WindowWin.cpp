@@ -347,7 +347,11 @@ int WindowWin::y() const {
   return PixelsToScreen(pos.y);
 }
 
-void WindowWin::SetTitle(const char* title) { SetWindowTextA(hwnd_, title); }
+void WindowWin::SetTitle(const char* title) {
+  // Title is in UTF-8, we need to convert it to a UTF-16 wide-string
+  ultralight::String16 titleUtf16 = ultralight::String(title).utf16();
+  SetWindowTextW(hwnd_, titleUtf16.data());
+}
 
 void WindowWin::SetCursor(ultralight::Cursor cursor) {
   switch (cursor) {
