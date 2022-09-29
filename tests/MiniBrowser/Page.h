@@ -44,9 +44,7 @@ public:
   virtual void OnChangeURL(View* caller, const String& url) override;
   virtual void OnChangeTooltip(View* caller, const String& tooltip) override;
   virtual void OnChangeCursor(View* caller, Cursor cursor) override;
-  virtual void OnAddConsoleMessage(View* caller, MessageSource source,
-    MessageLevel level, const String& message, uint32_t line_number,
-    uint32_t column_number, const String& source_id) override;
+  virtual void OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) override;
   virtual RefPtr<View> OnCreateChildView(ultralight::View* caller,
     const String& opener_url, const String& target_url,
     bool is_popup, const IntRect& popup_rect) override;

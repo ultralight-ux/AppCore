@@ -121,12 +121,7 @@ void Page::OnChangeCursor(View* caller, Cursor cursor) {
 }
 
 void Page::OnAddConsoleMessage(View* caller,
-  MessageSource source,
-  MessageLevel level,
-  const String& message,
-  uint32_t line_number,
-  uint32_t column_number,
-  const String& source_id) {
+  const ConsoleMessage& msg) {
 }
 
 RefPtr<View> Page::OnCreateChildView(ultralight::View* caller,

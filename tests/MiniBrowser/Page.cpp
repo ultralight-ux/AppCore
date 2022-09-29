@@ -2,6 +2,7 @@
 #include "UI.h"
 #include <iostream>
 #include <string>
+#include <AppCore/JSHelpers.h>
 
 #define INSPECTOR_DRAG_HANDLE_HEIGHT 10
 
@@ -124,13 +125,26 @@ void Page::OnChangeCursor(View* caller, Cursor cursor) {
   ui_->SetCursor(cursor);
 }
 
-void Page::OnAddConsoleMessage(View* caller,
-  MessageSource source,
-  MessageLevel level,
-  const String& message,
-  uint32_t line_number,
-  uint32_t column_number,
-  const String& source_id) {
+void Page::OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) {
+  std::cout << "[OnAddConsoleMessage]\n\t"
+            << "\n\tsource:\t" << (uint32_t)msg.source()
+            << "\n\ttype:\t" << (uint32_t)msg.type()
+            << "\n\tlevel:\t" << (uint32_t)msg.level()
+            << "\n\tmessage:\t" << msg.message().utf8().data()
+            << "\n\tline_number:\t" << msg.line_number()
+            << "\n\tcolumn_number:\t" << msg.column_number()
+            << "\n\tsource_id:\t" << msg.source_id().utf8().data()
+            << "\n\tnum_arguments:\t" << msg.num_arguments() << std::endl;
+
+  uint32_t num_args = msg.num_arguments();
+  if (num_args > 0) {
+    SetJSContext(msg.argument_context());
+    for (uint32_t i = 0; i < num_args; i++) {
+      String arg_str = JSValue(msg.argument_at(i)).ToString();
+      std::cout << "\n\t[" << i << "]:\t" << arg_str.utf8().data();
+    }
+    std::cout << std::endl;
+  }
 }
 
 RefPtr<View> Page::OnCreateChildView(ultralight::View* caller,
