@@ -1,8 +1,12 @@
-#pragma once
+///
+/// Copyright (C) 2022 Ultralight, Inc. All rights reserved.
+///
+#ifndef __ULTRALIGHT_MEMORY_PROFILER_H__
+#define __ULTRALIGHT_MEMORY_PROFILER_H__
 
 #include <Ultralight/private/util/MemoryTag.h>
 
-#if (defined(TRACY_PROFILE_MEMORY) || defined(ULTRALIGHT_ENABLE_MEMORY_STATS)) && defined(_WIN32)
+#if defined(ULTRALIGHT_ENABLE_MEMORY_PROFILER)
 
 class ScopedMemoryZone {
  public:
@@ -19,3 +23,5 @@ class ScopedMemoryZone {
 #else
 #define ProfiledMemoryZone(tag)
 #endif
+
+#endif // __ULTRALIGHT_MEMORY_PROFILER_H__

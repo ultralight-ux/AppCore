@@ -166,8 +166,16 @@ if (UL_ENABLE_MEMORY_STATS)
 endif ()
 
 if (UL_PROFILE_MEMORY OR UL_ENABLE_MEMORY_STATS)
-    # Disable exceptions for allocator shim
-    add_compile_options(/EHa- /EHc- /EHs- /fp:except-)
+    if (NOT PORT MATCHES "UltralightWin")
+        message(FATAL_ERROR "Memory profiling is only available for Windows at this time. Please disable memory profiling and memory stats before building again.")
+    endif ()
+
+    add_definitions(-DULTRALIGHT_ENABLE_MEMORY_PROFILER)
+    
+    if (PORT MATCHES "UltralightWin")
+        # Disable exceptions for allocator shim
+        add_compile_options(/EHa- /EHc- /EHs- /fp:except-)
+    endif ()
 endif ()
 
 if (UL_ENABLE_ALLOCATOR_OVERRIDE)

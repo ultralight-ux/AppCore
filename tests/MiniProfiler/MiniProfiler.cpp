@@ -89,6 +89,8 @@ class MyApp : public WindowListener,
 
   void CreateViews() {
     ViewConfig viewConfig;
+    viewConfig.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, "
+                            "like Gecko) Chrome/105.0.0.0 Safari/537.36";
     viewConfig.initial_device_scale = window_->scale();
     auto session = app_->renderer()->CreateSession(false, "");
     auto view = app_->renderer()->CreateView(100, 100, viewConfig, session);
@@ -209,11 +211,9 @@ class MyApp : public WindowListener,
     }
   }
 
-  virtual void OnAddConsoleMessage(ultralight::View* caller, MessageSource source,
-                                   MessageLevel level, const String& message, uint32_t line_number,
-                                   uint32_t column_number, const String& source_id) override {
+  virtual void OnAddConsoleMessage(ultralight::View* caller, const ConsoleMessage& message) override {
     if (caller == content_->view().get())
-      AddMessage(message);
+      AddMessage(message.message());
   }
 
   virtual void LogMessage(LogLevel log_level, const String& message) override {
@@ -227,6 +227,8 @@ class MyApp : public WindowListener,
     content_ = nullptr;
 
     ViewConfig viewConfig;
+    viewConfig.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, "
+                            "like Gecko) Chrome/105.0.0.0 Safari/537.36";
     viewConfig.initial_device_scale = window_->scale();
     auto session = app_->renderer()->CreateSession(false, "");
     auto view = app_->renderer()->CreateView(100, 100, viewConfig, session);
