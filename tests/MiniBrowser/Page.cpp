@@ -282,6 +282,6 @@ void Page::OnFailDownload(ultralight::View* caller, DownloadId id) {
 }
 
 bool Page::OnNetworkRequest(ultralight::View* caller, NetworkRequest& request) {
-  std::cout << "[OnNetworkRequest] url: " << request.url().utf8().data() << std::endl;
+  //std::cout << "[OnNetworkRequest] url: " << request.url().utf8().data() << std::endl;
   return true;
 }

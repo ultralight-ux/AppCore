@@ -19,6 +19,9 @@ class MyApp : public WindowListener, public ViewListener, public LoadListener {
  public:
   MyApp() {
     Settings s;
+#ifdef _WIN32
+    s.force_cpu_renderer = true;
+#endif
     Config c;
     app_ = App::Create(s, c);
 

@@ -13,7 +13,7 @@ class ThreadManagerWin : public ThreadManager {
   ThreadManagerWin();
   virtual ~ThreadManagerWin();
 
-  virtual bool CreateThread(const char* name, ThreadQOS qos, ThreadEntryPoint entry_point,
+  virtual bool CreateThread(const char* name, ThreadType type, ThreadEntryPoint entry_point,
                             void* entry_point_data, CreateThreadResult& result) override;
 
   void OnThreadExit(uint32_t creation_id);

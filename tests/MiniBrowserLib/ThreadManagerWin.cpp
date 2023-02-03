@@ -40,7 +40,7 @@ ThreadManagerWin::~ThreadManagerWin() {
   g_instance = nullptr;
 }
 
-bool ThreadManagerWin::CreateThread(const char* name, ThreadQOS qos, ThreadEntryPoint entry_point,
+bool ThreadManagerWin::CreateThread(const char* name, ThreadType type, ThreadEntryPoint entry_point,
                                     void* entry_point_data, CreateThreadResult& result) {
 
   uint32_t creation_id = next_creation_id_++;

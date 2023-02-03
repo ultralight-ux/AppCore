@@ -2,7 +2,7 @@
 
 #include "Browser.h"
 
-#define ENABLE_PAUSE_FOR_DEBUGGER 0
+#define ENABLE_PAUSE_FOR_DEBUGGER 1
 
 #if defined(_WIN32) && ENABLE_PAUSE_FOR_DEBUGGER
 #include <Windows.h>

@@ -46,6 +46,7 @@ class UI : public WindowListener,
 
 protected:
   void CreatePage();
+  void UpdateJavaScriptBindings();
   void UpdatePageNavigation(bool is_loading, bool can_go_back, bool can_go_forward);
 
   void SetLoading(bool is_loading);

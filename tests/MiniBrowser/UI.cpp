@@ -30,7 +30,27 @@ bool UI::OnKeyEvent(const ultralight::KeyEvent& evt) {
       App::instance()->renderer()->StartRemoteInspectorServer("0.0.0.0", 7676);
     }
     return false;
+  } else if (evt.virtual_key_code == KeyCodes::GK_F3) {
+    if (evt.type == KeyEvent::kType_RawKeyDown) {
+      printf("Recreating page.\n");
+      CreatePage();
+    }
+    return false;
+  } else if (evt.virtual_key_code == KeyCodes::GK_F4) {
+    if (evt.type == KeyEvent::kType_RawKeyDown) {
+      printf("Purging memory.\n");
+      App::instance()->renderer()->PurgeMemory();
+      UpdateJavaScriptBindings();
+    }
+    return false;
+  } else if (evt.virtual_key_code == KeyCodes::GK_F5) {
+    if (evt.type == KeyEvent::kType_RawKeyDown) {
+      printf("Reloading page.\n");
+      page_->view()->Reload();
+    }
+    return false;
   }
+
 
   return true;
 }
@@ -92,23 +112,7 @@ void UI::OnResize(ultralight::Window* window, uint32_t width, uint32_t height) {
 }
 
 void UI::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const String& url) {
-  // Set the context for all subsequent JS* calls
-  RefPtr<JSContext> locked_context = view()->LockJSContext();
-  SetJSContext(locked_context->ctx());
-
-  JSObject global = JSGlobalObject();
-  updateBack = global["updateBack"];
-  updateForward = global["updateForward"];
-  updateLoading = global["updateLoading"];
-  updateURL = global["updateURL"];
-
-  global["OnBack"] = BindJSCallback(&UI::OnBack);
-  global["OnForward"] = BindJSCallback(&UI::OnForward);
-  global["OnRefresh"] = BindJSCallback(&UI::OnRefresh);
-  global["OnStop"] = BindJSCallback(&UI::OnStop);
-  global["OnToggleTools"] = BindJSCallback(&UI::OnToggleTools);
-  global["OnRequestChangeURL"] = BindJSCallback(&UI::OnRequestChangeURL);
-
+  UpdateJavaScriptBindings();
   CreatePage();
 }
 
@@ -135,8 +139,28 @@ void UI::CreatePage() {
   int page_height = window->height() - ui_height_;
   if (page_height < 1)
     page_height = 1;
+  page_.reset();
   page_.reset(new Page(this, window->width(), (uint32_t)page_height, 0, ui_height_));
   page_->view()->LoadURL("file:///page.html");
+}
+
+void UI::UpdateJavaScriptBindings() {
+  // Set the context for all subsequent JS* calls
+  RefPtr<JSContext> locked_context = view()->LockJSContext();
+  SetJSContext(locked_context->ctx());
+
+  JSObject global = JSGlobalObject();
+  updateBack = global["updateBack"];
+  updateForward = global["updateForward"];
+  updateLoading = global["updateLoading"];
+  updateURL = global["updateURL"];
+
+  global["OnBack"] = BindJSCallback(&UI::OnBack);
+  global["OnForward"] = BindJSCallback(&UI::OnForward);
+  global["OnRefresh"] = BindJSCallback(&UI::OnRefresh);
+  global["OnStop"] = BindJSCallback(&UI::OnStop);
+  global["OnToggleTools"] = BindJSCallback(&UI::OnToggleTools);
+  global["OnRequestChangeURL"] = BindJSCallback(&UI::OnRequestChangeURL);
 }
 
 void UI::UpdatePageNavigation(bool is_loading, bool can_go_back, bool can_go_forward) {
