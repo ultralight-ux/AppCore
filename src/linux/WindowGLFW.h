@@ -4,6 +4,7 @@
 #include "RefCountedImpl.h"
 #include "OverlayManager.h"
 #include <cmath>
+#include <vulkan/vulkan.h>
 
 typedef struct GLFWwindow GLFWwindow;
 typedef struct GLFWcursor GLFWcursor;
@@ -106,6 +107,9 @@ protected:
   GLFWcursor* cursor_hresize_;
   GLFWcursor* cursor_vresize_;
   bool window_needs_repaint_ = false;
+  
+  // Vulkan
+  VkSurfaceKHR surface = VK_NULL_HANDLE;
 };
 
 }  // namespace ultralight

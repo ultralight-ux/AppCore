@@ -1,6 +1,7 @@
 #pragma once
 #include <AppCore/App.h>
 #include "gl/GPUContextGL.h"
+#include "vulkan/GPUContextVK.h"
 #include <AppCore/Window.h>
 #include "RefCountedImpl.h"
 #include "MonitorGLFW.h"

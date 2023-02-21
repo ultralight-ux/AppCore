@@ -149,7 +149,9 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
     glfwTerminate();
     exit(EXIT_FAILURE);
   }
-
+  if (glfwVulkanSupported()){
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // do not create GL context
+  }
   // This window will share the GL context of GPUContextGL's offscreen window
   GLFWwindow* win = glfwCreateWindow(ScreenToPixels(width), ScreenToPixels(height),
     "", NULL, gpu_context->window());
@@ -159,6 +161,16 @@ WindowGLFW::WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
   {
     glfwTerminate();
     exit(EXIT_FAILURE);
+  }
+
+  if (glfwVulkanSupported()){
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+	  VkResult ret = glfwCreateWindowSurface(((GPUContextVK*)gpu_context)->instance, window_, nullptr, &surface);
+	  if(ret != VK_SUCCESS) {
+	  	glfwTerminate();
+      exit(EXIT_FAILURE);
+	  }
+    this->surface = surface;
   }
 
   glfwSetWindowUserPointer(window_, this);
@@ -200,6 +212,11 @@ WindowGLFW::~WindowGLFW() {
     glfwDestroyCursor(cursor_hand_);
     glfwDestroyCursor(cursor_hresize_);
     glfwDestroyCursor(cursor_vresize_);
+
+    if(glfwVulkanSupported()){
+      GPUContextVK* gpu_context = (GPUContextVK*)static_cast<AppGLFW*>(App::instance())->gpu_context();
+      vkDestroySurfaceKHR(gpu_context->instance, this->surface, nullptr);
+    }
 
     glfwDestroyWindow(window_);
     static_cast<AppGLFW*>(App::instance())->RemoveWindow(this);

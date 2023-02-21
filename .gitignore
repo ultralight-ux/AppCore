@@ -4,3 +4,5 @@ build_*/
 .DS_Store
 /deps/
 .directory
+.cache
+CMakeFiles
