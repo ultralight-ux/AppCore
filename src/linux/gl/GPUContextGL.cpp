@@ -15,6 +15,11 @@ GPUContextGL::GPUContextGL(bool enable_vsync, bool enable_msaa) :
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
 
+  if (enable_msaa) {
+    // Request 4x MSAA for our window
+    glfwWindowHint(GLFW_SAMPLES, 4);
+  }
+
   // Make the window offscreen
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
   GLFWwindow* win = glfwCreateWindow(10, 10, "", NULL, NULL);
@@ -29,11 +34,14 @@ GPUContextGL::GPUContextGL(bool enable_vsync, bool enable_msaa) :
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
   glfwSwapInterval(enable_vsync ? 1 : 0);
 
-  // TODO: enable msaa, GLFW currently has num_samples == 0 in glfwWindowHint
   int samples = 4;
   glGetIntegerv(GL_SAMPLES, &samples);
   if (!samples) {
     msaa_enabled_ = false;
+  }
+
+  if (msaa_enabled_) {
+    glEnable(GL_MULTISAMPLE);
   }
 
   driver_.reset(new ultralight::GPUDriverGL(this));
