@@ -182,7 +182,7 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool ful
     : monitor_(monitor), is_fullscreen_(fullscreen) {
 
   HINSTANCE hInstance = GetModuleHandle(NULL);
-  TCHAR* class_name = _T("UltralightWindow");
+  const TCHAR* class_name = _T("UltralightWindow");
 
   if (!g_window_class_initialized) {
     WNDCLASSEX wcex;
@@ -556,7 +556,7 @@ void WindowWin::OnChangeDPI(double scale, const RECT* suggested_rect) {
 
 void WindowWin::CleanupWindowClass() {
   HINSTANCE hInstance = GetModuleHandle(NULL);
-  TCHAR* class_name = _T("UltralightWindow");
+  const TCHAR* class_name = _T("UltralightWindow");
 
   if (g_window_class_initialized) {
     UnregisterClass(class_name, hInstance);

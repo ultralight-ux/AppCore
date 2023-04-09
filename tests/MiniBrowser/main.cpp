@@ -12,7 +12,7 @@ void PauseForDebugger() {}
 #endif
 
 #if defined(_WIN32)
-#include "ThreadManagerWin.h"
+#include "ThreadFactoryWin.h"
 #include <Ultralight/platform/Platform.h>
 #endif
 
@@ -20,8 +20,8 @@ int main() {
   PauseForDebugger();
 
 #if defined(_WIN32)
-  ThreadManagerWin* thread_manager = new ThreadManagerWin();
-  ultralight::Platform::instance().set_thread_manager(thread_manager);
+  ThreadFactoryWin* thread_factory = new ThreadFactoryWin();
+  ultralight::Platform::instance().set_thread_factory(thread_factory);
 #endif
   
   {
@@ -30,8 +30,8 @@ int main() {
   }
 
 #if defined(_WIN32)
-  ultralight::Platform::instance().set_thread_manager(nullptr);
-  delete thread_manager;
+  ultralight::Platform::instance().set_thread_factory(nullptr);
+  delete thread_factory;
 #endif
 
   PauseForDebugger();

@@ -1,17 +1,17 @@
 #pragma once
 #if defined(_WIN32)
 
-#include <Ultralight/platform/ThreadManager.h>
+#include <Ultralight/platform/Thread.h>
 #include <mutex>
 #include <string>
 #include <map>
 
 using namespace ultralight;
 
-class ThreadManagerWin : public ThreadManager {
+class ThreadFactoryWin : public ThreadFactory {
  public:
-  ThreadManagerWin();
-  virtual ~ThreadManagerWin();
+  ThreadFactoryWin();
+  virtual ~ThreadFactoryWin();
 
   virtual bool CreateThread(const char* name, ThreadType type, ThreadEntryPoint entry_point,
                             void* entry_point_data, CreateThreadResult& result) override;

@@ -1,10 +1,10 @@
-#include "ThreadManagerWin.h"
+#include "ThreadFactoryWin.h"
 
 #if defined(_WIN32)
 #include <Windows.h>
 #include <process.h>
 
-ThreadManagerWin* g_instance = nullptr;
+ThreadFactoryWin* g_instance = nullptr;
 
 struct ThreadContext {
   ultralight::ThreadEntryPoint entry_point;
@@ -24,9 +24,9 @@ static unsigned __stdcall ultralightThreadEntryPoint(void* ctx) {
   return 0;
 }
 
-ThreadManagerWin::ThreadManagerWin() { g_instance = this; }
+ThreadFactoryWin::ThreadFactoryWin() { g_instance = this; }
 
-ThreadManagerWin::~ThreadManagerWin() {
+ThreadFactoryWin::~ThreadFactoryWin() {
 
   std::lock_guard<std::mutex> lock(thread_map_lock_);
   if (thread_map_.size()) {
@@ -40,7 +40,7 @@ ThreadManagerWin::~ThreadManagerWin() {
   g_instance = nullptr;
 }
 
-bool ThreadManagerWin::CreateThread(const char* name, ThreadType type, ThreadEntryPoint entry_point,
+bool ThreadFactoryWin::CreateThread(const char* name, ThreadType type, ThreadEntryPoint entry_point,
                                     void* entry_point_data, CreateThreadResult& result) {
 
   uint32_t creation_id = next_creation_id_++;
@@ -64,7 +64,7 @@ bool ThreadManagerWin::CreateThread(const char* name, ThreadType type, ThreadEnt
   return true;
 }
 
-void ThreadManagerWin::OnThreadExit(uint32_t creation_id) {
+void ThreadFactoryWin::OnThreadExit(uint32_t creation_id) {
   std::lock_guard<std::mutex> lock(thread_map_lock_);
   auto i = thread_map_.find(creation_id);
   if (i != thread_map_.end()) {

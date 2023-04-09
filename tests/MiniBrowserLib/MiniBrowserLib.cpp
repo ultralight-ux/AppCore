@@ -7,17 +7,17 @@
 static Browser* g_browser = nullptr;
 
 #if defined(_WIN32)
-#include "ThreadManagerWin.h"
+#include "ThreadFactoryWin.h"
 #include <Ultralight/platform/Platform.h>
-static ThreadManagerWin* thread_manager = nullptr;
+static ThreadFactoryWin* thread_factory = nullptr;
 #endif
 
 void* MiniBrowser_Initialize() {
   assert(g_browser == nullptr);
 
 #if defined(_WIN32)
-  thread_manager = new ThreadManagerWin();
-  ultralight::Platform::instance().set_thread_manager(thread_manager);
+  thread_factory = new ThreadFactoryWin();
+  ultralight::Platform::instance().set_thread_factory(thread_factory);
 #endif
 
   g_browser = new Browser();
@@ -40,8 +40,8 @@ void MiniBrowser_Shutdown() {
   g_browser = nullptr;
 
 #if defined(_WIN32)
-  ultralight::Platform::instance().set_thread_manager(nullptr);
-  delete thread_manager;
-  thread_manager = nullptr;
+  ultralight::Platform::instance().set_thread_factory(nullptr);
+  delete thread_factory;
+  thread_factory = nullptr;
 #endif
 }

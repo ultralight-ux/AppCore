@@ -24,6 +24,7 @@
 #include <sstream>
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
 
 namespace ultralight {
 
@@ -43,6 +44,10 @@ static String GetRoamingAppDataPath() {
   return result;
 }
 
+inline std::filesystem::path ToFSPath(const String& str) {
+  return str.utf8().data();
+}
+
 AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   windows_util_.reset(new WindowsUtil());
   windows_util_->EnableDPIAwareness();
@@ -50,28 +55,29 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   main_monitor_.reset(new MonitorWin(windows_util_.get()));
 
   // Generate cache path
-  String cache_path = GetRoamingAppDataPath();
-  cache_path = PlatformFileSystem::AppendPath(cache_path, settings_.developer_name);
-  cache_path = PlatformFileSystem::AppendPath(cache_path, settings_.app_name);
-  PlatformFileSystem::MakeAllDirectories(cache_path);
+  String cache_path16 = GetRoamingAppDataPath();
+  std::filesystem::path cache_path = ToFSPath(GetRoamingAppDataPath());
+  cache_path /= ToFSPath(settings_.developer_name);
+  cache_path /= ToFSPath(settings_.app_name);
+  std::filesystem::create_directories(cache_path);
 
   std::ostringstream info;
 
   if (!Platform::instance().logger()) {
-    String log_path = PlatformFileSystem::AppendPath(cache_path, "ultralight.log");
+    std::filesystem::path log_path = cache_path / std::filesystem::path("ultralight.log");
 
-    logger_.reset(new FileLogger(log_path));
+    logger_.reset(new FileLogger(log_path.string().c_str()));
     Platform::instance().set_logger(logger_.get());
 
     
-    info << "Writing log to: " << log_path.utf8().data() << std::endl;
+    info << "Writing log to: " << log_path.string().c_str() << std::endl;
     OutputDebugStringA(info.str().c_str());
   }
 
   // Get module path
-  String module_path = GetModulePath();
+  std::filesystem::path module_path = ToFSPath(GetModulePath());
 
-  config.cache_path = cache_path.utf16();
+  config.cache_path = cache_path.string().c_str();
   config.face_winding = FaceWinding::Clockwise;
   Platform::instance().set_config(config);
 
@@ -85,13 +91,12 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
     std::wstring fs_str = settings.file_system_path.utf16().data();
     std::replace(fs_str.begin(), fs_str.end(), L'/', L'\\');
 
-    String file_system_path = PlatformFileSystem::AppendPath(module_path,
-      String16(fs_str.data(), fs_str.length()));
+    std::filesystem::path file_system_path = module_path / std::filesystem::path(fs_str);
 
-    Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
+    Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path.string().c_str()));
 
     info.clear();
-    info << "File system base directory resolved to: " << file_system_path.utf8().data();
+    info << "File system base directory resolved to: " << file_system_path.string().c_str();
     UL_LOG_INFO(info.str().c_str());
   }
 

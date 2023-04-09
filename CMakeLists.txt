@@ -8,7 +8,7 @@ set_property(DIRECTORY . PROPERTY FOLDER "AppCore")
 
 include(ExternalProject)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_definitions(-DAPPCORE_IMPLEMENTATION)
