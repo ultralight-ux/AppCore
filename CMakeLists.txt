@@ -214,19 +214,4 @@ if (PORT MATCHES "UltralightMac")
     SET(CMAKE_INSTALL_RPATH "@executable_path/")
 endif ()
 
-if(UL_ENABLE_TESTS)
-    include(CreateTestApp.cmake)
-
-    CreateTestApp("MiniTester")
-    CreateTestApp("MiniBrowser")
-
-    if (PORT MATCHES "UltralightWin" AND (UL_PROFILE_MEMORY OR UL_ENABLE_MEMORY_STATS))
-        CreateTestApp("MiniProfiler")
-    endif ()
-
-    include(CreateTestLib.cmake)
-
-    CreateTestLib("MiniBrowserLib")
-endif ()
-
 include(CreateSDK.cmake)
