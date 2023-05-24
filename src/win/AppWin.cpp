@@ -160,6 +160,7 @@ void AppWin::Run() {
       : WAIT_TIMEOUT);
     if (result == WAIT_TIMEOUT) {
       Update();
+      renderer()->RefreshDisplay(0);
       for (auto window : windows_) {
         if (window->NeedsRepaint())
           InvalidateRect(window->hwnd(), nullptr, false);
