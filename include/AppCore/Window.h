@@ -1,16 +1,10 @@
-///
-/// @file Window.h
-///
-/// @brief The header for the Window class.
-///
-/// @author
-///
-/// This file is a part of Ultralight, a next-generation HTML renderer.
-///
-/// Website: <http://ultralig.ht>
-///
-/// Copyright (C) 2021 Ultralight, Inc. All rights reserved.
-///
+/******************************************************************************
+ *  This file is a part of Ultralight, an ultra-portable web-browser engine.  *
+ *                                                                            *
+ *  See <https://ultralig.ht> for licensing and more.                         *
+ *                                                                            *
+ *  (C) 2023 Ultralight, Inc.                                                 *
+ *****************************************************************************/
 #pragma once
 #include "Defines.h"
 #include <Ultralight/RefPtr.h>
@@ -105,11 +99,25 @@ public:
   ///
   /// @param  window_flags  Various window flags.
   /// 
-  /// @note  Windows are immediately shown by default unless kWindowFlags_Hidden is set in the
-  ///        window_flags parameter. (They can be shown later via Window::Show())
+  /// @note 
+  /// \parblock
   /// 
-  /// @note  Screen coordinates are device-scale-independent and have the following relationship
-  ///        to pixel coordinates:   pixel_coordinate = round(screen_coordinate * scale)
+  /// Windows are immediately shown by default unless kWindowFlags_Hidden is set in the
+  /// window_flags parameter. (They can be shown later via Window::Show())
+  /// 
+  /// \endparblock
+  /// 
+  /// @note
+  /// \parblock
+  /// 
+  /// Screen coordinates are device-scale-independent and have the following relationship
+  /// to pixel coordinates:  
+  /// 
+  /// \code
+  /// pixel_coordinate = round(screen_coordinate * scale)
+  /// \endcode
+  /// 
+  /// \endparblock
   ///
   static RefPtr<Window> Create(Monitor* monitor, uint32_t width, uint32_t height,
     bool fullscreen, unsigned int window_flags);
@@ -238,9 +246,11 @@ public:
   ///
   /// Get the underlying native window handle.
   ///
-  /// @note This is:  - HWND on Windows
-  ///                 - NSWindow* on macOS
-  ///                 - GLFWwindow* on Linux
+  /// @note 
+  ///   This is:  
+  ///   - HWND on Windows
+  ///   - NSWindow* on macOS
+  ///   - GLFWwindow* on Linux
   ///
   virtual void* native_handle() const = 0;
 

@@ -1,16 +1,10 @@
-///
-/// @file Overlay.h
-///
-/// @brief The header for the Overlay class.
-///
-/// @author
-///
-/// This file is a part of Ultralight, a next-generation HTML renderer.
-///
-/// Website: <http://ultralig.ht>
-///
-/// Copyright (C) 2021 Ultralight, Inc. All rights reserved.
-///
+/******************************************************************************
+ *  This file is a part of Ultralight, an ultra-portable web-browser engine.  *
+ *                                                                            *
+ *  See <https://ultralig.ht> for licensing and more.                         *
+ *                                                                            *
+ *  (C) 2023 Ultralight, Inc.                                                 *
+ *****************************************************************************/
 #pragma once
 #include "Window.h"
 #include <Ultralight/View.h>
@@ -18,7 +12,7 @@
 namespace ultralight {
 
 ///
-/// Web-content overlay. Displays a web-page within an area of the main window.
+/// Web-content overlay. Displays a web-page within an area of a Window.
 ///
 /// @note  Each Overlay is essentially a View and an on-screen quad. You should
 ///        create the Overlay then load content into the underlying View.

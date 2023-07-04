@@ -1,16 +1,10 @@
-///
-/// @file App.h
-///
-/// @brief The header for the App class.
-///
-/// @author
-///
-/// This file is a part of Ultralight, a next-generation HTML renderer.
-///
-/// Website: <http://ultralig.ht>
-///
-/// Copyright (C) 2021 Ultralight, Inc. All rights reserved.
-///
+/******************************************************************************
+ *  This file is a part of Ultralight, an ultra-portable web-browser engine.  *
+ *                                                                            *
+ *  See <https://ultralig.ht> for licensing and more.                         *
+ *                                                                            *
+ *  (C) 2023 Ultralight, Inc.                                                 *
+ *****************************************************************************/
 #pragma once
 #include "Defines.h"
 #include <Ultralight/RefPtr.h>
@@ -89,7 +83,10 @@ struct AExport Settings {
 };
 
 ///
-/// Main application class.
+/// Main application singleton (use this if you want to let the library manage window creation).
+/// 
+/// This convenience class automatically sets up the Renderer, creates a run loop, and handles all
+/// painting and platform-specific operations for you.
 ///
 class AExport App : public RefCounted {
 public:
@@ -105,7 +102,7 @@ public:
   /// @note  You should only create one of these per application lifetime.
   ///
   /// @note  Certain Config options may be overridden during App creation,
-  ///        most commonly Config::face_winding and Config::device_scale_hint.
+  ///        most commonly Config::face_winding and Config::cache_path.
   ///
   static RefPtr<App> Create(Settings settings = Settings(), Config config = Config());
 
