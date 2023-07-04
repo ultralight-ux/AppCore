@@ -99,7 +99,7 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
   clipboard_.reset(new ClipboardGLFW());
   Platform::instance().set_clipboard(clipboard_.get());
 
-  gpu_context_.reset(new GPUContextGL(true, false));
+  gpu_context_.reset(new GPUContextGL(true, true));
   Platform::instance().set_gpu_driver(gpu_context_->driver());
 
   // We use the GPUContext's global offscreen window to maintain
