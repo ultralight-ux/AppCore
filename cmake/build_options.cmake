@@ -2,7 +2,7 @@ set(CMAKE_BUILD_TYPE "Release"                            CACHE STRING  "Choose 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/out  CACHE PATH    "The path to install to.")
 set(ALLINONE_BUILD OFF                                    CACHE BOOL    "Whether or not we are building all modules monolithically.")
 set(UL_ENABLE_STATIC_BUILD OFF                            CACHE BOOL    "Whether or not to link the library statically (otherwise, will be linked dynamically).")
-set(UL_ENABLE_VIDEO ON                                    CACHE BOOL    "Whether or not to enable video/audio via GStreamer/FFmpeg.")
+set(UL_ENABLE_VIDEO OFF                                   CACHE BOOL    "Whether or not to enable video/audio via GStreamer/FFmpeg.")
 set(UL_ENABLE_JIT ON                                      CACHE BOOL    "Whether or not to enable JavaScript Just-In-Time compilation.")
 set(UL_ENABLE_TESTS ON                                    CACHE BOOL    "Whether or not to enable test applications.")
 set(UL_ENABLE_DEBUG_CHECKS OFF                            CACHE BOOL    "Whether or not to enable debug assertions (disabled in all builds by default).")
