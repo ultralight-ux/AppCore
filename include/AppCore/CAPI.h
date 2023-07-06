@@ -5,6 +5,24 @@
  *                                                                            *
  *  (C) 2023 Ultralight, Inc.                                                 *
  *****************************************************************************/
+
+///
+/// @file AppCore/CAPI.h
+///
+/// The AppCore API is a convenient windowing system for desktop platforms built on top of the
+/// Ultralight renderer.
+/// 
+/// It automatically sets up the Renderer, creates a run loop, and handles all window creation,
+/// painting, and platform-specific operations for you.
+/// 
+/// ## Using the API
+/// 
+/// To initialize your application, you should first call ulCreateApp().
+/// 
+/// To create a window, call ulCreateWindow().
+/// 
+/// To create a web-page overlay within a window, call ulCreateOverlay().
+///
 #ifndef APPCORE_CAPI_H
 #define APPCORE_CAPI_H
 
