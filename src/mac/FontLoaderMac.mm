@@ -2,6 +2,7 @@
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <CoreText/CoreText.h>
+#include "FallbackFont.h"
 #include <vector>
 
 namespace ultralight {
@@ -11,7 +12,7 @@ FontLoaderMac::FontLoaderMac() {}
 FontLoaderMac::~FontLoaderMac() {}
     
 String FontLoaderMac::fallback_font() const {
-    return "Helvetica";
+    return "Fallback-Font-Roboto";
 }
     
 static String16 ToString16(CFStringRef str) {
@@ -103,6 +104,14 @@ RefPtr<FontFile> FontLoaderMac::Load(const String& family, int weight, bool ital
     String16 family_name = family.utf16();
     if (Equals(family_name, String("-apple-system").utf16()))
         family_name = String(".AppleSystemUIFont").utf16();
+
+    if (Equals(family_name, fallback_font().utf16())) {
+        // Use embedded font file as the last resort fallback
+        // We don't specify a destruction callback since the bytes are embedded in the binary.
+        auto buffer = Buffer::Create((void*)const_cast<unsigned char*>(&Roboto_Regular_ttf[0]), 
+            sizeof(Roboto_Regular_ttf), nullptr, nullptr);
+        return FontFile::Create(buffer);
+    }
     
     CTFontDescriptorRef descriptor = CTFontDescriptorCreateWithAttributes(
       (CFDictionaryRef)createFontAttributes(ToNSString(family_name), weight, italic, 12.0));
