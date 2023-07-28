@@ -1,15 +1,27 @@
+/******************************************************************************
+ *  This file is a part of Ultralight, an ultra-portable web-browser engine.  *
+ *                                                                            *
+ *  See <https://ultralig.ht> for licensing and more.                         *
+ *                                                                            *
+ *  (C) 2023 Ultralight, Inc.                                                 *
+ *****************************************************************************/
+
 ///
-/// @file CAPI.h
+/// @file AppCore/CAPI.h
 ///
-/// @brief The C-language API for AppCore
-///
-/// @author
-///
-/// This file is a part of Ultralight, a next-generation HTML renderer.
-///
-/// Website: <http://ultralig.ht>
-///
-/// Copyright (C) 2021 Ultralight, Inc. All rights reserved.
+/// The AppCore API is a convenient windowing system for desktop platforms built on top of the
+/// Ultralight renderer.
+/// 
+/// It automatically sets up the Renderer, creates a run loop, and handles all window creation,
+/// painting, and platform-specific operations for you.
+/// 
+/// ## Using the API
+/// 
+/// To initialize your application, you should first call ulCreateApp().
+/// 
+/// To create a window, call ulCreateWindow().
+/// 
+/// To create a web-page overlay within a window, call ulCreateOverlay().
 ///
 #ifndef APPCORE_CAPI_H
 #define APPCORE_CAPI_H
