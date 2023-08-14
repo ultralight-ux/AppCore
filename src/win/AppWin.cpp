@@ -69,7 +69,6 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
     logger_.reset(new FileLogger(log_path.string().c_str()));
     Platform::instance().set_logger(logger_.get());
 
-    
     info << "Writing log to: " << log_path.string().c_str() << std::endl;
     OutputDebugStringA(info.str().c_str());
   }
@@ -103,7 +102,7 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   clipboard_.reset(new ClipboardWin());
   Platform::instance().set_clipboard(clipboard_.get());
 
-  if (settings_.force_cpu_renderer) {
+  if (settings_.force_cpu_renderer || true) {
     surface_factory_.reset(new DIBSurfaceFactory(GetDC(0)));
     Platform::instance().set_surface_factory(surface_factory_.get());
   } else {
