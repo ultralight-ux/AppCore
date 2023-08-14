@@ -219,8 +219,10 @@ protected:
     ViewConfig view_config;
     view_config.initial_device_scale = window_->scale();
     view_config.is_accelerated = use_gpu_;
+    view_config.display_id = 0;
+
     //view_config.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
-    view_ = App::instance()->renderer()->CreateView(width, height, view_config, nullptr, 0);
+    view_ = App::instance()->renderer()->CreateView(width, height, view_config, nullptr);
 
     window_->overlay_manager()->Add(this);
   }
