@@ -205,6 +205,14 @@ bool ulWindowIsFullscreen(ULWindow window) {
   return window->val->is_fullscreen();
 }
 
+bool ulWindowIsAccelerated(ULWindow window) {
+  return window->val->is_accelerated();
+}
+
+unsigned int ulWindowGetRenderBufferId(ULWindow window) {
+  return window->val->render_buffer_id();
+}
+
 double ulWindowGetScale(ULWindow window) {
   return window->val->scale();
 }

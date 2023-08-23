@@ -293,6 +293,17 @@ ACExport int ulWindowGetPositionY(ULWindow window);
 ACExport bool ulWindowIsFullscreen(ULWindow window);
 
 ///
+/// Whether or not the window is GPU accelerated.
+/// 
+ACExport bool ulWindowIsAccelerated(ULWindow window);
+
+///
+/// The render buffer id of the window's backing texture.
+/// (This will be 0 if the window is not accelerated).
+/// 
+ACExport unsigned int ulWindowGetRenderBufferId(ULWindow window);
+
+///
 /// Get the DPI scale of a window.
 ///
 ACExport double ulWindowGetScale(ULWindow window);
