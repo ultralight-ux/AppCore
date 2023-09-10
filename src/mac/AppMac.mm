@@ -14,6 +14,7 @@
 #include <Ultralight/private/util/Debug.h>
 #include <Ultralight/private/PlatformFileSystem.h>
 #import <MetalKit/MetalKit.h>
+#include <filesystem>
 
 @interface UpdateTimer : NSObject
 @property NSTimer *timer;
@@ -69,6 +70,8 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   [NSApp setDelegate:appDelegate];
 
   // Generate cache path
+  // TODO: Handle cache path (macOS has new rules for writable cache dirs)
+  /*
   String cache_path = GetSystemCachePath();
   String cache_dirname = "com." + settings_.developer_name + "." +
     settings_.app_name;
@@ -76,31 +79,34 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   PlatformFileSystem::MakeAllDirectories(cache_path);
 
   if (!Platform::instance().logger()) {
-    String log_path = PlatformFileSystem::AppendPath(cache_path,
-                                                    "ultralight.log");
+    std::string cache_path_str = cache_path.utf8().data();
+    std::filesystem::path log_path = cache_path_str / std::filesystem::path("ultralight.log");
     
-    logger_.reset(new FileLogger(log_path));
+    logger_.reset(new FileLogger(log_path.string().c_str()));
     Platform::instance().set_logger(logger_.get());
   }
+  */
 
   // Determine resources path
   String bundle_resource_path = GetBundleResourcePath();
 
-  config.cache_path = cache_path.utf16();
+  //config.cache_path = cache_path.utf16();
   config.face_winding = FaceWinding::Clockwise;
   //config.force_repaint = true;
   Platform::instance().set_config(config);
 
   if (!Platform::instance().file_system()) {
     // Determine file system path
-    String file_system_path = PlatformFileSystem::AppendPath(bundle_resource_path, settings_.file_system_path.utf16());
+    std::string fs_str = settings.file_system_path.utf8().data();
+    std::string bundle_resource_path_str = bundle_resource_path.utf8().data();
+    std::filesystem::path file_system_path = bundle_resource_path_str / std::filesystem::path(fs_str);
 
-    Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
+    Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path.string().c_str()));
     
-    std::ostringstream info;
-    info << "File system base directory resolved to: " <<
-      file_system_path.utf8().data();
-    UL_LOG_INFO(info.str().c_str());
+    //std::ostringstream info;
+    //info << "File system base directory resolved to: " <<
+    //  file_system_path.utf8().data();
+    //UL_LOG_INFO(info.str().c_str());
   }
 
   if (!Platform::instance().font_loader()) {
