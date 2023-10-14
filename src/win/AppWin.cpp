@@ -102,7 +102,7 @@ AppWin::AppWin(Settings settings, Config config) : settings_(settings) {
   clipboard_.reset(new ClipboardWin());
   Platform::instance().set_clipboard(clipboard_.get());
 
-  if (settings_.force_cpu_renderer || true) {
+  if (settings_.force_cpu_renderer) {
     surface_factory_.reset(new DIBSurfaceFactory(GetDC(0)));
     Platform::instance().set_surface_factory(surface_factory_.get());
   } else {
