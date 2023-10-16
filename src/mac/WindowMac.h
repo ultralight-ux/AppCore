@@ -65,6 +65,8 @@ public:
 
   virtual void* native_handle() const override;
 
+  virtual void DrawSurface(int x, int y, Surface* surface) override;
+
   virtual OverlayManager* overlay_manager() const override { return const_cast<WindowMac*>(this); }
 
   virtual void FireKeyEvent(const ultralight::KeyEvent& evt) override;
@@ -94,6 +96,8 @@ protected:
     bool fullscreen, unsigned int window_flags);
 
   virtual ~WindowMac();
+
+  virtual bool platform_always_uses_cpu_renderer() const override { return true; }
 
   friend class Window;
 

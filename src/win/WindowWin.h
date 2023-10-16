@@ -105,6 +105,8 @@ class WindowWin : public Window, public RefCountedImpl<WindowWin>, public Overla
 
   virtual ~WindowWin();
 
+  virtual bool platform_always_uses_cpu_renderer() const override { return false; }
+
   friend class Window;
 
   DISALLOW_COPY_AND_ASSIGN(WindowWin);

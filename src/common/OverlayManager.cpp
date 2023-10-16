@@ -44,6 +44,11 @@ void OverlayManager::Render() {
   App::instance()->renderer()->RenderOnly(view_array, view_array_len);
 
   delete[] view_array;
+
+  // TODO: move the above logic into Overlay::Render
+  for (auto& overlay : overlays_) {
+    overlay->Render();
+  }
 }
 
 void OverlayManager::Paint() {

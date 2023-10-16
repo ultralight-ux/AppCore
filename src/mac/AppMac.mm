@@ -115,6 +115,9 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   
   clipboard_.reset(new ClipboardMac());
   Platform::instance().set_clipboard(clipboard_.get());
+
+  surface_factory_.reset(new ULTextureSurfaceFactory());
+  Platform::instance().set_surface_factory(surface_factory_.get());
   
   renderer_ = Renderer::Create();
 }
@@ -150,6 +153,8 @@ void AppMac::Update() {
     listener_->OnUpdate();
 
   renderer()->Update();
+
+  App::instance()->renderer()->RefreshDisplay(0);
   
   for (auto i : windows_) {
     if (i->NeedsRepaint())

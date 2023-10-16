@@ -4,6 +4,7 @@
 #include "RefCountedImpl.h"
 #include "MonitorMac.h"
 #include "FileLogger.h"
+#include "ULTextureSurface.h"
 #include <memory>
 #include <vector>
 #import <QuartzCore/CAMetalLayer.h>
@@ -64,6 +65,7 @@ protected:
   std::unique_ptr<GPUContextMetal> gpu_context_;
   std::unique_ptr<ClipboardMac> clipboard_;
   std::unique_ptr<FileLogger> logger_;
+  std::unique_ptr<ULTextureSurfaceFactory> surface_factory_;
   std::vector<WindowMac*> windows_;
 };
     

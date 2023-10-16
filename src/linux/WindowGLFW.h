@@ -88,6 +88,8 @@ protected:
 
   virtual ~WindowGLFW();
 
+  virtual bool platform_always_uses_cpu_renderer() const override { return true; }
+
   GLFWwindow* handle() { return window_; }
 
   friend class Window;

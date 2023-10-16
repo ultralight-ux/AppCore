@@ -179,6 +179,10 @@ void* WindowMac::native_handle() const {
   return (__bridge void *)window_;
 }
 
+void WindowMac::DrawSurface(int x, int y, Surface* surface) {
+
+}
+
 void WindowMac::FireKeyEvent(const ultralight::KeyEvent& evt) {
   if (listener())
     if (!listener()->OnKeyEvent(evt))

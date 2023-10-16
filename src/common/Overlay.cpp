@@ -9,6 +9,7 @@
 #include "GPUDriverImpl.h"
 #include "RefCountedImpl.h"
 #include "OverlayManager.h"
+#include "ULTextureSurface.h"
 #include <vector>
 
 namespace ultralight {
@@ -19,13 +20,49 @@ static IndexType patternCCW[] = { 0, 3, 1, 1, 3, 2 };
 class OverlayImpl : public Overlay,
                     public RefCountedImpl<OverlayImpl> {
 public:
+  RenderTarget GetRenderTarget() {
+    RenderTarget target;
+
+    if (use_gpu_) {
+      if (use_ul_texture_surface_ && view()->surface()) {
+        auto surface = static_cast<ULTextureSurface*>(view()->surface());
+        target.is_empty = false;
+        target.width = surface->width();
+        target.height = surface->height();
+        target.texture_id = surface->texture_id();
+        target.texture_width = surface->width();
+        target.texture_height = surface->height();
+        target.texture_format = BitmapFormat::BGRA8_UNORM_SRGB;
+        target.uv_coords = { 0.0f, 0.0f, 1.0f, 1.0f };
+        target.render_buffer_id = window_->render_buffer_id();
+      } else {
+        target = view_->render_target();
+      }
+    }
+
+    return target;
+  }
+
+  void SyncTextureIfNeeded() {
+    if (use_ul_texture_surface_ && view()->surface()) {
+      auto surface = static_cast<ULTextureSurface*>(view()->surface());
+      if (surface->Synchronize()) {
+        gpu_state_.texture_1_id = surface->texture_id();
+        needs_draw_ = true;
+      }
+    }
+  }
+
+  virtual void Render() override {
+    SyncTextureIfNeeded();
+  }
+
   virtual void Paint() override {
     if (is_hidden_)
       return;
 
     if (use_gpu_) {
       UpdateGeometry();
-
       driver_->DrawGeometry(geometry_id_, 6, 0, gpu_state_);
     } else if (view()->surface()) {
       Surface* surface = view()->surface();
@@ -33,6 +70,7 @@ public:
     }
 
     needs_update_ = false;
+    needs_draw_ = false;
   }
 
   virtual void Resize(uint32_t width, uint32_t height) override {
@@ -52,9 +90,18 @@ public:
     if (use_gpu_) {
       UpdateGeometry();
 
+      uint32_t texture_id = 0;
+
+      if (use_ul_texture_surface_) {
+        // Defer update of texture id until next draw.
+        texture_id = 0;
+      } else {
+        RenderTarget target = view_->render_target();
+        texture_id = target.texture_id;
+      }
+      
       // Update these now since they were invalidated
-      RenderTarget target = view_->render_target();
-      gpu_state_.texture_1_id = target.texture_id;
+      gpu_state_.texture_1_id = texture_id;
       gpu_state_.viewport_width = window_->width();
       gpu_state_.viewport_height = window_->height();
     }
@@ -65,7 +112,7 @@ public:
       return;
 
     bool initial_creation = false;
-    RenderTarget target = view_->render_target();
+    RenderTarget target = GetRenderTarget();
 
     if (vertices_.empty()) {
       vertices_.resize(4);
@@ -108,8 +155,8 @@ public:
 
     float left = static_cast<float>(x_);
     float top = static_cast<float>(y_);
-    float right = static_cast<float>(x_ + width());
-    float bottom = static_cast<float>(y_ + height());
+    float right = static_cast<float>(x_ + width_);
+    float bottom = static_cast<float>(y_ + height_);
 
     // TOP LEFT
     v.pos[0] = v.obj[0] = left;
@@ -204,7 +251,13 @@ public:
   }
                         
   virtual bool NeedsRepaint() override {
-    return needs_update_ || view_->needs_paint();
+    bool needs_sync = false;
+    if (use_ul_texture_surface_ && view()->surface()) {
+      auto surface = static_cast<ULTextureSurface*>(view()->surface());
+      needs_sync = surface->NeedsSynchronize();
+    }
+    
+    return needs_update_ || needs_sync || needs_draw_ || view_->needs_paint();
   }
 
   REF_COUNTED_IMPL(OverlayImpl);
@@ -216,9 +269,13 @@ protected:
     if (use_gpu_)
       driver_ = (ultralight::GPUDriverImpl*)Platform::instance().gpu_driver();
 
+    use_ul_texture_surface_ = window_->platform_always_uses_cpu_renderer();
+
+    bool view_paints_to_gpu = use_gpu_ && !use_ul_texture_surface_;
+
     ViewConfig view_config;
     view_config.initial_device_scale = window_->scale();
-    view_config.is_accelerated = use_gpu_;
+    view_config.is_accelerated = view_paints_to_gpu;
     view_config.display_id = 0;
 
     //view_config.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
@@ -253,11 +310,13 @@ protected:
   int y_;
   bool is_hidden_ = false;
   bool use_gpu_ = true;
+  bool use_ul_texture_surface_ = false;
   ultralight::RefPtr<ultralight::View> view_;
   ultralight::GPUDriverImpl* driver_;
   std::vector<ultralight::Vertex_2f_4ub_2f_2f_28f> vertices_;
   std::vector<ultralight::IndexType> indices_;
   bool needs_update_;
+  bool needs_draw_ = false;
   uint32_t geometry_id_;
   ultralight::GPUState gpu_state_;
 

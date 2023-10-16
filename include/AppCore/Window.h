@@ -256,6 +256,7 @@ public:
 
 protected:
   virtual ~Window();
+  virtual bool platform_always_uses_cpu_renderer() const = 0;
   virtual OverlayManager* overlay_manager() const = 0;
 
   friend class OverlayImpl;
