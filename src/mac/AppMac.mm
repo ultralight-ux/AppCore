@@ -15,6 +15,7 @@
 #include <Ultralight/private/PlatformFileSystem.h>
 #import <MetalKit/MetalKit.h>
 #include <filesystem>
+#include <Security/SecTask.h>
 
 @interface UpdateTimer : NSObject
 @property NSTimer *timer;
@@ -53,10 +54,21 @@ static String16 ToString16(CFStringRef str) {
     return String16(buffer.data(), size);
 }
 
-static String16 GetSystemCachePath() {
+std::filesystem::path ToFileSystemPath(const __CFString* cfString) {
+    if (cfString) {
+        CFIndex maxSize = CFStringGetMaximumSizeForEncoding(CFStringGetLength(cfString), kCFStringEncodingUTF8) + 1;
+        std::vector<char> cString(maxSize);
+        if (CFStringGetCString(cfString, cString.data(), maxSize, kCFStringEncodingUTF8))
+            return std::filesystem::path(cString.data());
+    }
+
+    return std::filesystem::path();
+}
+
+static std::filesystem::path GetSystemCachePath() {
   NSArray* paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
   NSString* cacheDir = [paths objectAtIndex:0];
-  return ToString16((__bridge CFStringRef)cacheDir);
+  return ToFileSystemPath((__bridge CFStringRef)cacheDir);
 }
 
 static String16 GetBundleResourcePath() {
@@ -71,26 +83,25 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
 
   // Generate cache path
   // TODO: Handle cache path (macOS has new rules for writable cache dirs)
-  /*
-  String cache_path = GetSystemCachePath();
+  
+  std::filesystem::path cache_path = GetSystemCachePath();
   String cache_dirname = "com." + settings_.developer_name + "." +
     settings_.app_name;
-  cache_path = PlatformFileSystem::AppendPath(cache_path, cache_dirname);
-  PlatformFileSystem::MakeAllDirectories(cache_path);
+  cache_path /= std::string(cache_dirname.utf8().data());
+  if (!std::filesystem::create_directories(cache_path)) {
+    std::cout << "Failed to create cache path: " << cache_path.string() << std::endl;
+  }
 
   if (!Platform::instance().logger()) {
-    std::string cache_path_str = cache_path.utf8().data();
-    std::filesystem::path log_path = cache_path_str / std::filesystem::path("ultralight.log");
-    
+    std::filesystem::path log_path = cache_path / std::filesystem::path("ultralight.log");
     logger_.reset(new FileLogger(log_path.string().c_str()));
     Platform::instance().set_logger(logger_.get());
   }
-  */
 
   // Determine resources path
   String bundle_resource_path = GetBundleResourcePath();
 
-  //config.cache_path = cache_path.utf16();
+  config.cache_path = cache_path.string().c_str();
   config.face_winding = FaceWinding::Clockwise;
   //config.force_repaint = true;
   Platform::instance().set_config(config);
