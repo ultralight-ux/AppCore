@@ -4,7 +4,10 @@
 namespace ultralight {
 
 void ClipboardWin::Clear() {
+  if (!OpenClipboard(0))
+    return;
   EmptyClipboard();
+  CloseClipboard();
 }
 
 String ClipboardWin::ReadPlainText() {
