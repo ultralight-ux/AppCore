@@ -17,6 +17,7 @@
 #include <pwd.h>
 #include <libgen.h>
 #include <iostream>
+#include <filesystem>
 
 extern "C" {
 
@@ -24,20 +25,27 @@ static void GLFW_error_callback(int error, const char* description) {
   fprintf(stderr, "GLFW Error: %s\n", description);
 }
 
-static const char* GetHomeDirectory() {
-  const char* result;
-  if (!(result = getenv("HOME")))
-    result = getpwuid(getuid())->pw_dir;
-  return result;
+std::filesystem::path GetCacheDirectory() {
+    const char* xdgCacheHome = std::getenv("XDG_CACHE_HOME");
+    if (xdgCacheHome) {
+        return std::filesystem::path(xdgCacheHome);
+    } else {
+        const char* home = std::getenv("HOME");
+        if (home) {
+            return std::filesystem::path(home) / ".cache";
+        }
+    }
+    // Handle error or use a default path
+    return std::filesystem::path("/tmp");
 }
 
-static const char* GetExecutableDirectory() {
+static std::filesystem::path GetExecutableDirectory() {
   static char exe_path[PATH_MAX];
   ssize_t count = readlink("/proc/self/exe", exe_path, PATH_MAX);
   const char* result = "";
   if (count != -1)
     result = dirname(exe_path);
-  return result;
+  return std::filesystem::path(result);
 }
 
 }
@@ -46,27 +54,26 @@ namespace ultralight {
 
 AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
   // Generate cache path
-  String cache_path = GetHomeDirectory();
-  cache_path = PlatformFileSystem::AppendPath(cache_path, ".cache");
-  String cache_dirname = settings_.developer_name + "-" +
+  std::filesystem::path cache_path = GetCacheDirectory();
+  String cache_dirname = "com." + settings_.developer_name + "." +
     settings_.app_name;
-  cache_path = PlatformFileSystem::AppendPath(cache_path, cache_dirname);
-  PlatformFileSystem::MakeAllDirectories(cache_path);
+  cache_path /= std::string(cache_dirname.utf8().data());
+  if (!std::filesystem::exists(cache_path)) {
+    if (!std::filesystem::create_directories(cache_path)) {
+      std::cout << "Failed to create cache path: " << cache_path.string() << std::endl;
+    }
+  }
 
   if (!Platform::instance().logger()) {
-    String log_path = PlatformFileSystem::AppendPath(cache_path,
-                                                    "ultralight.log");
-
-    std::cout << "Writing log to: " << log_path.utf8().data() << std::endl;
-
-    logger_.reset(new FileLogger(log_path));
+    std::filesystem::path log_path = cache_path / std::filesystem::path("ultralight.log");
+    logger_.reset(new FileLogger(log_path.string().c_str()));
     Platform::instance().set_logger(logger_.get());
   }
 
   // Determine resources path
-  String executable_path = GetExecutableDirectory();
+  std::filesystem::path executable_path = GetExecutableDirectory();
 
-  config.cache_path = cache_path.utf16();
+  config.cache_path = cache_path.string().c_str();
 
   glfwSetErrorCallback(GLFW_error_callback);
 
@@ -80,16 +87,10 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
 
   if (!Platform::instance().file_system()) {
     // Determine file system path
-    String file_system_path = PlatformFileSystem::AppendPath(executable_path, 
-      settings_.file_system_path.utf16());
+    std::string fs_str = settings.file_system_path.utf8().data();
+    std::filesystem::path file_system_path = executable_path / std::filesystem::path(fs_str);
 
-    Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path));
-  
-
-    std::ostringstream info;
-    info << "File system base directory resolved to: " <<
-      file_system_path.utf8().data();
-    UL_LOG_INFO(info.str().c_str());
+    Platform::instance().set_file_system(GetPlatformFileSystem(file_system_path.string().c_str()));
   }
 
   if (!Platform::instance().font_loader()) {
@@ -105,6 +106,9 @@ AppGLFW::AppGLFW(Settings settings, Config config) : settings_(settings) {
   // We use the GPUContext's global offscreen window to maintain
   // clipboard state for the duration of the app lifetime.
   clipboard_->set_window(gpu_context_->window());
+
+  surface_factory_.reset(new ULTextureSurfaceFactory());
+  Platform::instance().set_surface_factory(surface_factory_.get());
 
   renderer_ = Renderer::Create();
 }
@@ -201,6 +205,8 @@ void AppGLFW::Update() {
     listener_->OnUpdate();
 
   renderer()->Update();
+
+  App::instance()->renderer()->RefreshDisplay(0);
 }
 
 static App* g_app_instance = nullptr;

@@ -4,6 +4,7 @@
 #include <AppCore/Window.h>
 #include "RefCountedImpl.h"
 #include "MonitorGLFW.h"
+#include "ULTextureSurface.h"
 #include <vector>
 #include <memory>
 #include <algorithm>
@@ -69,6 +70,7 @@ protected:
   std::unique_ptr<GPUContextGL> gpu_context_;
   std::unique_ptr<ClipboardGLFW> clipboard_;
   std::unique_ptr<FileLogger> logger_;
+  std::unique_ptr<ULTextureSurfaceFactory> surface_factory_;
 };
 
 }  // namespace ultralight

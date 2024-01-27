@@ -256,6 +256,8 @@ public:
       auto surface = static_cast<ULTextureSurface*>(view()->surface());
       needs_sync = surface->NeedsSynchronize();
     }
+
+    return true;
     
     return needs_update_ || needs_sync || needs_draw_ || view_->needs_paint();
   }

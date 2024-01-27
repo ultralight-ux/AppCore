@@ -84,7 +84,7 @@ public:
   }
 
 protected:
-  uint32_t texture_id_;
+  uint32_t texture_id_ = 0;
   ultralight::RefPtr<ultralight::Bitmap> bitmap_;
 };
 
