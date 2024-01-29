@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <iostream>
 
 namespace ultralight {
 
@@ -68,11 +69,6 @@ static int fontWeightToFontconfigWeight(int weight)
     return FC_WEIGHT_ULTRABLACK;
 }
 
-String FontLoaderLinux::fallback_font() const { return "sans"; }
-
-String FontLoaderLinux::fallback_font_for_characters(const String& characters, int weight, bool italic) const {
-  return fallback_font();
-}
 
 static bool configurePatternForFontDescription(FcPattern* pattern, int weight, bool italic, float size)
 {
@@ -335,6 +331,50 @@ FcUniquePtr<FcPattern> GetPatternForDescription(const std::string& family, int w
   //    return nullptr;
 
   return std::move(resultPattern);
+}
+
+String FontLoaderLinux::fallback_font() const { return "sans"; }
+
+String FontLoaderLinux::fallback_font_for_characters(const String& characters, int weight, bool italic) const {
+    FcUniquePtr<FcCharSet> charset(FcCharSetCreate());
+
+    // Obtain UTF-32 representation of the input string
+    const char32_t* utf32_characters = characters.utf32().data();
+    size_t utf32_length = characters.utf32().length();
+
+    // Add UTF-32 characters to the charset
+    for (size_t i = 0; i < utf32_length; i++) {
+        FcCharSetAddChar(charset.get(), static_cast<FcChar32>(utf32_characters[i]));
+    }
+
+    // Create a pattern
+    FcUniquePtr<FcPattern> pat(FcPatternCreate());
+    FcPatternAddCharSet(pat.get(), FC_CHARSET, charset.get());
+
+    // Set weight and italic properties
+    configurePatternForFontDescription(pat.get(), weight, italic, 12.0);
+
+    // Match the pattern
+    FcResult result;
+    FcUniquePtr<FcPattern> matched(FcFontMatch(nullptr, pat.get(), &result));
+
+    String fallback = fallback_font(); // Use existing fallback font logic
+
+    if (matched) {
+        // Extract font family
+        FcChar8* font_family;
+        if (FcPatternGetString(matched.get(), FC_FAMILY, 0, &font_family) == FcResultMatch) {
+            String matched_family(reinterpret_cast<const char*>(font_family));
+            if (!matched_family.empty() && !isCommonlyUsedGenericFamily(matched_family.utf8().data())) {
+                // If the matched family is not a commonly-used generic family, use it as the fallback.
+                fallback = matched_family;
+            }
+        }
+    }
+
+    // FontConfig resources will be automatically released when FcUniquePtr goes out of scope
+
+    return fallback;
 }
 
 RefPtr<FontFile> FontLoaderLinux::Load(const String& family, int weight, bool italic) {
