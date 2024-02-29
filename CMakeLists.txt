@@ -132,6 +132,10 @@ elseif (PORT MATCHES "UltralightWin")
         endif()
     endforeach ()
 
+    if (CMAKE_BUILD_TYPE MATCHES "Debug")
+        add_definitions(-DUL_DEBUG)
+    endif ()
+
     if (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded")
         message(STATUS "Building projects with MultiThreaded Static Runtime (/MT)")
     elseif (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL")
@@ -195,7 +199,7 @@ else ()
     add_library(AppCore SHARED ${AppCore_SOURCES})
 endif ()
 
-add_dependencies(AppCore UltralightCoreBin WebCoreBin UltralightBin)
+add_dependencies(AppCore Ultralight)
 
 if (PORT MATCHES "UltralightMac")
     set_target_properties(AppCore PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework QuartzCore -framework MetalKit")
@@ -214,4 +218,6 @@ if (PORT MATCHES "UltralightMac")
     SET(CMAKE_INSTALL_RPATH "@executable_path/")
 endif ()
 
-include(CreateSDK.cmake)
+if (NOT ALLINONE_BUILD)
+    include(CreateSDK.cmake)
+endif ()

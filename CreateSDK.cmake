@@ -31,8 +31,9 @@ elseif (PORT MATCHES "UltralightWin")
 endif ()
 
 set(INSTALL_DIR ${PROJECT_BINARY_DIR}/out)
+set(TARGET_NAME create_sdk_appcore)
     
-add_custom_target(create_sdk ALL "${CMAKE_COMMAND}" 
+add_custom_target(${TARGET_NAME} ALL "${CMAKE_COMMAND}" 
     -D CMAKE_INSTALL_PREFIX:string=${INSTALL_DIR}
     -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake" 
     DEPENDS AppCore) 
@@ -80,23 +81,23 @@ endif ()
 set(PKG_FILENAME "appcore-bin-${GIT_COMMIT_HASH}-${PLATFORM}-${ARCHITECTURE}.7z")
 
 if (NOT UL_GENERATE_SDK)
-    add_custom_command(TARGET create_sdk POST_BUILD
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "NOTE: No release archive created, SDK generation was disabled."
     )
 elseif (NOT GIT_STATUS STREQUAL "")
-    add_custom_command(TARGET create_sdk POST_BUILD
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "NOTE: No release archive created, working directory not clean."
     )
 elseif (NOT GIT_CHERRY STREQUAL "")
-    add_custom_command(TARGET create_sdk POST_BUILD
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "NOTE: No release archive created, branch needs to be pushed to remote repository."
     )
 else ()
-    add_custom_command(TARGET create_sdk POST_BUILD
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PROJECT_BINARY_DIR}/${PKG_FILENAME} --format=7zip -- .
         WORKING_DIRECTORY ${INSTALL_DIR}
     )
-    add_custom_command(TARGET create_sdk POST_BUILD
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "Created release archive: ${PROJECT_BINARY_DIR}/${PKG_FILENAME}"
     )
 endif ()
