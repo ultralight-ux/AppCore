@@ -28,8 +28,11 @@ include_directories(
     "src/common"
     )
 
-load_sources(AppCore_SOURCES "include")
-load_sources(AppCore_SOURCES "src/common")
+set(SRC_DIRS)
+list(APPEND SRC_DIRS "include")
+list(APPEND SRC_DIRS "src/common")
+
+set(Extra_SOURCES)
     
 if (PORT MATCHES "UltralightLinux")
     link_directories("${ULTRALIGHTCORE_DIR}/bin"
@@ -58,9 +61,9 @@ if (PORT MATCHES "UltralightLinux")
     set(GLFW_DIR "src/glfw")
     add_subdirectory(${GLFW_DIR})
 
-    load_sources(AppCore_SOURCES "src/linux")
+    list(APPEND SRC_DIRS "src/linux")
 
-    list(APPEND AppCore_SOURCES
+    list(APPEND Extra_SOURCES
         "${GLFW_DIR}/deps/glad/glad.h"
         "${GLFW_DIR}/deps/glad.c"
     )
@@ -82,9 +85,9 @@ elseif (PORT MATCHES "UltralightMac")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG -fPIC -std=gnu++14 -stdlib=libc++ -Wno-trigraphs -fno-exceptions -Wno-missing-field-initializers -Wnon-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wunused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wconstant-conversion -Wint-conversion -Wbool-conversion -Wenum-conversion -Wno-float-conversion -Wnon-literal-null-conversion -Wobjc-literal-conversion -Wsign-compare -Wno-shorten-64-to-32 -Wno-c++11-extensions -DU_DISABLE_RENAMING=1 -DU_SHOW_CPLUSPLUS_API=0 -isysroot ${CMAKE_SYSROOT} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET} -Wdeprecated-declarations -Winvalid-offsetof -fvisibility=hidden -fno-threadsafe-statics -Wno-sign-conversion -Winfinite-recursion -Wmove -Wno-comma -Wblock-capture-autoreleasing -Wno-strict-prototypes -Wno-nonportable-include-path -frtti")
     endif ()
 
-    load_sources(AppCore_SOURCES "src/mac")
+    list(APPEND SRC_DIRS "src/mac")
 
-    list(APPEND AppCore_SOURCES
+    list(APPEND Extra_SOURCES
 #        "shaders/metal/Shaders.metal"
     )
 
@@ -94,7 +97,7 @@ elseif (PORT MATCHES "UltralightWin")
                      "${WEBCORE_DIR}/lib"
                      "${ULTRALIGHT_DIR}/lib")
 
-    load_sources(AppCore_SOURCES "src/win")
+    list(APPEND SRC_DIRS "src/win")
     
     if (UL_D3D_DRIVER STREQUAL "d3d11")
         add_definitions(-DDRIVER_D3D11)
@@ -192,11 +195,19 @@ endif ()
 
 link_libraries(UltralightCore WebCore Ultralight)
 
+if(NOT EXISTS "${PROJECT_BINARY_DIR}/Sources.cmake")
+    # Call generate_sources_cmake only if Sources.cmake does not exist.
+    # You should delete Sources.cmake if you want to regenerate it.
+    generate_sources("${SRC_DIRS}" "cpp;cc;c;h;m;mm;vert;frag;hlsl;fx" "AppCore_SOURCES" ${CMAKE_CURRENT_LIST_DIR})
+endif()
+
+include("${PROJECT_BINARY_DIR}/Sources.cmake")
+
 if (UL_ENABLE_STATIC_BUILD)
     add_definitions(-DULTRALIGHT_STATIC_BUILD)
-    add_library(AppCore STATIC ${AppCore_SOURCES})
+    add_library(AppCore STATIC ${AppCore_SOURCES} ${Extra_SOURCES})
 else ()
-    add_library(AppCore SHARED ${AppCore_SOURCES})
+    add_library(AppCore SHARED ${AppCore_SOURCES} ${Extra_SOURCES})
 endif ()
 
 add_dependencies(AppCore Ultralight)
