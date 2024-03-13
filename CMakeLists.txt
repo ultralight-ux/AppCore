@@ -110,7 +110,7 @@ elseif (PORT MATCHES "UltralightWin")
     endif ()
     
     add_definitions(-D_UNICODE -DUNICODE -DNOMINMAX)
-    link_libraries("Shlwapi.lib" "Usp10.lib" "Dwrite.lib")
+    link_libraries("Shlwapi.lib" "Usp10.lib" "Dwrite.lib" "Winmm.lib")
 
     foreach (flag_var
         CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE

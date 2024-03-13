@@ -224,6 +224,7 @@ public:
 
   virtual void Hide() override {
     is_hidden_ = true;
+    needs_update_ = true;
   }
 
   virtual void Show() override {
@@ -256,8 +257,6 @@ public:
       auto surface = static_cast<ULTextureSurface*>(view()->surface());
       needs_sync = surface->NeedsSynchronize();
     }
-
-    return true;
     
     return needs_update_ || needs_sync || needs_draw_ || view_->needs_paint();
   }
