@@ -97,7 +97,7 @@ protected:
 
   virtual ~WindowMac();
 
-  virtual bool platform_always_uses_cpu_renderer() const override { return true; }
+  virtual bool platform_always_uses_cpu_renderer() const override { return false; }
 
   friend class Window;
 

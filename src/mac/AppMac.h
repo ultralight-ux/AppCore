@@ -40,6 +40,8 @@ public:
   REF_COUNTED_IMPL(AppMac);
                    
   void Update();
+
+  void Refresh();
   
   GPUContextMetal* gpu_context();
   

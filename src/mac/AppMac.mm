@@ -17,30 +17,66 @@
 #include <filesystem>
 #include <Security/SecTask.h>
 
-@interface UpdateTimer : NSObject
-@property NSTimer *timer;
-- (id)init;
-- (void)onTick:(NSTimer *)aTimer;
+@interface AppTimers : NSObject {
+    dispatch_source_t updateTimer;
+    dispatch_source_t refreshTimer;
+    double updateFrequency;
+    double refreshFrequency;
+}
+- (id)initWithUpdateFrequency:(double)updateFreq refreshFrequency:(double)refreshFreq;
+- (void)startTimers;
+- (void)stopTimers;
 @end
 
-// Run update timer at 120 FPS
-@implementation UpdateTimer
-- (id)init {
-  id newInstance = [super init];
-  if (newInstance) {
-    _timer = [NSTimer scheduledTimerWithTimeInterval:(1.0/120.0)
-                                              target:self
-                                            selector:@selector(onTick:)
-                                            userInfo:nil
-                                             repeats:YES];
-  }
-  
-  return newInstance;
+@implementation AppTimers
+
+- (id)initWithUpdateFrequency:(double)updateFreq refreshFrequency:(double)refreshFreq {
+    self = [super init];
+    if (self) {
+        updateFrequency = updateFreq;
+        refreshFrequency = refreshFreq;
+        [self startTimers];
+    }
+    return self;
 }
 
--(void)onTick:(NSTimer *)aTimer {
-  static_cast<ultralight::AppMac*>(ultralight::App::instance())->Update();
+- (void)dealloc {
+    [self stopTimers];
 }
+
+- (void)startTimers {
+    // Update Timer
+    updateTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+    if (updateTimer) {
+        dispatch_source_set_timer(updateTimer, DISPATCH_TIME_NOW, (1.0 / updateFrequency) * NSEC_PER_SEC, 0);
+        dispatch_source_set_event_handler(updateTimer, ^{
+            static_cast<ultralight::AppMac*>(ultralight::App::instance())->Update();
+        });
+        dispatch_resume(updateTimer);
+    }
+
+    // Refresh Timer
+    refreshTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+    if (refreshTimer) {
+        dispatch_source_set_timer(refreshTimer, DISPATCH_TIME_NOW, (1.0 / refreshFrequency) * NSEC_PER_SEC, 0);
+        dispatch_source_set_event_handler(refreshTimer, ^{
+            static_cast<ultralight::AppMac*>(ultralight::App::instance())->Refresh();
+        });
+        dispatch_resume(refreshTimer);
+    }
+}
+
+- (void)stopTimers {
+    if (updateTimer) {
+        dispatch_source_cancel(updateTimer);
+        updateTimer = NULL;
+    }
+    if (refreshTimer) {
+        dispatch_source_cancel(refreshTimer);
+        refreshTimer = NULL;
+    }
+}
+
 @end
 
 namespace ultralight {
@@ -75,7 +111,7 @@ static String16 GetBundleResourcePath() {
   return ToString16((__bridge CFStringRef)[[NSBundle mainBundle] resourcePath]);
 }
 
-AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
+AppMac::AppMac(Settings settings, Config config) : settings_(settings) {  
   [NSApplication sharedApplication];
   
   AppDelegate *appDelegate = [[AppDelegate alloc] init];
@@ -149,9 +185,17 @@ void AppMac::Run() {
     return;
 
   is_running_ = true;
-  UpdateTimer* timer = [[UpdateTimer alloc] init];
+
+  // Initialize AppTimers with desired frequencies
+  // Note: we display at twice the refresh rate to reduce temporal aliasing (see: nyquist rate)
+  double updateRate = 500.0;
+  double refreshRate = main_monitor()->refresh_rate() * 2.0;
+  AppTimers* timers = [[AppTimers alloc] initWithUpdateFrequency:updateRate refreshFrequency:refreshRate];
+
   [NSApp run];
-  timer = nullptr;
+
+  // With ARC, just set the variable to nil to release it
+  timers = nil;
   is_running_ = false;
 }
 
@@ -165,12 +209,17 @@ void AppMac::Update() {
 
   renderer()->Update();
 
-  App::instance()->renderer()->RefreshDisplay(0);
-  
+  bool force_repaint = Platform::instance().config().force_repaint;
+
   for (auto i : windows_) {
-    if (i->NeedsRepaint())
+    if (i->NeedsRepaint() || force_repaint)
       i->SetNeedsDisplay();
   }
+}
+
+void AppMac::Refresh() {
+  App::instance()->renderer()->RefreshDisplay(main_monitor()->display_id());
+  Update();
 }
 
 GPUContextMetal* AppMac::gpu_context() {
