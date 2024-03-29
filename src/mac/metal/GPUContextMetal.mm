@@ -38,6 +38,7 @@ size_t RenderState::Hash() {
 GPUContextMetal::GPUContextMetal(id<MTLDevice> device, bool enable_vsync, bool enable_msaa) {
   device_ = device;
   msaa_enabled_ = enable_msaa;
+  msaa_enabled_ = false; // Disable MSAA for now, it's causing issues with Metal on macOS
   
   // Only allow FrameCount - 1 number of frames in-flight-- testing on MacBook Pros older than 2016 shows corruption
   // if we use semaphore == FrameCount. 
@@ -183,13 +184,25 @@ id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
   pipelineStateDescriptor.colorAttachments[0].pixelFormat = render_state_.pixel_format;
   
   auto colorAttachmentDesc = pipelineStateDescriptor.colorAttachments[0];
-  colorAttachmentDesc.blendingEnabled = render_state_.blend_enabled;
-  colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
-  colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
-  colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorOne;
-  colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-  colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
-  colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorOne;
+  if (render_state_.blend_enabled) {
+    colorAttachmentDesc.blendingEnabled = YES;
+    colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
+    colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
+    colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorOne;
+    colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+    colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
+    colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorOne;
+    colorAttachmentDesc.writeMask = MTLColorWriteMaskAll;
+  } else {
+    colorAttachmentDesc.blendingEnabled = NO;
+    colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
+    colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
+    colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorOne;
+    colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorZero;
+    colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorOne;
+    colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorZero;
+    colorAttachmentDesc.writeMask = MTLColorWriteMaskAll;
+  }
   
   NSError *error = NULL;
   id<MTLRenderPipelineState> result = [device_ newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
@@ -225,6 +238,7 @@ void GPUContextMetal::CommitCommandBuffer() {
     return;
   
   [command_buffer_ commit];
+  //[command_buffer_ waitUntilCompleted];
   command_buffer_ = nullptr;
 }
 
