@@ -1,7 +1,7 @@
-if (DEFINED TOOLCHAIN_ARM64_MACOS_11_0_CMAKE)
+if (DEFINED TOOLCHAIN_ARM64_MACOS_11_3_CMAKE)
   return ()
 else ()
-  set(TOOLCHAIN_ARM64_MACOS_11_0_CMAKE 1)
+  set(TOOLCHAIN_ARM64_MACOS_11_3_CMAKE 1)
 endif ()
 
 set(CMAKE_SYSTEM_NAME Darwin CACHE INTERNAL "" FORCE)
@@ -11,7 +11,7 @@ set(UNIX TRUE CACHE INTERNAL "" FORCE)
 set(APPLE TRUE CACHE INTERNAL "" FORCE)
 set(MSVC FALSE CACHE INTERNAL "" FORCE)
 
-set(triple arm64-apple-macos11)
+set(triple arm64-apple-macos11.3)
 
 set(CMAKE_C_COMPILER_TARGET ${triple} CACHE INTERNAL "" FORCE)
 set(CMAKE_CXX_COMPILER_TARGET ${triple} CACHE INTERNAL "" FORCE)
@@ -27,8 +27,22 @@ string(REGEX MATCH "^([0-9]+)\\.([0-9]+)" CLANG_VERSION_MATCH ${CLANG_VERSION_ST
 set(CLANG_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(CLANG_VERSION_MINOR ${CMAKE_MATCH_2})
 
-set(CMAKE_SYSROOT "/Library/Developer/CommandLineTools/SDKs/MacOSX11.0.sdk"      CACHE PATH    "(macOS only) The path to the macOS platform SDK." FORCE)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0"                                           CACHE STRING  "(macOS only) The minimum macOS deployment target." FORCE)
+# Get the path to the active developer directory
+execute_process(
+    COMMAND xcode-select -print-path
+    OUTPUT_VARIABLE XCODE_DEVELOPER_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Construct the path to the default macOS SDK
+set(XCODE_MACOS_SYSROOT "${XCODE_DEVELOPER_DIR}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
+
+set(CMAKE_SYSROOT ${XCODE_MACOS_SYSROOT} CACHE PATH "(macOS only) The path to the macOS platform SDK." FORCE)
+#set(CMAKE_SYSROOT "/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk" CACHE PATH "(macOS only) The path to the macOS platform SDK." FORCE)
+
+message(STATUS "Using macOS platform SDK: ${CMAKE_SYSROOT}")
+
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.3" CACHE STRING  "(macOS only) The minimum macOS deployment target." FORCE)
 set(CMAKE_POSITION_INDEPENDENT_CODE CACHE BOOL ON FORCE)
 set(PORT "UltralightMac" CACHE INTERNAL "" FORCE)
 set(CMAKE_OSX_SYSROOT ${CMAKE_SYSROOT} CACHE PATH "(macOS only) The path to the macOS platform SDK." FORCE)
@@ -39,7 +53,7 @@ if (NOT EXISTS ${CMAKE_SYSROOT})
 endif ()
 
 set(SKIA_CPU "arm64")
-set(UL_SKIA_CFLAGS -arch arm64 -mmacosx-version-min=11.0)
+set(UL_SKIA_CFLAGS -arch arm64 -mmacosx-version-min=11.3)
 
 # Set up FFmpeg args
 #set(UL_FFMPEG_ARGS --target-os=darwin --enable-asm --cpu=haswell --sysroot=${CMAKE_SYSROOT})

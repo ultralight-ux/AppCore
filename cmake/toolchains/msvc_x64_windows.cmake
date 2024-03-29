@@ -16,7 +16,8 @@ set(CMAKE_SYSTEM_VERSION "10.0.19043")
 set(CMAKE_SYSTEM_PROCESSOR "AMD64")
 set(CMAKE_CROSSCOMPILING "FALSE")
 set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)
-set(PORT "UltralightWin")
+set(PORT "UltralightWin" CACHE STRING "The WebKit port to build.")
+
 
 message(STATUS "MSVC runtime library: '${CMAKE_MSVC_RUNTIME_LIBRARY}'")
 
@@ -33,7 +34,7 @@ set(UL_FFMPEG_ARGS --toolchain=msvc --enable-asm --cpu=haswell --target-os=win64
 msvc_runtime_library_to_meson_flags(UL_GSTREAMER_MESON_FLAGS ${CMAKE_MSVC_RUNTIME_LIBRARY})
 
 # Set up Skia C flags
-set(UL_SKIA_CFLAGS -march=core2)
+set(UL_SKIA_CFLAGS -march=nehalem)
 msvc_runtime_library_to_msvc_flags(UL_SKIA_CFLAGS ${CMAKE_MSVC_RUNTIME_LIBRARY})
 
 get_filename_component(WIN_PLATFORM_DEFINES_H "win_platform_defines.h" REALPATH BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")

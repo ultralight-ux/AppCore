@@ -33,7 +33,11 @@ list(APPEND SRC_DIRS "include")
 list(APPEND SRC_DIRS "src/common")
 
 set(Extra_SOURCES)
-    
+
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    add_definitions(-DUL_DEBUG)
+endif ()
+
 if (PORT MATCHES "UltralightLinux")
     link_directories("${ULTRALIGHTCORE_DIR}/bin"
                      "${WEBCORE_DIR}/bin"
@@ -135,10 +139,6 @@ elseif (PORT MATCHES "UltralightWin")
         endif()
     endforeach ()
 
-    if (CMAKE_BUILD_TYPE MATCHES "Debug")
-        add_definitions(-DUL_DEBUG)
-    endif ()
-
     if (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded")
         message(STATUS "Building projects with MultiThreaded Static Runtime (/MT)")
     elseif (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDLL")
@@ -210,7 +210,9 @@ else ()
     add_library(AppCore SHARED ${AppCore_SOURCES} ${Extra_SOURCES})
 endif ()
 
-add_dependencies(AppCore Ultralight)
+if (ALLINONE_BUILD)
+    add_dependencies(AppCore Ultralight)
+endif ()
 
 if (PORT MATCHES "UltralightMac")
     set_target_properties(AppCore PROPERTIES LINK_FLAGS "-framework Cocoa -framework Metal -framework Foundation -framework CoreFoundation -framework QuartzCore -framework MetalKit")

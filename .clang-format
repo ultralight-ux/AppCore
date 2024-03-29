@@ -61,7 +61,7 @@ IncludeCategories:
   - Regex:           '^"config\.h"'
     Priority:        -1
   # The main header for a source file automatically gets category 0
-  - Regex:           '^(<|")Windows\.h"'
+  - Regex:           '^<Windows.h>'
     Priority:        1
   - Regex:           '^<.*SoftLink.h>'
     Priority:        5

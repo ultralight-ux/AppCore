@@ -12,6 +12,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/util)
 
 # Common utilities
 include(load_sources)
+include(generate_sources)
 include(show_fatal_error)
 include(show_status)
 include(show_warning)

@@ -1,6 +1,7 @@
 if (NOT CMAKE_TOOLCHAIN_FILE)
     if (CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
-        get_filename_component(CMAKE_TOOLCHAIN_FILE "../toolchains/msvc_x64_windows.cmake"
+        #get_filename_component(CMAKE_TOOLCHAIN_FILE "../toolchains/msvc_x64_windows.cmake"
+        get_filename_component(CMAKE_TOOLCHAIN_FILE "../toolchains/clang_x64_windows.cmake"
                                REALPATH BASE_DIR "${CMAKE_CURRENT_LIST_DIR}") 
     elseif (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
         get_filename_component(CMAKE_TOOLCHAIN_FILE "../toolchains/clang_arm64_macos_11.3.cmake"
