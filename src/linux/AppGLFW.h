@@ -45,6 +45,7 @@ protected:
   virtual ~AppGLFW();
 
   void Update();
+  void Repaint();
 
   GPUContextGL* gpu_context() { return gpu_context_.get(); }
   GPUDriverImpl* gpu_driver() { return gpu_context_->driver(); }

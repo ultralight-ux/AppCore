@@ -3,24 +3,36 @@
 
 namespace ultralight {
 
-MonitorGLFW::MonitorGLFW() {
-  monitor_ = glfwGetPrimaryMonitor();
+MonitorGLFW::MonitorGLFW()
+{
+    monitor_ = glfwGetPrimaryMonitor();
+    static uint32_t next_display_id = 0;
+    display_id_ = next_display_id++;
 }
 
-double MonitorGLFW::scale() const {
-  float xscale, yscale;
-  glfwGetMonitorContentScale(monitor_, &xscale, &yscale);
-  return (double)xscale;
+double MonitorGLFW::scale() const
+{
+    float xscale, yscale;
+    glfwGetMonitorContentScale(monitor_, &xscale, &yscale);
+    return (double)xscale;
 }
 
-uint32_t MonitorGLFW::width() const {
-  const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-  return (uint32_t)mode->width;
+uint32_t MonitorGLFW::width() const
+{
+    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    return (uint32_t)mode->width;
 }
 
-uint32_t MonitorGLFW::height() const {
-  const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-  return (uint32_t)mode->height;
+uint32_t MonitorGLFW::height() const
+{
+    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    return (uint32_t)mode->height;
 }
 
-}  // namespace ultralight
+uint32_t MonitorGLFW::refresh_rate() const
+{
+    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    return (uint32_t)mode->refreshRate;
+}
+
+} // namespace ultralight
