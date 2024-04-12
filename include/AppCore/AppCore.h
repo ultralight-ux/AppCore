@@ -6,6 +6,7 @@
  *  (C) 2023 Ultralight, Inc.                                                 *
  *****************************************************************************/
 #include <AppCore/App.h>
+#include <AppCore/Dialogs.h>
 #include <AppCore/Monitor.h>
 #include <AppCore/Window.h>
 #include <AppCore/Overlay.h>
