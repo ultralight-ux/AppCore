@@ -36,7 +36,7 @@
   CAMetalLayer* metalLayer = [CAMetalLayer layer];
   metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
   metalLayer.device = app->gpu_context()->device();
-  metalLayer.allowsNextDrawableTimeout = false;
+  metalLayer.allowsNextDrawableTimeout = NO;
   metalLayer.autoresizingMask = kCALayerHeightSizable | kCALayerWidthSizable;
   metalLayer.needsDisplayOnBoundsChange = YES;
   metalLayer.contentsScale = initialScale;

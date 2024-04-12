@@ -6,6 +6,7 @@
 #import "metal/GPUContextMetal.h"
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/GPUDriver.h>
+#include <Ultralight/private/tracy/Tracy.hpp>
 
 namespace ultralight {
 
@@ -137,7 +138,20 @@ int WindowMac::y() const {
 }
 
 void WindowMac::SetTitle(const char* title) {
-  window_.title = [NSString stringWithUTF8String:title];
+  base_title_ = title;
+
+  std::string titleStr = base_title_;
+
+  if (frame_stats_enabled_) {
+    if (titleStr.length() > 24) {
+      titleStr = titleStr.substr(0, 24) + "..."; // Truncate and append ellipsis
+    }
+
+  if (!statistics_text_.empty())
+    titleStr += " | " + statistics_text_;
+  }
+
+  window_.title = [NSString stringWithUTF8String:titleStr.c_str()];
 }
 
 void WindowMac::SetCursor(ultralight::Cursor cursor) {
@@ -238,23 +252,116 @@ void WindowMac::OnPaint(CAMetalLayer* layer) {
 
   if (!NeedsRepaint())
     return;
-  
+
+  MarkBeginFrame();
+  MarkBeginRender();
   gpu_context->driver()->BeginSynchronize();
   OverlayManager::Render();
   gpu_context->driver()->EndSynchronize();
+  MarkEndRender();
 
   if (gpu_context->driver()->HasCommandsPending() || OverlayManager::NeedsRepaint()) {
+    MarkBeginDraw();
     gpu_context->BeginDrawing();
     gpu_context->driver()->DrawCommandList();
     OverlayManager::Paint();
     gpu_context->EndDrawing();
     [current_drawable_ present];
+    MarkEndDraw();
     current_drawable_ = [layer nextDrawable];
   }
+
+  MarkEndFrame();
+}
+
+static const char* frameMarker = "WindowMac::OnPaint";
+
+void WindowMac::MarkBeginFrame()
+{
+    FrameMarkStart(frameMarker);
+    frame_start_time_ = std::chrono::steady_clock::now();
+}
+
+void WindowMac::MarkEndFrame()
+{
+    FrameMarkEnd(frameMarker);
+    using namespace std::chrono;
+
+    auto now = std::chrono::steady_clock::now();
+
+    // At the end of a frame, calculate the duration
+    auto frame_duration = duration_cast<nanoseconds>(now - frame_start_time_);
+    sum_frame_time_ += frame_duration;
+
+    frame_count_++;
+}
+
+void WindowMac::MarkBeginRender()
+{
+    render_start_time_ = std::chrono::steady_clock::now();
+}
+
+void WindowMac::MarkEndRender()
+{
+    using namespace std::chrono;
+    auto now = std::chrono::steady_clock::now();
+    auto render_duration = duration_cast<nanoseconds>(now - render_start_time_);
+    sum_render_time_ += render_duration;
+}
+
+void WindowMac::MarkBeginDraw()
+{
+    draw_start_time_ = std::chrono::steady_clock::now();
+}
+
+void WindowMac::MarkEndDraw()
+{
+    using namespace std::chrono;
+    auto now = std::chrono::steady_clock::now();
+    auto draw_duration = duration_cast<nanoseconds>(now - draw_start_time_);
+    sum_draw_time_ += draw_duration;
+}
+
+void WindowMac::UpdateTitleWithStatistics()
+{
+    if (!frame_stats_enabled_ || frame_count_ == 0)
+        return;
+
+    // Calculate averages
+    auto avg_frame_time = sum_frame_time_ / frame_count_;
+    auto avg_render_time = sum_render_time_ / frame_count_;
+    auto avg_draw_time = sum_draw_time_ / frame_count_;
+
+    // Convert to milliseconds and round to the nearest tenth
+    auto toMS = [](long long value) -> double {
+        return std::round(value / 1000000.0 * 10.0) / 10.0;
+    };
+
+    double fps = frame_count_;
+    std::stringstream title_stream;
+    title_stream << (platform_always_uses_cpu_renderer() ? "CPU" : "GPU") << " Renderer | " << fps
+                 << " FPS | Frame Stats (" << std::fixed << std::setprecision(1)
+                 << "Render: " << toMS(avg_render_time.count()) << " ms, "
+                 << "Draw: " << toMS(avg_draw_time.count()) << " ms, "
+                 << "Total: " << toMS(avg_frame_time.count()) << " ms)";
+    statistics_text_ = title_stream.str();
+
+    // Force an update to re-calculate title string
+    SetTitle(base_title_.c_str());
+
+    frame_count_ = 0;
+    sum_frame_time_ = std::chrono::nanoseconds(0);
+    sum_render_time_ = std::chrono::nanoseconds(0);
+    sum_draw_time_ = std::chrono::nanoseconds(0);
 }
     
 CAMetalLayer* WindowMac::layer() {
   return controller_.metalView.metalLayer;
+}
+
+bool WindowMac::platform_always_uses_cpu_renderer() const {
+  auto app = static_cast<AppMac*>(App::instance());
+  return app->settings().force_cpu_renderer;
 }
 
 RefPtr<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height,

@@ -13,6 +13,7 @@
 #include <iostream>
 #include <Ultralight/private/util/Debug.h>
 #include <Ultralight/private/PlatformFileSystem.h>
+#include <Ultralight/private/tracy/Tracy.hpp>
 #import <MetalKit/MetalKit.h>
 #include <filesystem>
 #include <Security/SecTask.h>
@@ -192,6 +193,9 @@ void AppMac::Run() {
   double refreshRate = main_monitor()->refresh_rate() * 2.0;
   AppTimers* timers = [[AppTimers alloc] initWithUpdateFrequency:updateRate refreshFrequency:refreshRate];
 
+  if (Platform::instance().config().force_repaint)
+    refreshRate = 2000.0;
+
   [NSApp run];
 
   // With ARC, just set the variable to nil to release it
@@ -207,13 +211,27 @@ void AppMac::Update() {
   if (listener_)
     listener_->OnUpdate();
 
+  const char* frame_mark_update = "Update";
+
+  FrameMarkStart(frame_mark_update);
   renderer()->Update();
+  FrameMarkEnd(frame_mark_update);
+
+  bool needs_stat_update = false;
+  auto now = std::chrono::steady_clock::now();
+  auto time_since_last_statistics_update = now - last_statistics_update_;
+  if (time_since_last_statistics_update > std::chrono::seconds(1)) {
+    needs_stat_update = true;
+    last_statistics_update_ = now;
+  }
 
   bool force_repaint = Platform::instance().config().force_repaint;
 
   for (auto i : windows_) {
     if (i->NeedsRepaint() || force_repaint)
       i->SetNeedsDisplay();
+    if (needs_stat_update)
+      i->UpdateTitleWithStatistics();
   }
 }
 
@@ -225,6 +243,8 @@ void AppMac::Refresh() {
 GPUContextMetal* AppMac::gpu_context() {
   if (!gpu_context_) {
     // TODO, we need to handle settings.force_cpu_renderer
+    // Right now we are still using the Metal context to display
+    // the CPU renderer output.
     gpu_context_.reset(new GPUContextMetal(MTLCreateSystemDefaultDevice(), true, true));
     Platform::instance().set_gpu_driver(gpu_context_->driver());
   }

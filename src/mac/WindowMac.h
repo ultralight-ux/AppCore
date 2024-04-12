@@ -3,6 +3,7 @@
 #include <Ultralight/Listener.h>
 #include "RefCountedImpl.h"
 #include "OverlayManager.h"
+#include <chrono>
 #import "Cocoa/Cocoa.h"
 #import "ViewController.h"
 #import "WindowDelegate.h"
@@ -65,6 +66,8 @@ public:
 
   virtual void* native_handle() const override;
 
+  virtual void EnableFrameStatistics() override { frame_stats_enabled_ = true; }
+
   virtual void DrawSurface(int x, int y, Surface* surface) override;
 
   virtual OverlayManager* overlay_manager() const override { return const_cast<WindowMac*>(this); }
@@ -86,6 +89,8 @@ public:
   void SetNeedsDisplay();
   
   void OnPaint(CAMetalLayer* layer);
+
+  void UpdateTitleWithStatistics();
                       
   CAMetalLayer* layer();
   
@@ -97,7 +102,16 @@ protected:
 
   virtual ~WindowMac();
 
-  virtual bool platform_always_uses_cpu_renderer() const override { return false; }
+  virtual bool platform_always_uses_cpu_renderer() const override;
+ 
+  void MarkBeginFrame();
+  void MarkEndFrame();
+
+  void MarkBeginRender();
+  void MarkEndRender();
+
+  void MarkBeginDraw();
+  void MarkEndDraw();
 
   friend class Window;
 
@@ -113,6 +127,17 @@ protected:
   bool is_accelerated_;
   uint32_t render_buffer_id_;
   id <CAMetalDrawable> current_drawable_;
+
+  bool frame_stats_enabled_ = false;
+  std::chrono::steady_clock::time_point frame_start_time_, render_start_time_, draw_start_time_;
+  std::chrono::nanoseconds sum_frame_time_ = std::chrono::nanoseconds(0);
+  std::chrono::nanoseconds sum_render_time_ = std::chrono::nanoseconds(0);
+  std::chrono::nanoseconds sum_draw_time_ = std::chrono::nanoseconds(0);
+  uint32_t frame_count_ = 0;
+  std::chrono::steady_clock::time_point last_statistics_update_;
+
+  std::string base_title_;
+  std::string statistics_text_;
 };
 
 }  // namespace ultralight

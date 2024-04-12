@@ -7,6 +7,7 @@
 #include "ULTextureSurface.h"
 #include <memory>
 #include <vector>
+#include <chrono>
 #import <QuartzCore/CAMetalLayer.h>
 
 namespace ultralight {
@@ -69,6 +70,7 @@ protected:
   std::unique_ptr<FileLogger> logger_;
   std::unique_ptr<ULTextureSurfaceFactory> surface_factory_;
   std::vector<WindowMac*> windows_;
+  std::chrono::steady_clock::time_point last_statistics_update_;
 };
     
     
