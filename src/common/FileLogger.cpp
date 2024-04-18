@@ -1,4 +1,5 @@
 #include "FileLogger.h"
+#include <AppCore/Dialogs.h>
 #include <iostream>
 
 namespace ultralight {
@@ -18,6 +19,10 @@ void FileLogger::LogMessage(LogLevel log_level, const String& message) {
     return;
 
   log_file_ << "> " << String(message).utf8().data() << std::endl << std::endl;
+
+  if (log_level == LogLevel::Error) {
+    ShowMessageBox("Error", message, DialogIcon::Error, ButtonType::OK);
+  }
 }
 
 }  // namespace ultralight
