@@ -4,6 +4,10 @@
 #include "AppGLFW.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <iomanip>
+#include <Ultralight/private/tracy/Tracy.hpp>
 
 static int GLFWModsToUltralightMods(int mods);
 static int GLFWKeyCodeToUltralightKeyCode(int key);
@@ -206,6 +210,11 @@ WindowGLFW::~WindowGLFW() {
   }
 }
 
+bool WindowGLFW::platform_always_uses_cpu_renderer() const {
+  auto app = static_cast<AppGLFW*>(App::instance());
+  return app->settings().force_cpu_renderer;
+}
+
 uint32_t WindowGLFW::screen_width() const {
   return PixelsToScreen(width());
 }
@@ -256,7 +265,20 @@ int WindowGLFW::y() const {
 }
 
 void WindowGLFW::SetTitle(const char* title) {
-  glfwSetWindowTitle(window_, title);
+  base_title_ = title;
+
+  std::string titleStr = base_title_;
+
+  if (frame_stats_enabled_) {
+    if (titleStr.length() > 24) {
+      titleStr = titleStr.substr(0, 24) + "..."; // Truncate and append ellipsis
+    }
+
+  if (!statistics_text_.empty())
+    titleStr += " | " + statistics_text_;
+  }
+
+  glfwSetWindowTitle(window_, titleStr.c_str());
 }
 
 void WindowGLFW::SetCursor(ultralight::Cursor cursor) {
@@ -348,20 +370,108 @@ void WindowGLFW::Repaint() {
   gpu_context->set_active_window(window_);
   glfwMakeContextCurrent(gpu_context->window());
 
+  MarkBeginFrame();
+  MarkBeginRender();
   gpu_driver->BeginSynchronize();
   OverlayManager::Render();
   gpu_driver->EndSynchronize();
+  MarkEndRender();
 
   if (gpu_driver->HasCommandsPending() || OverlayManager::NeedsRepaint() || window_needs_repaint_) {
+    MarkBeginDraw();
     glfwMakeContextCurrent(window_);
     gpu_context->BeginDrawing();
     gpu_driver->DrawCommandList();
     OverlayManager::Paint();
+    MarkEndDraw();
     glfwSwapBuffers(window_);
     gpu_context->EndDrawing();
   }
 
+  MarkEndFrame();
+
   window_needs_repaint_ = false;
+}
+
+static const char* frameMarker = "WindowGLFW::OnPaint";
+
+void WindowGLFW::MarkBeginFrame()
+{
+    FrameMarkStart(frameMarker);
+    frame_start_time_ = std::chrono::steady_clock::now();
+}
+
+void WindowGLFW::MarkEndFrame()
+{
+    FrameMarkEnd(frameMarker);
+    using namespace std::chrono;
+
+    auto now = std::chrono::steady_clock::now();
+
+    // At the end of a frame, calculate the duration
+    auto frame_duration = duration_cast<nanoseconds>(now - frame_start_time_);
+    sum_frame_time_ += frame_duration;
+
+    frame_count_++;
+}
+
+void WindowGLFW::MarkBeginRender()
+{
+    render_start_time_ = std::chrono::steady_clock::now();
+}
+
+void WindowGLFW::MarkEndRender()
+{
+    using namespace std::chrono;
+    auto now = std::chrono::steady_clock::now();
+    auto render_duration = duration_cast<nanoseconds>(now - render_start_time_);
+    sum_render_time_ += render_duration;
+}
+
+void WindowGLFW::MarkBeginDraw()
+{
+    draw_start_time_ = std::chrono::steady_clock::now();
+}
+
+void WindowGLFW::MarkEndDraw()
+{
+    using namespace std::chrono;
+    auto now = std::chrono::steady_clock::now();
+    auto draw_duration = duration_cast<nanoseconds>(now - draw_start_time_);
+    sum_draw_time_ += draw_duration;
+}
+
+void WindowGLFW::UpdateTitleWithStatistics()
+{
+    if (!frame_stats_enabled_ || frame_count_ == 0)
+        return;
+
+    // Calculate averages
+    auto avg_frame_time = sum_frame_time_ / frame_count_;
+    auto avg_render_time = sum_render_time_ / frame_count_;
+    auto avg_draw_time = sum_draw_time_ / frame_count_;
+
+    // Convert to milliseconds and round to the nearest tenth
+    auto toMS = [](long long value) -> double {
+        return std::round(value / 1000000.0 * 10.0) / 10.0;
+    };
+
+    double fps = frame_count_;
+    std::stringstream title_stream;
+    title_stream << (platform_always_uses_cpu_renderer() ? "CPU" : "GPU") << " Renderer | " << fps
+                 << " FPS | Frame Stats (" << std::fixed << std::setprecision(1)
+                 << "Render: " << toMS(avg_render_time.count()) << " ms, "
+                 << "Draw: " << toMS(avg_draw_time.count()) << " ms, "
+                 << "Total: " << toMS(avg_frame_time.count()) << " ms)";
+    statistics_text_ = title_stream.str();
+
+    // Force an update to re-calculate title string
+    SetTitle(base_title_.c_str());
+
+    frame_count_ = 0;
+    sum_frame_time_ = std::chrono::nanoseconds(0);
+    sum_render_time_ = std::chrono::nanoseconds(0);
+    sum_draw_time_ = std::chrono::nanoseconds(0);
 }
 
 RefPtr<Window> Window::Create(Monitor* monitor, uint32_t width, uint32_t height,

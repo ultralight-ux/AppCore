@@ -221,9 +221,21 @@ void AppGLFW::Repaint()
 {
     App::instance()->renderer()->RefreshDisplay(0);
 
+    bool needs_stat_update = false;
+    auto now = std::chrono::steady_clock::now();
+    auto time_since_last_statistics_update = now - last_statistics_update_;
+    if (time_since_last_statistics_update > std::chrono::seconds(1)) {
+        needs_stat_update = true;
+        last_statistics_update_ = now;
+    }
+
+    bool force_repaint = Platform::instance().config().force_repaint;
+
     for (auto window : windows_) {
-        if (window->NeedsRepaint())
+        if (window->NeedsRepaint() || force_repaint)
             window->Repaint();
+        if (needs_stat_update)
+            window->UpdateTitleWithStatistics();
     }
 }
 

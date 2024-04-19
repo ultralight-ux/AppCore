@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <chrono>
 
 namespace ultralight {
 
@@ -72,6 +73,7 @@ protected:
   std::unique_ptr<ClipboardGLFW> clipboard_;
   std::unique_ptr<FileLogger> logger_;
   std::unique_ptr<ULTextureSurfaceFactory> surface_factory_;
+  std::chrono::steady_clock::time_point last_statistics_update_;
 };
 
 }  // namespace ultralight

@@ -4,6 +4,7 @@
 #include "RefCountedImpl.h"
 #include "OverlayManager.h"
 #include <cmath>
+#include <chrono>
 
 typedef struct GLFWwindow GLFWwindow;
 typedef struct GLFWcursor GLFWcursor;
@@ -64,6 +65,8 @@ public:
 
   virtual void* native_handle() const override;
 
+  virtual void EnableFrameStatistics() override { frame_stats_enabled_ = true; }
+
   virtual OverlayManager* overlay_manager() const override { return const_cast<WindowGLFW*>(this); }
 
   virtual void FireKeyEvent(const ultralight::KeyEvent& evt) override;
@@ -82,15 +85,26 @@ public:
 
   void InvalidateWindow() { window_needs_repaint_ = true; }
 
+  void UpdateTitleWithStatistics();
+
 protected:
   WindowGLFW(Monitor* monitor, uint32_t width, uint32_t height,
     bool fullscreen, unsigned int window_flags);
 
   virtual ~WindowGLFW();
 
-  virtual bool platform_always_uses_cpu_renderer() const override { return false; }
+  virtual bool platform_always_uses_cpu_renderer() const override;
 
   GLFWwindow* handle() { return window_; }
+
+  void MarkBeginFrame();
+  void MarkEndFrame();
+
+  void MarkBeginRender();
+  void MarkEndRender();
+
+  void MarkBeginDraw();
+  void MarkEndDraw();
 
   friend class Window;
   friend class AppGLFW;
@@ -108,6 +122,17 @@ protected:
   GLFWcursor* cursor_hresize_;
   GLFWcursor* cursor_vresize_;
   bool window_needs_repaint_ = false;
+
+  bool frame_stats_enabled_ = false;
+  std::chrono::steady_clock::time_point frame_start_time_, render_start_time_, draw_start_time_;
+  std::chrono::nanoseconds sum_frame_time_ = std::chrono::nanoseconds(0);
+  std::chrono::nanoseconds sum_render_time_ = std::chrono::nanoseconds(0);
+  std::chrono::nanoseconds sum_draw_time_ = std::chrono::nanoseconds(0);
+  uint32_t frame_count_ = 0;
+  std::chrono::steady_clock::time_point last_statistics_update_;
+
+  std::string base_title_;
+  std::string statistics_text_;
 };
 
 }  // namespace ultralight

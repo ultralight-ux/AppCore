@@ -74,8 +74,15 @@ if (PORT MATCHES "UltralightLinux")
                  
     include_directories("${GLFW_DIR}/include")
     include_directories("${GLFW_DIR}/deps")
+
+    # Find the GTK package
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+    # Include the GTK headers
+    include_directories(${GTK3_INCLUDE_DIRS})
     
-    link_libraries(glfw fontconfig)
+    link_libraries(glfw fontconfig ${GTK3_LIBRARIES})
 elseif (PORT MATCHES "UltralightMac")
     link_directories("${ULTRALIGHTCORE_DIR}/bin"
                      "${WEBCORE_DIR}/bin"
