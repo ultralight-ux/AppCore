@@ -238,7 +238,7 @@ void GPUContextMetal::CommitCommandBuffer() {
     return;
   
   [command_buffer_ commit];
-  //[command_buffer_ waitUntilCompleted];
+  [command_buffer_ waitUntilCompleted];
   command_buffer_ = nullptr;
 }
 
