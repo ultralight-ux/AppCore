@@ -1,6 +1,7 @@
 #include "WindowMac.h"
 #include <AppCore/Monitor.h>
 #include "AppMac.h"
+#include <sstream>
 #import "Cocoa/Cocoa.h"
 #import "ViewController.h"
 #import "metal/GPUContextMetal.h"
