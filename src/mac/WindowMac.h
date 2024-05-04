@@ -4,6 +4,7 @@
 #include "RefCountedImpl.h"
 #include "OverlayManager.h"
 #include <chrono>
+#include <string>
 #import "Cocoa/Cocoa.h"
 #import "ViewController.h"
 #import "WindowDelegate.h"
