@@ -29,6 +29,7 @@
  */
 
 #include "FileSystemWin.h"
+#include "FileUtils.h"
 #include <io.h>
 #include <shlobj.h>
 #include <shlwapi.h>
@@ -53,32 +54,6 @@ static bool getFindData(LPCWSTR path, WIN32_FIND_DATAW& findData) {
   return true;
 }
 
-std::wstring GetMimeType(const std::wstring& szExtension) {
-  // return mime type for extension
-  HKEY hKey = NULL;
-  std::wstring szResult = L"application/unknown";
-
-  // open registry key
-  if (RegOpenKeyExW(HKEY_CLASSES_ROOT, szExtension.c_str(), 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-    // define buffer
-    wchar_t szBuffer[256] = { 0 };
-    DWORD dwBuffSize = sizeof(szBuffer);
-
-    // get content type
-    if (RegQueryValueExW(hKey, L"Content Type", NULL, NULL, (LPBYTE)szBuffer, &dwBuffSize)
-        == ERROR_SUCCESS) {
-      // success
-      szResult = szBuffer;
-    }
-
-    // close key
-    RegCloseKey(hKey);
-  }
-
-  // return result
-  return szResult;
-}
-
 FileSystemWin::FileSystemWin(LPCWSTR baseDir) {
   baseDir_.reset(new WCHAR[_MAX_PATH]);
   StringCchCopyW(baseDir_.get(), MAX_PATH, baseDir);
@@ -92,10 +67,10 @@ bool FileSystemWin::FileExists(const String& path) {
 }
 
 String FileSystemWin::GetFileMimeType(const String& file_path) {
-  String16 path16 = file_path.utf16();
-  LPWSTR ext = PathFindExtensionW(path16.data());
-  std::wstring mimetype = GetMimeType(ext);
-  return String16(mimetype.c_str(), mimetype.length());
+  String8 utf8 = file_path.utf8();
+  std::string filepath(utf8.data(), utf8.length());
+  std::string ext = filepath.substr(filepath.find_last_of(".") + 1);
+  return String(FileUtils::FileExtensionToMimeType(ext.c_str()));
 }
 
 String FileSystemWin::GetFileCharset(const String& file_path) { return "utf-8"; }

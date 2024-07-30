@@ -2,6 +2,7 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <CoreServices/CoreServices.h>
 #import <Foundation/Foundation.h>
+#include "FileUtils.h"
 #include <CoreFoundation/CFString.h>
 #include <Ultralight/String.h>
 #include <string>
@@ -107,14 +108,10 @@ bool FileSystemMac::FileExists(const String& path) {
 }
 
 String FileSystemMac::GetFileMimeType(const String& file_path) {
-    auto pathStr = ToNSString(getRelative(file_path.utf16()));
-    CFStringRef extension = (__bridge CFStringRef)[pathStr pathExtension];
-    CFStringRef mime_type = NULL;
-    CFStringRef identifier = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, extension, NULL);
-    if (identifier)
-        mime_type = UTTypeCopyPreferredTagWithClass(identifier, kUTTagClassMIMEType);
-    CFRelease(identifier);
-    return ToString16(mime_type);
+    String8 utf8 = file_path.utf8();
+    std::string filepath(utf8.data(), utf8.length()); 
+    std::string ext = filepath.substr(filepath.find_last_of(".") + 1);
+    return String(FileUtils::FileExtensionToMimeType(ext.c_str()));
 }
 
 String FileSystemMac::GetFileCharset(const String& file_path) {
