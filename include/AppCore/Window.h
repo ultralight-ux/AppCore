@@ -1,10 +1,10 @@
-/******************************************************************************
- *  This file is a part of Ultralight, an ultra-portable web-browser engine.  *
- *                                                                            *
- *  See <https://ultralig.ht> for licensing and more.                         *
- *                                                                            *
- *  (C) 2023 Ultralight, Inc.                                                 *
- *****************************************************************************/
+/**************************************************************************************************
+ *  This file is a part of Ultralight, an ultra-portable web-browser engine.                      *
+ *                                                                                                *
+ *  See <https://ultralig.ht> for licensing and more.                                             *
+ *                                                                                                *
+ *  (C) 2024 Ultralight, Inc.                                                                     *
+ **************************************************************************************************/
 #pragma once
 #include "Defines.h"
 #include <Ultralight/RefPtr.h>
@@ -82,7 +82,43 @@ enum WindowFlags : uint8_t {
 };
 
 ///
-/// Window class, represents a platform window.
+/// A platform-specific window.
+///
+/// This class describes a platform-specific window and provides methods for managing it.
+///
+/// ## Creating a Window
+///
+/// To create a new Window, use the static Window::Create method:
+///
+/// ```
+/// auto window = Window::Create(monitor, 1024, 768, false, kWindowFlags_Titled);
+/// ```
+///
+/// ## Setting a WindowListener
+///
+/// To receive callbacks for window-related events, set a WindowListener:
+///
+/// ```
+/// class MyWindowListener : public WindowListener {
+///   virtual void OnClose(Window* window) override {
+///     printf("Window closed!\n");
+///   }
+/// };
+///
+/// auto listener = new MyWindowListener();
+/// window->set_listener(listener);
+/// ```
+///
+/// ## Coordinate Systems
+///
+/// Monitors and may windows may have a device scale applied by the OS (for example, a Retina
+/// display on macOS may have a 2x or 3x DPI scale).
+///
+/// To convert between screen coordinates and pixel coordinates, use the following equation:
+///
+/// ```
+/// pixel_coordinate = round(screen_coordinate * scale)
+/// ```
 ///
 class AExport Window : public RefCounted {
 public:

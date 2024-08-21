@@ -1,10 +1,10 @@
-/******************************************************************************
- *  This file is a part of Ultralight, an ultra-portable web-browser engine.  *
- *                                                                            *
- *  See <https://ultralig.ht> for licensing and more.                         *
- *                                                                            *
- *  (C) 2023 Ultralight, Inc.                                                 *
- *****************************************************************************/
+/**************************************************************************************************
+ *  This file is a part of Ultralight, an ultra-portable web-browser engine.                      *
+ *                                                                                                *
+ *  See <https://ultralig.ht> for licensing and more.                                             *
+ *                                                                                                *
+ *  (C) 2024 Ultralight, Inc.                                                                     *
+ **************************************************************************************************/
 #pragma once
 #include "Window.h"
 #include <Ultralight/View.h>
@@ -12,10 +12,26 @@
 namespace ultralight {
 
 ///
-/// Web-content overlay. Displays a web-page within an area of a Window.
+/// Web-content overlay, displays a web-page within a portion of a Window.
 ///
-/// @note  Each Overlay is essentially a View and an on-screen quad. You should
-///        create the Overlay then load content into the underlying View.
+/// Overlays are used to display web-based content in a portion of a window. They automatically
+/// forward input events to the underlying View instance and handle rendering.
+///
+/// ## Creating an Overlay
+///
+/// Call Overlay::Create() to create an overlay in a window.
+///
+/// ```
+///   auto overlay = Overlay::Create(window, 1024, 768, 0, 0);
+/// ```
+///
+/// ## Loading Content into an Overlay
+///
+/// Each Overlay has a View instance that you can use to load web content into.
+///
+/// ```
+///   overlay->view()->LoadURL("https://google.com");
+/// ```
 ///
 class AExport Overlay : public RefCounted {
 public:
