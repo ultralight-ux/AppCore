@@ -82,7 +82,6 @@ if (PORT MATCHES "UltralightLinux")
     # Include the GTK headers
     include_directories(${GTK3_INCLUDE_DIRS})
     
-    link_libraries(glfw fontconfig ${GTK3_LIBRARIES})
 elseif (PORT MATCHES "UltralightMac")
     link_directories("${ULTRALIGHTCORE_DIR}/bin"
                      "${WEBCORE_DIR}/bin"
@@ -230,6 +229,9 @@ if (PORT MATCHES "UltralightLinux")
     SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     SET(CMAKE_INSTALL_RPATH "$\{ORIGIN\}")
+
+    # Link to GLFW and GTK3 deps
+    target_link_libraries(AppCore PRIVATE glfw fontconfig ${GTK3_LIBRARIES})
 endif ()
 
 if (PORT MATCHES "UltralightMac")
