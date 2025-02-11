@@ -278,6 +278,7 @@ protected:
     view_config.initial_device_scale = window_->scale();
     view_config.is_accelerated = view_paints_to_gpu;
     view_config.display_id = 0;
+    view_config.enable_compositor = true;
 
     //view_config.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
     view_ = App::instance()->renderer()->CreateView(width, height, view_config, nullptr);
