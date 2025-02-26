@@ -8,6 +8,8 @@
 #include <sstream>
 #include "../../../shaders/hlsl/bin/fill_fxc.h"
 #include "../../../shaders/hlsl/bin/fill_path_fxc.h"
+#include "../../../shaders/hlsl/bin/filter_basic_fxc.h"
+#include "../../../shaders/hlsl/bin/filter_blur_fxc.h"
 #include "../../../shaders/hlsl/bin/v2f_c4f_t2f_fxc.h"
 #include "../../../shaders/hlsl/bin/v2f_c4f_t2f_t2f_d28f_fxc.h"
 #include <Ultralight/platform/Platform.h>
@@ -647,6 +649,38 @@ void GPUDriverD3D11::LoadShaders() {
                              vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
     LoadCompiledPixelShader(fill_fxc, fill_fxc_len, shader_fill.second.GetAddressOf());
   }
+
+  auto& shader_filter_basic = shaders_[ShaderType::FilterBasic];
+  if (App::instance()->settings().load_shaders_from_file_system) {
+    LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f_t2f_d28f.hlsl",
+                     shader_filter_basic.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
+                     ARRAYSIZE(layout_2f_4ub_2f_2f_28f), vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+    LoadPixelShader("shaders/hlsl/ps/filter_basic.hlsl",
+                    shader_filter_basic.second.GetAddressOf());
+  } else {
+    LoadCompiledVertexShader(v2f_c4f_t2f_t2f_d28f_fxc, v2f_c4f_t2f_t2f_d28f_fxc_len,
+                             shader_filter_basic.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
+                             ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
+                             vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+    LoadCompiledPixelShader(filter_basic_fxc, filter_basic_fxc_len,
+                            shader_filter_basic.second.GetAddressOf());
+  }
+
+  auto& shader_filter_blur = shaders_[ShaderType::FilterBlur];
+  if (App::instance()->settings().load_shaders_from_file_system) {
+    LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f_t2f_d28f.hlsl",
+      shader_filter_blur.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
+                     ARRAYSIZE(layout_2f_4ub_2f_2f_28f), vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+    LoadPixelShader("shaders/hlsl/ps/filter_blur.hlsl",
+      shader_filter_blur.second.GetAddressOf());
+  } else {
+    LoadCompiledVertexShader(v2f_c4f_t2f_t2f_d28f_fxc, v2f_c4f_t2f_t2f_d28f_fxc_len,
+      shader_filter_blur.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
+                             ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
+                             vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+    LoadCompiledPixelShader(filter_blur_fxc, filter_blur_fxc_len,
+      shader_filter_blur.second.GetAddressOf());
+  }
 }
 
 void GPUDriverD3D11::BindShader(ShaderType shader) {
@@ -666,6 +700,26 @@ void GPUDriverD3D11::BindShader(ShaderType shader) {
     context_->immediate_context()->PSSetShader(shader.second.Get(), nullptr, 0);
     break;
   }
+  case ShaderType::FilterBasic: {
+    auto& shader = shaders_[ShaderType::FilterBasic];
+    context_->immediate_context()->VSSetShader(shader.first.Get(), nullptr, 0);
+    context_->immediate_context()->PSSetShader(shader.second.Get(), nullptr, 0);
+    break;
+  }
+  case ShaderType::FilterBlur: {
+    auto& shader = shaders_[ShaderType::FilterBlur];
+    context_->immediate_context()->VSSetShader(shader.first.Get(), nullptr, 0);
+    context_->immediate_context()->PSSetShader(shader.second.Get(), nullptr, 0);
+    break;
+  }
+  /*
+  case ShaderType::FilterDropShadow: {
+    auto& shader = shaders_[ShaderType::FilterDropShadow];
+    context_->immediate_context()->VSSetShader(shader.first.Get(), nullptr, 0);
+    context_->immediate_context()->PSSetShader(shader.second.Get(), nullptr, 0);
+    break;
+  }
+    */
   }
 }
 
