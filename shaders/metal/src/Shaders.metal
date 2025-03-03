@@ -153,6 +153,8 @@ float Gradient_R1(thread FragmentInput& input) { return input.Data1.y; }
 float2 Gradient_P0(thread FragmentInput& input) { return input.Data1.xy; }
 float2 Gradient_P1(thread FragmentInput& input) { return input.Data1.zw; }
 float SDFMaxDistance(thread FragmentInput& input) { return input.Data0.y; }
+uint FilterType(thread FragmentInput& input) { return uint(input.Data0.x + 0.5); }
+float Amount(thread FragmentInput& input) { return input.Data0.y; }
 
 struct GradientStop { float percent; float4 color; };
 
@@ -727,4 +729,146 @@ fragment float4 pathFragmentShader(PathFragmentInput input [[stage_in]],
     applyClip(input.ObjectCoord, uniforms, outColor);
     
     return outColor;
+}
+
+
+void filterGrayscale(thread float4 &color, float amount) {
+    amount = 1.0 - amount;
+    color = float4((0.2126 + 0.7874 * amount) * color.r + (0.7152 - 0.7152 * amount) * color.g + (0.0722 - 0.0722 * amount) * color.b,
+        (0.2126 - 0.2126 * amount) * color.r + (0.7152 + 0.2848 * amount) * color.g + (0.0722 - 0.0722 * amount) * color.b,
+        (0.2126 - 0.2126 * amount) * color.r + (0.7152 - 0.7152 * amount) * color.g + (0.0722 + 0.9278 * amount) * color.b,
+        color.a);
+}
+
+void filterSepia(thread float4 &color, float amount) {
+    amount = 1.0 - amount;
+    color = float4((0.393 + 0.607 * amount) * color.r + (0.769 - 0.769 * amount) * color.g + (0.189 - 0.189 * amount) * color.b,
+        (0.349 - 0.349 * amount) * color.r + (0.686 + 0.314 * amount) * color.g + (0.168 - 0.168 * amount) * color.b,
+        (0.272 - 0.272 * amount) * color.r + (0.534 - 0.534 * amount) * color.g + (0.131 + 0.869 * amount) * color.b,
+        color.a);
+}
+
+void filterSaturate(thread float4 &color, float amount) {
+    color = float4((0.213 + 0.787 * amount) * color.r + (0.715 - 0.715 * amount) * color.g + (0.072 - 0.072 * amount) * color.b,
+        (0.213 - 0.213 * amount) * color.r + (0.715 + 0.285 * amount) * color.g + (0.072 - 0.072 * amount) * color.b,
+        (0.213 - 0.213 * amount) * color.r + (0.715 - 0.715 * amount) * color.g + (0.072 + 0.928 * amount) * color.b,
+        color.a);
+}
+
+void filterHueRotate(thread float4 &color, float amount) {
+    float pi = 3.14159265358979323846;
+    float c = cos(amount * pi / 180.0);
+    float s = sin(amount * pi / 180.0);
+    color = float4(color.r * (0.213 + c * 0.787 - s * 0.213) + color.g * (0.715 - c * 0.715 - s * 0.715) + color.b * (0.072 - c * 0.072 + s * 0.928),
+        color.r * (0.213 - c * 0.213 + s * 0.143) + color.g * (0.715 + c * 0.285 + s * 0.140) + color.b * (0.072 - c * 0.072 - s * 0.283),
+        color.r * (0.213 - c * 0.213 - s * 0.787) +  color.g * (0.715 - c * 0.715 + s * 0.715) + color.b * (0.072 + c * 0.928 + s * 0.072),
+        color.a);
+}
+
+float invert(float n, float a, float amount) { return (a - n) * amount + n * (1.0 - amount); }
+void filterInvert(thread float4 &color, float amount) {
+    color = float4(invert(color.r, 1.0, amount), invert(color.g, 1.0, amount), invert(color.b, 1.0, amount), color.a);
+}
+
+void filterBrightness(thread float4 &color, float amount) {
+    color = float4(color.r * amount, color.g * amount, color.b * amount, color.a);
+}
+
+float contrast(float n, float amount) { return (n - 0.5) * amount + 0.5; }
+void filterContrast(thread float4 &color, float amount) {
+    color = float4(contrast(color.r, amount), contrast(color.g, amount), contrast(color.b, amount), color.a);
+}
+
+void filterOpacity(thread float4 &color, float amount) {
+    color *= amount;
+}
+
+// Fragment function
+fragment float4 filterBasicFragmentShader(FragmentInput input [[stage_in]],
+                               constant Uniforms &uniforms [[buffer(FragmentIndex_Uniforms)]],
+                               texture2d<half> tex0 [[texture(0)]],
+                               texture2d<half> tex1 [[texture(1)]])
+{
+    const uint FilterType_Grayscale = 0u;
+    const uint FilterType_Sepia = 1u;
+    const uint FilterType_Saturate = 2u;
+    const uint FilterType_HueRotate = 3u;
+    const uint FilterType_Invert = 4u;
+    const uint FilterType_Opacity = 5u;
+    const uint FilterType_Brightness = 6u;
+    const uint FilterType_Contrast = 7u;
+
+    float4 color = fillImage(input, tex0);
+    float amount = Amount(input);
+
+    switch(FilterType(input))
+    {
+        case FilterType_Grayscale: filterGrayscale(color, amount); break;
+        case FilterType_Sepia: filterSepia(color, amount); break;
+        case FilterType_Saturate: filterSaturate(color, amount); break;
+        case FilterType_HueRotate: filterHueRotate(color, amount); break;
+        case FilterType_Invert: filterInvert(color, amount); break;
+        case FilterType_Opacity: filterOpacity(color, amount); break;
+        case FilterType_Brightness: filterBrightness(color, amount); break;
+        case FilterType_Contrast: filterContrast(color, amount); break;
+    }
+
+    return color;
+}
+
+
+// Blur radius (std deviation, scaled to texture coordinates)
+// first pass = horizontal (y will be 0), second pass = vertical (x will be 0)
+float2 BlurRadius(constant Uniforms& u) { return float2(Scalar(u, 0), Scalar(u, 1)); }
+
+// Size of the texture in texels
+float2 TextureSize(constant Uniforms& u) { return float2(Scalar(u, 2), Scalar(u, 3)); }
+
+
+// Gaussian kernel
+#define GAUSSIAN_HALF_WIDTH 11
+#define GAUSSIAN_KERNEL_STEP 0.2
+
+// Hardcoded normalized Gaussian kernel (half-width 11)
+// Offsets: 0, 0.2, 0.4, ..., 2.0. Note that for a symmetric blur you’d use
+// kernel[0] for the center and mirror kernel[1..10] for positive/negative offsets.
+static constant float GaussianKernel[11] = {
+    0.08271846539774,  // offset 0.0
+    0.08108053004084,  // offset 0.2
+    0.07635876755667,  // offset 0.4
+    0.06909227008039,  // offset 0.6
+    0.06006593399678,  // offset 0.8
+    0.05017128538811,  // offset 1.0
+    0.04026339964190,  // offset 1.2
+    0.03104515814373,  // offset 1.4
+    0.02299881881682,  // offset 1.6
+    0.01636987669241,  // offset 1.8
+    0.01119472694350   // offset 2.0
+};
+
+float4 sampleColorAtRadius(thread FragmentInput& input, constant Uniforms& u, thread texture2d<half>& tex, float radius) {
+    float2 offset = radius * BlurRadius(u);
+    float2 sampleCoord = clamp(input.TexCoord + offset, 0.0, 1.0);
+    return float4(tex.sample(texSampler, sampleCoord)) * input.Color;
+}
+
+float4 filterBlur(thread FragmentInput& input, constant Uniforms& u, thread texture2d<half>& tex) {
+    float4 total = sampleColorAtRadius(input, u, tex, 0.0) * GaussianKernel[0];
+
+#pragma clang loop unroll(full)
+    for (int i = 1; i < GAUSSIAN_HALF_WIDTH; i++) {
+        total += sampleColorAtRadius(input, u, tex, float(i) * GAUSSIAN_KERNEL_STEP) * GaussianKernel[i];
+        total += sampleColorAtRadius(input, u, tex, -float(i) * GAUSSIAN_KERNEL_STEP) * GaussianKernel[i];
+    }
+
+    return total;
+}
+
+// Fragment function
+fragment float4 filterBlurFragmentShader(FragmentInput input [[stage_in]],
+                               constant Uniforms &uniforms [[buffer(FragmentIndex_Uniforms)]],
+                               texture2d<half> tex0 [[texture(0)]],
+                               texture2d<half> tex1 [[texture(1)]])
+{
+    return filterBlur(input, uniforms, tex0);
 }
