@@ -68,6 +68,7 @@ WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
   auto driver = ultralight::Platform::instance().gpu_driver();
   render_buffer_id_ = driver? driver->NextRenderBufferId() : 0;
   current_drawable_ = [layer() nextDrawable];
+  set_drawable_needs_clear(true);
   
   if (gpu_context)
     gpu_context->AddWindow(this);
@@ -270,6 +271,7 @@ void WindowMac::OnPaint(CAMetalLayer* layer) {
     [current_drawable_ present];
     MarkEndDraw();
     current_drawable_ = [layer nextDrawable];
+    set_drawable_needs_clear(true);
   }
 
   MarkEndFrame();
