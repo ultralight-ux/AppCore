@@ -26,6 +26,9 @@ void OverlayManager::Remove(Overlay* overlay) {
 
   if (hovered_overlay_ == overlay)
     hovered_overlay_ = nullptr;
+    
+  // Notify the platform-specific implementation
+  OnOverlayDestroyed(overlay);
 }
 
 void OverlayManager::Render() {

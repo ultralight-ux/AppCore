@@ -8,6 +8,7 @@
 #import <dispatch/dispatch.h>
 #import "AppMac.h"
 #import "metal/GPUContextMetal.h"
+#import "IOSurfaceView.h"
 
 @implementation MTLView
 {
@@ -108,9 +109,19 @@
 
 - (void)loadView
 {
-  MTLView* view = [[MTLView alloc] initWithFrame:_initialFrame
-                                    initialScale:_initialScale];
-  [self setView:view];
+  NSRect frame = NSMakeRect(0, 0, _initialFrame.size.width, _initialFrame.size.height);
+  
+  // Access the Window's platform_always_uses_cpu_renderer through a local method
+  if ([self isUsingCPURenderer]) {
+    // For CPU rendering, use a regular NSView as the main container
+    // Individual IOSurfaceViews will be added as children
+    NSView* view = [[NSView alloc] initWithFrame:frame];
+    [self setView:view];
+  } else {
+    // For GPU rendering, use MTLView as before
+    MTLView* view = [[MTLView alloc] initWithFrame:frame initialScale:_initialScale];
+    [self setView:view];
+  }
 }
 
 - (void)viewDidLayout
@@ -126,12 +137,6 @@
 {
   [super viewDidLoad];
 
-  if (!self.metalView.metalLayer.device)
-  {
-    NSLog(@"Metal is not supported on this device");
-    return;
-  }
-
   _delegate = [[ViewDelegate alloc] initWithWindow:_window];
 
   if (!_delegate)
@@ -140,7 +145,16 @@
     return;
   }
 
-  [(MTLView*)self.view setDelegate:_delegate];
+  if (![self isUsingCPURenderer]) {
+    // Only set delegate for Metal views
+    if (!self.metalView.metalLayer.device)
+    {
+      NSLog(@"Metal is not supported on this device");
+      return;
+    }
+
+    [(MTLView*)self.view setDelegate:_delegate];
+  }
 
   NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
                                   initWithRect:self.view.bounds
@@ -252,6 +266,16 @@
 
 - (void)setRepresentedObject:(id)representedObject {
   [super setRepresentedObject:representedObject];
+}
+
+// Helper method to check if we're using CPU renderer
+- (BOOL)isUsingCPURenderer {
+  // Get CPU renderer setting from App
+  ultralight::AppMac* app = static_cast<ultralight::AppMac*>(ultralight::App::instance());
+  if (app) {
+    return app->settings().force_cpu_renderer;
+  }
+  return NO;
 }
 
 @end

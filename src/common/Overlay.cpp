@@ -270,7 +270,13 @@ protected:
     if (use_gpu_)
       driver_ = (ultralight::GPUDriverImpl*)Platform::instance().gpu_driver();
 
+#ifdef __APPLE__
+    // On macOS with CPU rendering, we use IOSurfaceMac instead of ULTextureSurface
+    use_ul_texture_surface_ = false;
+#else
+    // On other platforms with CPU rendering, we use ULTextureSurface
     use_ul_texture_surface_ = window_->platform_always_uses_cpu_renderer();
+#endif
 
     bool view_paints_to_gpu = use_gpu_ && !use_ul_texture_surface_;
 

@@ -17,6 +17,7 @@
 #import <MetalKit/MetalKit.h>
 #include <filesystem>
 #include <Security/SecTask.h>
+#include "IOSurfaceMac.h"
 
 @interface AppTimers : NSObject {
     dispatch_source_t updateTimer;
@@ -164,8 +165,14 @@ AppMac::AppMac(Settings settings, Config config) : settings_(settings) {
   clipboard_.reset(new ClipboardMac());
   Platform::instance().set_clipboard(clipboard_.get());
 
-  surface_factory_.reset(new ULTextureSurfaceFactory());
-  Platform::instance().set_surface_factory(surface_factory_.get());
+  if (settings_.force_cpu_renderer) {
+    // Create IOSurface factory for CPU rendering
+    surface_factory_.reset(new IOSurfaceFactoryMac());
+    Platform::instance().set_surface_factory(surface_factory_.get());
+  } else {
+    surface_factory_.reset(new ULTextureSurfaceFactory());
+    Platform::instance().set_surface_factory(surface_factory_.get());
+  }
   
   renderer_ = Renderer::Create();
 }
@@ -241,14 +248,21 @@ void AppMac::Refresh() {
 }
 
 GPUContextMetal* AppMac::gpu_context() {
-  if (!gpu_context_) {
-    // TODO, we need to handle settings.force_cpu_renderer
-    // Right now we are still using the Metal context to display
-    // the CPU renderer output.
-    gpu_context_.reset(new GPUContextMetal(MTLCreateSystemDefaultDevice(), true, true));
-    Platform::instance().set_gpu_driver(gpu_context_->driver());
+  if (gpu_context_)
+    return gpu_context_.get();
+
+  if (settings_.force_cpu_renderer) {
+    // When using CPU renderer with IOSurface, we don't need a GPU context
+    return nullptr;
   }
 
+  // Existing GPU context creation with Metal
+  gpu_context_.reset(new GPUContextMetal(MTLCreateSystemDefaultDevice(), true, true));
+  
+  // Setup driver
+  if (gpu_context_)
+    Platform::instance().set_gpu_driver(gpu_context_->driver());
+    
   return gpu_context_.get();
 }
 

@@ -68,7 +68,7 @@ protected:
   std::unique_ptr<GPUContextMetal> gpu_context_;
   std::unique_ptr<ClipboardMac> clipboard_;
   std::unique_ptr<FileLogger> logger_;
-  std::unique_ptr<ULTextureSurfaceFactory> surface_factory_;
+  std::unique_ptr<ultralight::SurfaceFactory> surface_factory_;
   std::vector<WindowMac*> windows_;
   std::chrono::steady_clock::time_point last_statistics_update_;
 };

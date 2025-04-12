@@ -5,11 +5,14 @@
 #include "OverlayManager.h"
 #include <chrono>
 #include <string>
+#include <map>
 #import "Cocoa/Cocoa.h"
 #import "ViewController.h"
 #import "WindowDelegate.h"
 #import <MetalKit/MetalKit.h>
 #import <QuartzCore/QuartzCore.h>
+#import <IOSurface/IOSurface.h>
+@class IOSurfaceView;
 
 namespace ultralight {
 
@@ -118,6 +121,12 @@ protected:
 
   void MarkBeginDraw();
   void MarkEndDraw();
+  
+  // Method to create or get an IOSurfaceView for an overlay
+  IOSurfaceView* GetIOSurfaceViewForOverlay(Overlay* overlay);
+  
+  // Handle overlay destruction
+  void OnOverlayDestroyed(Overlay* overlay) override;
 
   friend class Window;
 
@@ -134,6 +143,10 @@ protected:
   uint32_t render_buffer_id_;
   id <CAMetalDrawable> current_drawable_;
   bool drawable_needs_clear_ = true;
+  
+  // Map to track overlay to IOSurfaceView connections
+  std::map<Overlay*, IOSurfaceView*> overlay_views_;
+  float window_scale_;
 
   bool frame_stats_enabled_ = false;
   std::chrono::steady_clock::time_point frame_start_time_, render_start_time_, draw_start_time_;

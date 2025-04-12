@@ -1,5 +1,7 @@
 #include "WindowMac.h"
 #include <AppCore/Monitor.h>
+#include <AppCore/Overlay.h>
+#include <AppCore/App.h>
 #include "AppMac.h"
 #include <sstream>
 #import "Cocoa/Cocoa.h"
@@ -8,6 +10,8 @@
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/GPUDriver.h>
 #include <Ultralight/private/tracy/Tracy.hpp>
+#import "IOSurfaceView.h"
+#include "IOSurfaceMac.h"
 
 namespace ultralight {
 
@@ -55,7 +59,9 @@ WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
   ProcessSerialNumber psn = {0, kCurrentProcess};
   TransformProcessType(&psn, kProcessTransformToForegroundApplication);
 
-  SetWindowScale(scale());
+  // Initialize window scale
+  window_scale_ = scale();
+  SetWindowScale(window_scale_);
   
   auto app = static_cast<AppMac*>(App::instance());
   GPUContextMetal* gpu_context = nullptr;
@@ -65,13 +71,19 @@ WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
     gpu_context = app->gpu_context();
   }
   
-  auto driver = ultralight::Platform::instance().gpu_driver();
-  render_buffer_id_ = driver? driver->NextRenderBufferId() : 0;
-  current_drawable_ = [layer() nextDrawable];
-  set_drawable_needs_clear(true);
-  
-  if (gpu_context)
+  if (platform_always_uses_cpu_renderer()) {
+    // For CPU rendering, we don't need a Metal drawable
+    render_buffer_id_ = 0;
+    current_drawable_ = nil;
+  } else if (gpu_context) {
+    // For GPU rendering, initialize Metal resources
+    auto driver = ultralight::Platform::instance().gpu_driver();
+    render_buffer_id_ = driver ? driver->NextRenderBufferId() : 0;
+    current_drawable_ = [layer() nextDrawable];
+    set_drawable_needs_clear(true);
+    
     gpu_context->AddWindow(this);
+  }
 }
 
 WindowMac::~WindowMac() {
@@ -92,7 +104,13 @@ uint32_t WindowMac::screen_width() const {
 }
 
 uint32_t WindowMac::width() const {
-  return (uint32_t)controller_.metalView.metalLayer.drawableSize.width;
+  if (platform_always_uses_cpu_renderer()) {
+    // For CPU rendering path, get width from the controller's view
+    return (uint32_t)(controller_.view.frame.size.width * window_scale_);
+  } else {
+    // For GPU rendering path, use the MTLView's metalLayer
+    return (uint32_t)controller_.metalView.metalLayer.drawableSize.width;
+  }
 }
 
 uint32_t WindowMac::screen_height() const {
@@ -100,7 +118,13 @@ uint32_t WindowMac::screen_height() const {
 }
 
 uint32_t WindowMac::height() const {
-  return (uint32_t)controller_.metalView.metalLayer.drawableSize.height;
+  if (platform_always_uses_cpu_renderer()) {
+    // For CPU rendering path, get height from the controller's view
+    return (uint32_t)(controller_.view.frame.size.height * window_scale_);
+  } else {
+    // For GPU rendering path, use the MTLView's metalLayer
+    return (uint32_t)controller_.metalView.metalLayer.drawableSize.height;
+  }
 }
 
 double WindowMac::scale() const {
@@ -196,7 +220,51 @@ void* WindowMac::native_handle() const {
 }
 
 void WindowMac::DrawSurface(int x, int y, Surface* surface) {
-
+  if (!surface || !is_visible())
+    return;
+    
+  // Get the overlay for this surface
+  Overlay* overlay = nullptr;
+  // Get overlays from OverlayManager parent class
+  for (auto& overlay_ptr : overlays_) {
+    if (overlay_ptr->view()->surface() == surface) {
+      overlay = overlay_ptr;
+      break;
+    }
+  }
+  
+  if (!overlay)
+    return;
+  
+  if (platform_always_uses_cpu_renderer()) {
+    // Cast to our IOSurface implementation
+    auto* ioSurfaceMac = static_cast<IOSurfaceMac*>(surface);
+    if (!ioSurfaceMac)
+      return;
+      
+    // Get or create an IOSurfaceView for this overlay
+    IOSurfaceView* ioSurfaceView = GetIOSurfaceViewForOverlay(overlay);
+    if (!ioSurfaceView)
+      return;
+    
+    // Update the view with the IOSurface
+    [ioSurfaceView setIOSurface:ioSurfaceMac->GetIOSurface()];
+    
+    // Update the view's position and size
+    NSRect overlayFrame = NSMakeRect(x, y, surface->width(), surface->height());
+    [ioSurfaceView setFrame:overlayFrame];
+    
+    // If we have dirty regions, mark them for display
+    ultralight::IntRect dirtyBounds = surface->dirty_bounds();
+    if (!dirtyBounds.IsEmpty()) {
+      NSRect dirtyRect = NSMakeRect(dirtyBounds.x(), dirtyBounds.y(), 
+                                  dirtyBounds.width(), dirtyBounds.height());
+      [ioSurfaceView setNeedsDisplayInRect:dirtyRect];
+      
+      // Clear the dirty bounds once displayed
+      surface->ClearDirtyBounds();
+    }
+  }
 }
 
 void WindowMac::FireKeyEvent(const ultralight::KeyEvent& evt) {
@@ -244,18 +312,40 @@ void WindowMac::OnResize(uint32_t width, uint32_t height) {
 }
     
 void WindowMac::SetNeedsDisplay() {
-  controller_.metalView.needsDisplay = true;
+  if (platform_always_uses_cpu_renderer()) {
+    // For CPU rendering, we need to mark the regular NSView as needing display
+    controller_.view.needsDisplay = YES;
+  } else {
+    // For GPU rendering, we use the MTLView
+    controller_.metalView.needsDisplay = YES;
+  }
 }
 
 void WindowMac::OnPaint(CAMetalLayer* layer) {
-  auto gpu_context = static_cast<AppMac*>(App::instance())->gpu_context();
-  if (!gpu_context)
-    return;
-
-  if (!NeedsRepaint())
-    return;
-
   MarkBeginFrame();
+
+  if (platform_always_uses_cpu_renderer()) {
+    // CPU rendering path - directly render to IOSurfaces
+    MarkBeginRender();
+    OverlayManager::Render();
+    MarkEndRender();
+    
+    // Paint will call DrawSurface for each overlay
+    MarkBeginDraw();
+    OverlayManager::Paint();
+    MarkEndDraw();
+    
+    MarkEndFrame();
+    return;
+  }
+  
+  // Metal GPU rendering path
+  auto gpu_context = static_cast<AppMac*>(App::instance())->gpu_context();
+  if (!gpu_context || !NeedsRepaint()) {
+    MarkEndFrame();
+    return;
+  }
+
   MarkBeginRender();
   gpu_context->driver()->BeginSynchronize();
   OverlayManager::Render();
@@ -359,7 +449,55 @@ void WindowMac::UpdateTitleWithStatistics()
 }
     
 CAMetalLayer* WindowMac::layer() {
+  if (platform_always_uses_cpu_renderer()) {
+    // We don't use Metal layer in CPU rendering mode
+    return nullptr;
+  }
   return controller_.metalView.metalLayer;
+}
+
+IOSurfaceView* WindowMac::GetIOSurfaceViewForOverlay(Overlay* overlay) {
+  // Check if we already have a view for this overlay
+  auto it = overlay_views_.find(overlay);
+  if (it != overlay_views_.end())
+    return it->second;
+    
+  // Create a new IOSurfaceView
+  Surface* surface = overlay->view()->surface();
+  auto* ioSurfaceMac = static_cast<IOSurfaceMac*>(surface);
+  if (!ioSurfaceMac)
+    return nullptr;
+    
+  // Get the content view from our view controller
+  NSView* contentView = controller_.view;
+  
+  // Create frame in parent coordinates
+  NSRect frame = NSMakeRect(0, 0, surface->width(), surface->height());
+  
+  // Create the IOSurfaceView
+  IOSurfaceView* ioSurfaceView = [[IOSurfaceView alloc] 
+                               initWithFrame:frame
+                               initialScale:window_scale_
+                               ioSurface:ioSurfaceMac->GetIOSurface()];
+  
+  // Add to the content view
+  [contentView addSubview:ioSurfaceView];
+  
+  // Store in our map for future reference
+  overlay_views_[overlay] = ioSurfaceView;
+  
+  return ioSurfaceView;
+}
+
+void WindowMac::OnOverlayDestroyed(Overlay* overlay) {
+  auto it = overlay_views_.find(overlay);
+  if (it != overlay_views_.end()) {
+    // Remove the view from its superview
+    [it->second removeFromSuperview];
+    
+    // Remove from our map
+    overlay_views_.erase(it);
+  }
 }
 
 bool WindowMac::platform_always_uses_cpu_renderer() const {

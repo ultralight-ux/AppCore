@@ -27,6 +27,9 @@ public:
   virtual void SetWindowFocused(bool focused);
 
   virtual void SetWindowScale(double scale);
+  
+  // Called when an overlay is destroyed, to be implemented by platform-specific subclasses
+  virtual void OnOverlayDestroyed(Overlay* overlay) { }
 
   virtual void FireKeyEvent(const ultralight::KeyEvent& evt);
 
