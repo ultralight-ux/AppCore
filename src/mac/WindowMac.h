@@ -97,6 +97,11 @@ public:
   
   id <CAMetalDrawable> current_drawable() { return current_drawable_; }
 
+  // When we advance the drawable, we need to clear it before drawing to avoid garbage.
+  // We use this flag to keep track of whether we need to clear the drawable or not.
+  void set_drawable_needs_clear(bool needs_clear) { drawable_needs_clear_ = needs_clear; }
+  bool drawable_needs_clear() const { return drawable_needs_clear_; }
+
 protected:
   WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
     bool fullscreen, unsigned int window_flags);
@@ -128,6 +133,7 @@ protected:
   bool is_accelerated_;
   uint32_t render_buffer_id_;
   id <CAMetalDrawable> current_drawable_;
+  bool drawable_needs_clear_ = true;
 
   bool frame_stats_enabled_ = false;
   std::chrono::steady_clock::time_point frame_start_time_, render_start_time_, draw_start_time_;

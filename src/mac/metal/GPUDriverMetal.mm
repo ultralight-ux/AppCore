@@ -237,7 +237,7 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id)
 
         if (j->second.needs_init_) {
             j->second.needs_init_ = false;
-            force_clear = true;
+            //force_clear = true;
         }
         is_drawing_to_window_ = false;
     } else {
@@ -248,7 +248,9 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id)
 
         auto drawable = window->current_drawable();
         texture = drawable.texture;
-        force_clear = true;
+        force_clear = window->drawable_needs_clear();
+        if (force_clear)
+            window->set_drawable_needs_clear(false);
         is_drawing_to_window_ = true;
     }
 
@@ -259,7 +261,7 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id)
 
     auto renderPassDescriptor = [MTLRenderPassDescriptor new];
     renderPassDescriptor.colorAttachments[0].loadAction = force_clear ? MTLLoadActionClear : MTLLoadActionLoad;
-    renderPassDescriptor.colorAttachments[0].clearColor = is_drawing_to_window_ ? MTLClearColorMake(1.0, 1.0, 1.0, 1.0) : MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
+    renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
     renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
     renderPassDescriptor.colorAttachments[0].texture = texture;
     renderPassDescriptor.colorAttachments[0].level = 0;
@@ -307,7 +309,7 @@ void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id)
 
         auto drawable = window->current_drawable();
         texture = drawable.texture;
-        clearColor = MTLClearColorMake(1.0, 1.0, 1.0, 1.0);
+        clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
         is_drawing_to_window_ = true;
     }
 
