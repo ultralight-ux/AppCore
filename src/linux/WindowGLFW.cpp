@@ -26,12 +26,15 @@ static void WindowGLFW_key_callback(GLFWwindow* window, int key, int scancode, i
   evt.modifiers = GLFWModsToUltralightMods(mods);
   win->FireKeyEvent(evt);
 
+  bool enter_key = key == GLFW_KEY_KP_ENTER || key == GLFW_KEY_ENTER;
+  bool tab_key = key == GLFW_KEY_TAB;
+
   if (evt.type == ultralight::KeyEvent::kType_RawKeyDown &&
-    (key == GLFW_KEY_ENTER || key == GLFW_KEY_TAB)) {
+    (enter_key || tab_key)) {
     // We have to synthesize the Char Event for these keys.
     ultralight::KeyEvent evt;
     evt.type = ultralight::KeyEvent::kType_Char;
-    ultralight::String text = key == GLFW_KEY_ENTER ? ultralight::String("\r") : ultralight::String("\t");
+    ultralight::String text = enter_key ? ultralight::String("\r\n") : ultralight::String("\t");
     evt.text = text;
     evt.unmodified_text = text;
     win->FireKeyEvent(evt);
