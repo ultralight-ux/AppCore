@@ -37,29 +37,27 @@ float2 PatternTransformB() { return Vector[2].zw; }
 float2 PatternTransformC() { return Vector[3].xy; }
 uint Gradient_NumStops(VS_OUTPUT input) { return uint(input.Data0.y + 0.5); }
 bool Gradient_IsRadial(VS_OUTPUT input) { return bool(uint(input.Data0.z + 0.5)); }
-float Gradient_R0(VS_OUTPUT input) { return input.Data1.x; }
-float Gradient_R1(VS_OUTPUT input) { return input.Data1.y; }
 float2 Gradient_P0(VS_OUTPUT input) { return input.Data1.xy; }
 float2 Gradient_P1(VS_OUTPUT input) { return input.Data1.zw; }
+float2 Gradient_R0(VS_OUTPUT input) { return input.Data2.xy; }
+float2 Gradient_R1(VS_OUTPUT input) { return input.Data2.zw; }
 float SDFMaxDistance(VS_OUTPUT input) { return input.Data0.y; }
 
 struct GradientStop { float percent; float4 color; };
 
 GradientStop GetGradientStop(VS_OUTPUT input, uint offset) {
   GradientStop result;
-  if (offset < 4) {
-    result.percent = input.Data2[offset];
+  if (offset < 3) {
+    result.percent = input.Data3[offset];
     if (offset == 0)
-      result.color = input.Data3;
-    else if (offset == 1)
       result.color = input.Data4;
-    else if (offset == 2)
+    else if (offset == 1)
       result.color = input.Data5;
-    else if (offset == 3)
+    else if (offset == 2)
       result.color = input.Data6;
   } else {
-    result.percent = Scalar(offset - 4);
-    result.color = Vector[offset - 4];
+    result.percent = Scalar(offset - 3);
+    result.color = Vector[offset - 3];
   }
   return result;
 }
@@ -216,6 +214,7 @@ float ramp(in float inMin, in float inMax, in float val)
     return clamp((val - inMin) / (inMax - inMin), 0.0, 1.0);
 }
 
+/*
 float4 fillPatternGradient(VS_OUTPUT input) {
   float num_stops = Gradient_NumStops(input);
   bool is_radial = Gradient_IsRadial(input);
@@ -254,6 +253,104 @@ float4 fillPatternGradient(VS_OUTPUT input) {
           if (num_stops > 6) {
             GradientStop stop6 = GetGradientStop(input, 6u);
             out_Color = lerp(out_Color, stop6.color, ramp(stop5.percent, stop6.percent, t));
+          }
+        }
+      }
+    }
+  }
+
+  return float4(out_Color.rgb, out_Color.a);
+}
+*/
+
+
+float4 fillPatternGradient(VS_OUTPUT input) {
+  float num_stops = Gradient_NumStops(input);
+  bool is_radial = Gradient_IsRadial(input);
+  float2 p0 = Gradient_P0(input);
+  float2 p1 = Gradient_P1(input);
+  float2 r0 = Gradient_R0(input);
+  float2 r1 = Gradient_R1(input);
+  float4 out_Color = float4(0.0, 0.0, 0.0, 0.0);
+
+  float t = 0.0;
+  float2 texCoord = input.TexCoord;
+    
+  if (is_radial) {
+    // Calculate t parameter for radial gradient
+    float2 delta = texCoord - p0;  // Vector from center to current point
+    
+    // Calculate normalized distance in elliptical space
+    // By dividing vector components by respective radii, we transform
+    // the ellipse into a unit circle, simplifying distance calculations
+    float2 deltaOuter = delta / r1;
+    float distOuter = length(deltaOuter);
+    
+    if (r0.x > 0.0001 && r0.y > 0.0001) {
+      // Handle gradient with inner radius (like a ring)
+      float2 deltaInner = delta / r0;
+      float distInner = length(deltaInner);
+      
+      // Map t value: 0.0 at inner edge, 1.0 at outer edge
+      t = (distInner <= 1.0) ? 0.0 : 
+          (distOuter >= 1.0) ? 1.0 : 
+          saturate((distInner - 1.0) / (distInner - distOuter));
+    } else {
+      // Simple gradient from center point
+      t = saturate(distOuter);
+    }
+    
+    // Apply focal point adjustment if p1 is different from p0
+    if (length(p1 - p0) > 0.0001) {
+      float2 focalDir = normalize(p0 - p1);    // Direction from focal to center
+      float2 pixelDir = normalize(texCoord - p1); // Direction from focal to pixel
+      
+      // Adjust t based on angle between directions
+      // This creates a more natural gradient when focal != center
+      float angleFactor = dot(pixelDir, focalDir);
+      t = saturate(t * (1.0 + (1.0 - angleFactor) * 0.5));
+    }
+  } else {
+    // Linear gradient calculation
+    float2 V = p1 - p0;
+    t = saturate(dot(texCoord - p0, V) / dot(V, V));
+  }
+
+  GradientStop stop0 = GetGradientStop(input, 0u);
+  GradientStop stop1 = GetGradientStop(input, 1u);
+
+  out_Color = lerp(stop0.color, stop1.color, ramp(stop0.percent, stop1.percent, t));
+  if (num_stops > 2) {
+    GradientStop stop2 = GetGradientStop(input, 2u);
+    out_Color = lerp(out_Color, stop2.color, ramp(stop1.percent, stop2.percent, t));
+    if (num_stops > 3) {
+      GradientStop stop3 = GetGradientStop(input, 3u);
+      out_Color = lerp(out_Color, stop3.color, ramp(stop2.percent, stop3.percent, t));
+      if (num_stops > 4) {
+        GradientStop stop4 = GetGradientStop(input, 4u);
+        out_Color = lerp(out_Color, stop4.color, ramp(stop3.percent, stop4.percent, t));
+        if (num_stops > 5) {
+          GradientStop stop5 = GetGradientStop(input, 5u);
+          out_Color = lerp(out_Color, stop5.color, ramp(stop4.percent, stop5.percent, t));
+          if (num_stops > 6) {
+            GradientStop stop6 = GetGradientStop(input, 6u);
+            out_Color = lerp(out_Color, stop6.color, ramp(stop5.percent, stop6.percent, t));
+            if (num_stops > 7) {
+              GradientStop stop7 = GetGradientStop(input, 7u);
+              out_Color = lerp(out_Color, stop7.color, ramp(stop6.percent, stop7.percent, t));
+              if (num_stops > 8) {
+                GradientStop stop8 = GetGradientStop(input, 8u);
+                out_Color = lerp(out_Color, stop8.color, ramp(stop7.percent, stop8.percent, t));
+                if (num_stops > 9) {
+                  GradientStop stop9 = GetGradientStop(input, 9u);
+                  out_Color = lerp(out_Color, stop9.color, ramp(stop8.percent, stop9.percent, t));
+                  if (num_stops > 10) {
+                    GradientStop stop10 = GetGradientStop(input, 10u);
+                    out_Color = lerp(out_Color, stop10.color, ramp(stop9.percent, stop10.percent, t));
+                  }
+                }
+              }
+            }
           }
         }
       }
