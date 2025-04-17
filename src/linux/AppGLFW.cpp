@@ -107,7 +107,7 @@ AppGLFW::AppGLFW(Settings settings, Config config)
     clipboard_.reset(new ClipboardGLFW());
     Platform::instance().set_clipboard(clipboard_.get());
 
-    gpu_context_.reset(new GPUContextGL(true, true));
+    gpu_context_.reset(new GPUContextGL(false, true));
     Platform::instance().set_gpu_driver(gpu_context_->driver());
 
     // We use the GPUContext's global offscreen window to maintain
@@ -145,8 +145,8 @@ void AppGLFW::Run()
 
     is_running_ = true;
 
-    const double update_interval_ms = 2.0; // 1000ms / 500Hz
-    const double repaint_interval_ms = 8.0; // 1000ms / 125Hz
+    const double update_interval_ms = 2.0; // 500Hz
+    const double repaint_interval_ms = 4.0; // 250Hz
 
     // Create timer and signal file descriptors
     int update_timer_fd = timerfd_create(CLOCK_MONOTONIC, 0);
