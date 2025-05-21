@@ -154,8 +154,9 @@
   NSPoint eventLocation = [event locationInWindow];
   NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
   point.y = self.view.bounds.size.height - point.y;
+  auto numTicks = _initialScale * 8;
   
-  [_delegate scrollWheel:[event deltaY] * 8 mouseX:point.x mouseY:point.y];
+  [_delegate scrollWheel:[event deltaY] * numTicks mouseX:point.x mouseY:point.y];
 }
 
 - (void)mouseMoved:(NSEvent *)event
