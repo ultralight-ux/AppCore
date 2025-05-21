@@ -178,6 +178,10 @@ id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
   } else if (render_state_.shader_type == ShaderType::FilterBlur) {
     pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"vertexShader"];
     pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"filterBlurFragmentShader"];
+  } else if (render_state_.shader_type == ShaderType::FilterDropShadow) {
+    NSLog(@"TODO: Implement FilterDropShadow shader");
+    pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"vertexShader"];
+    pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"filterBlurFragmentShader"];
   } else {
     NSLog(@"Failed to create pipeline state, unhandled shader type");
     NSAlert *alert = [[NSAlert alloc] init];
