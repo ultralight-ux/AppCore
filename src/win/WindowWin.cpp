@@ -137,8 +137,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
     case WM_MOUSEWHEEL:
         WINDOW()->FireScrollEvent(
-            { ScrollEvent::kType_ScrollByPixel, 0,
-                static_cast<int>(WINDOW()->PixelsToScreen(GET_WHEEL_DELTA_WPARAM(wParam)) * 0.8) });
+            { ScrollEvent::kType_ScrollByPixel, 0, (int)std::round(GET_WHEEL_DELTA_WPARAM(wParam) * 0.8) });
         break;
     case WM_SETFOCUS:
         WINDOW()->SetWindowFocused(true);
