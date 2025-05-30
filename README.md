@@ -11,13 +11,120 @@ to a pixel buffer using the CPU renderer.
 
 For more information see our [Docs](https://docs.ultralig.ht).
 
-The following GPU back-ends are used on each platform: 
+## Architecture Overview
 
-| Platform | GPU Driver        | 
-|----------|-------------------|
-| Windows  | Direct3D 11       |
-| macOS    | Metal             |
-| Linux    | OpenGL 3.2 (GLFW) | 
+AppCore follows a clean abstraction pattern with platform-specific implementations in separate directories:
+
+### Core Components
+
+| Header        | Description                                                 |
+|---------------|-------------------------------------------------------------|
+| `App.h`       | Central singleton managing renderer, windows, and main loop |
+| `Window.h`    | Platform window creation and management                     |
+| `Overlay.h`   | Web content rendering within windows                        |
+| `Monitor.h`   | Display/monitor information and management                  |
+| `Platform.h`  | Platform-specific services (clipboard, fonts, etc.)         |
+
+### Platform Implementations
+
+| Platform | Windowing API | GPU Driver      | Shader Format  |
+|----------|---------------|-----------------|----------------|
+| Windows  | Win32         | Direct3D 11/12  | HLSL           |
+| macOS    | Cocoa         | Metal           | MSL            |
+| Linux    | GLFW          | OpenGL 3.2      | GLSL           |
+
+### Directory Structure
+
+```
+AppCore/
+├── include/AppCore/     # Public API headers
+│   ├── App.h
+│   ├── Window.h
+│   ├── Overlay.h
+│   └── ...
+├── src/
+│   ├── common/          # Shared implementation code
+│   ├── win/             # Windows-specific implementations
+│   │   ├── d3d11/       # Direct3D 11 GPU driver
+│   │   ├── d3d12/       # Direct3D 12 GPU driver
+│   │   └── memory/      # Windows memory profiler
+│   ├── mac/             # macOS-specific implementations
+│   │   └── metal/       # Metal GPU driver
+│   └── linux/           # Linux-specific implementations
+│       └── gl/          # OpenGL GPU driver
+└── shaders/
+    ├── hlsl/            # Direct3D shaders
+    ├── metal/           # Metal shaders
+    └── glsl/            # OpenGL shaders
+```
+
+### Shader System
+
+The shader system supports sophisticated rendering operations across all platforms:
+
+- **Fill Types**: Solid colors, images, patterns, gradients, rounded rectangles, etc.
+- **Blend Modes**: Full Porter-Duff compositing support (Over, Add, Multiply, Screen, etc.)
+- **Filters**: Blur, grayscale, sepia, hue-rotate, contrast, brightness, opacity, etc.
+- **Advanced Features**: Gamma correction, clipping masks, anti-aliasing, and more.
+
+### Platform Services
+
+| Service           | Windows                       | macOS                 | Linux               |
+|-------------------|-------------------------------|-----------------------|---------------------|
+| **Clipboard**     | Win32 Clipboard API           | NSPasteboard (AppKit) | GLFW (X11/Wayland)  |
+| **File System**   | Win32 File API + Mem-Mapping  | POSIX + mmap          | C++ std::ifstream   |
+| **Font Loading**  | DirectWrite                   | Core Text             | Fontconfig          |
+| **GPU Context**   | D3D11/D3D12                   | MetalKit              | OpenGL/GLAD         |
+| **Native Dialogs**| MessageBox API                | NSAlert (AppKit)      | GTK+                |
+
+## Basic Usage
+
+```cpp
+#include <AppCore/AppCore.h>
+
+using namespace ultralight;
+
+int main() {
+  // Create the App singleton
+  auto app = App::Create();
+
+  // Create a window
+  auto window = Window::Create(app->main_monitor(), 900, 600, false,
+    kWindowFlags_Titled | kWindowFlags_Resizable);
+
+  // Create an overlay to render HTML content
+  auto overlay = Overlay::Create(window, window->width(), window->height(), 0, 0);
+
+  // Load a URL
+  overlay->view()->LoadURL("https://google.com");
+
+  // Run the app (blocks until all active windows are closed)
+  app->Run();
+
+  return 0;
+}
+```
+
+## Compiling Shaders
+
+AppCore includes pre-compiled shaders in memory by default, but you can compile them from source if needed:
+
+### Windows (HLSL)
+```bash
+cd shaders/hlsl/util
+compile.bat
+```
+This uses the DirectX `fxc` compiler to compile HLSL shaders to bytecode and converts them to C headers.
+
+### macOS (Metal)
+```bash
+cd shaders/metal/util
+./compile.sh
+```
+This uses the Metal compiler toolchain to compile `.metal` files to a metallib and converts it to a C header.
+
+### Linux (GLSL)
+GLSL shaders are compiled at runtime by the OpenGL driver. The source files in `shaders/glsl/` are converted to C headers for embedding. 
 
 ## Downloading pre-built binaries
 
