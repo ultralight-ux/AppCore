@@ -1,6 +1,7 @@
 #import "GPUDriverMetal.h"
 #import "../WindowMac.h"
 #import "GPUContextMetal.h"
+#include "ShaderTypes.h"
 
 namespace ultralight {
 
@@ -402,6 +403,11 @@ void GPUDriverMetal::SetGPUState(const GPUState& state)
     Uniforms uniforms;
     uniforms.State = { 0.0f, (float)state.viewport_width, (float)state.viewport_height, 1.0f };
     uniforms.Transform = ToFloat4x4(model_view_projection.GetMatrix4x4());
+    
+    // Initialize integer values (for discrete parameters like fill types, blend modes)
+    uniforms.Integer4[0] = { 0, 0, 0, 0 };
+    uniforms.Integer4[1] = { 0, 0, 0, 0 };
+    
     uniforms.Scalar4[0] = { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2], state.uniform_scalar[3] };
     uniforms.Scalar4[1] = { state.uniform_scalar[4], state.uniform_scalar[5], state.uniform_scalar[6], state.uniform_scalar[7] };
     uniforms.Vector[0] = ToFloat4(state.uniform_vector[0]);
@@ -412,7 +418,7 @@ void GPUDriverMetal::SetGPUState(const GPUState& state)
     uniforms.Vector[5] = ToFloat4(state.uniform_vector[5]);
     uniforms.Vector[6] = ToFloat4(state.uniform_vector[6]);
     uniforms.Vector[7] = ToFloat4(state.uniform_vector[7]);
-    uniforms.ClipSize = state.clip_size;
+    uniforms.ClipData = { (int)state.clip_size, 0, 0, 0 };
     for (size_t i = 0; i < (size_t)state.clip_size; i++)
         uniforms.Clip[i] = ToFloat4x4(state.clip[i]);
 

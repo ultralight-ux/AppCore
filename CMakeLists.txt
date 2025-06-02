@@ -216,6 +216,10 @@ else ()
     add_library(AppCore SHARED ${AppCore_SOURCES} ${Extra_SOURCES})
 endif ()
 
+# Include shader compilation
+include(ShaderCompilation)
+compile_shaders_for_platform(AppCore)
+
 if (ALLINONE_BUILD)
     add_dependencies(AppCore Ultralight)
 endif ()

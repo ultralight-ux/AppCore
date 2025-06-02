@@ -66,6 +66,9 @@ class GPUContextMetal {
   virtual void CommitCommandBuffer();
   
   static const NSUInteger FrameCount = 3;
+
+protected:
+  void LoadShaders();
   
 protected:
   dispatch_semaphore_t fence_;
@@ -78,6 +81,9 @@ protected:
   id<MTLLibrary> library_;
   RenderState render_state_;
   std::map<size_t, id<MTLRenderPipelineState>> render_pipeline_states_;
+  
+  // Individual shader libraries for new system
+  std::map<ShaderType, std::pair<id<MTLLibrary>, id<MTLLibrary>>> shader_libraries_;
   id<MTLCommandQueue> command_queue_;
   id<MTLCommandBuffer> command_buffer_;
   CAMetalLayer* layer_;

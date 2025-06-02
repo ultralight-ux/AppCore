@@ -1,5 +1,12 @@
 #pragma once
-#import "../../../shaders/metal/src/ShaderTypes.h"
+// Include generated Metal shader headers
+#include "vertex_path_vs.h"
+#include "vertex_quad_vs.h" 
+#include "fill_ps.h"
+#include "fill_path_ps.h"
+#include "filter_basic_ps.h"
+#include "filter_blur_ps.h"
+#include "filter_dropshadow_ps.h"
 #import "GPUContextMetal.h"
 #include "GPUDriverImpl.h"
 #import <MetalKit/MetalKit.h>

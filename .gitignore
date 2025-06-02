@@ -4,3 +4,5 @@ build_*/
 .DS_Store
 /deps/
 .directory
+
+# Generated shader files are output to build directory, not source directory

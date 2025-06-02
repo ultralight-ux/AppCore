@@ -6,17 +6,17 @@
 #include <d3dcompiler.h>
 #include <string>
 #include <sstream>
-#include "../../../shaders/hlsl/bin/fill_fxc.h"
-#include "../../../shaders/hlsl/bin/fill_path_fxc.h"
-#include "../../../shaders/hlsl/bin/filter_basic_fxc.h"
-#include "../../../shaders/hlsl/bin/filter_blur_fxc.h"
-#include "../../../shaders/hlsl/bin/v2f_c4f_t2f_fxc.h"
-#include "../../../shaders/hlsl/bin/v2f_c4f_t2f_t2f_d28f_fxc.h"
+// Include generated shader headers
+#include "vertex_path_vs.h"
+#include "vertex_quad_vs.h"
+#include "fill_ps.h"
+#include "fill_path_ps.h"
+#include "filter_basic_ps.h"
+#include "filter_blur_ps.h"
+#include "filter_dropshadow_ps.h"
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/FileSystem.h>
 #include <AppCore/App.h>
-
-#define SHADER_PATH L".\\shaders\\hlsl\\"
 
 namespace {
 
@@ -41,66 +41,16 @@ struct Vertex_2f_4ub_2f_2f_28f {
 };
 
 struct Uniforms {
-  DirectX::XMFLOAT4 State;
-  DirectX::XMMATRIX Transform;
-  DirectX::XMFLOAT4 Scalar4[2];
-  DirectX::XMFLOAT4 Vector[8];
-  uint32_t ClipSize;
-  DirectX::XMMATRIX Clip[8];
+  DirectX::XMFLOAT4 State;           // time, screenWidth, screenHeight, screenScale
+  DirectX::XMMATRIX Transform;       // Model-view-projection matrix
+  DirectX::XMINT4 Integer4[2];       // 8 integer values for shader parameters
+  DirectX::XMFLOAT4 Scalar4[2];      // 8 scalar values for shader parameters
+  DirectX::XMFLOAT4 Vector[8];       // 8 vector values for colors, gradients, etc.
+  DirectX::XMINT4 ClipData;          // x = ClipSize, yzw = reserved for future use
+  DirectX::XMMATRIX Clip[8];         // Clip region matrices
 };
 
-HRESULT CompileShaderFromSource(const char* source,
-                                size_t source_size,
-                                const char* source_name,
-                                LPCSTR szEntryPoint,
-                                LPCSTR szShaderModel,
-                                ID3DBlob** ppBlobOut) {
-  DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG
-  dwShaderFlags |= D3DCOMPILE_DEBUG;
-  dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-  dwShaderFlags |= D3DCOMPILE_PARTIAL_PRECISION;
 
-  // Note that this may cause slow Application startup because the Shader Compiler must perform
-  // heavy optimizations. In a production build you should use D3D's HLSL Effect Compiler (fxc.exe)
-  // to compile the HLSL files offline which grants near-instantaneous load times.
-  dwShaderFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL2;
-#endif
-
-  ComPtr<ID3DBlob> pErrorBlob;
-
-  HRESULT hr
-      = D3DCompile2(source, source_size, source_name, nullptr, nullptr, szEntryPoint, szShaderModel,
-                    dwShaderFlags, 0, 0, 0, 0, ppBlobOut, pErrorBlob.GetAddressOf());
-
-  if (FAILED(hr) && pErrorBlob)
-    OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
-
-  return hr;
-}
-
-HRESULT CompileShaderFromFile(const char* path,
-                              LPCSTR szEntryPoint,
-                              LPCSTR szShaderModel,
-                              ID3DBlob** ppBlobOut) {
-  auto fs = ultralight::Platform::instance().file_system();
-
-  if (!fs) {
-    OutputDebugStringA("Could not load shaders, null FileSystem instance.");
-    return E_FAIL;
-  }
-
-  ultralight::RefPtr<ultralight::Buffer> buffer = fs->OpenFile(path);
-
-  if (!buffer) {
-    OutputDebugStringA("Could not load shaders, file not found.");
-    return E_FAIL;
-  }
-
-  return CompileShaderFromSource((char*)buffer->data(), buffer->size(), path, szEntryPoint,
-                                 szShaderModel, ppBlobOut);
-}
 
 } // namespace
 
@@ -485,57 +435,6 @@ void GPUDriverD3D11::DrawGeometry(uint32_t geometry_id,
   batch_count_++;
 }
 
-void GPUDriverD3D11::LoadVertexShader(const char* path,
-                                      ID3D11VertexShader** ppVertexShader,
-                                      const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs,
-                                      UINT NumElements,
-                                      ID3D11InputLayout** ppInputLayout) {
-  HRESULT hr;
-  ComPtr<ID3DBlob> vs_blob;
-  hr = CompileShaderFromFile(path, "VS", "vs_4_0", vs_blob.GetAddressOf());
-
-  // Create the vertex shader
-  hr = context_->device()->CreateVertexShader(vs_blob->GetBufferPointer(), vs_blob->GetBufferSize(),
-                                              nullptr, ppVertexShader);
-
-  if (FAILED(hr)) {
-    MessageBoxW(nullptr,
-                L"GPUDriverD3D11::LoadVertexShader, Vertex shader could not be compiled. Check "
-                L"your working directory.",
-                L"Error", MB_OK);
-    return;
-  }
-
-  // Create the input layout
-  hr = context_->device()->CreateInputLayout(pInputElementDescs, NumElements,
-                                             vs_blob->GetBufferPointer(), vs_blob->GetBufferSize(),
-                                             ppInputLayout);
-
-  if (FAILED(hr)) {
-    MessageBoxW(nullptr, L"GPUDriverD3D11::LoadVertexShader, Could not create vertex input layout.",
-                L"Error", MB_OK);
-    return;
-  }
-}
-
-void GPUDriverD3D11::LoadPixelShader(const char* path, ID3D11PixelShader** ppPixelShader) {
-  HRESULT hr;
-
-  ComPtr<ID3DBlob> ps_blob;
-  hr = CompileShaderFromFile(path, "PS", "ps_4_0", ps_blob.GetAddressOf());
-
-  // Create the pixel shader
-  hr = context_->device()->CreatePixelShader(ps_blob->GetBufferPointer(), ps_blob->GetBufferSize(),
-                                             nullptr, ppPixelShader);
-
-  if (FAILED(hr)) {
-    MessageBoxW(nullptr,
-                L"GPUDriverD3D11::LoadPixelShader, Pixel shader could not be compiled. Check your "
-                L"working directory.",
-                L"Error", MB_OK);
-    return;
-  }
-}
 
 void GPUDriverD3D11::LoadCompiledVertexShader(unsigned char* data,
                                               unsigned int len,
@@ -597,19 +496,13 @@ void GPUDriverD3D11::LoadShaders() {
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
   };
 
+  // Load FillPath shader (uses vertex_path vertex shader)
   auto& shader_fill_path = shaders_[ShaderType::FillPath];
-  if (App::instance()->settings().load_shaders_from_file_system) {
-    LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f.hlsl", shader_fill_path.first.GetAddressOf(),
-                     layout_2f_4ub_2f, ARRAYSIZE(layout_2f_4ub_2f),
-                     vertex_layout_2f_4ub_2f_.GetAddressOf());
-    LoadPixelShader("shaders/hlsl/ps/fill_path.hlsl", shader_fill_path.second.GetAddressOf());
-  } else {
-    LoadCompiledVertexShader(v2f_c4f_t2f_fxc, v2f_c4f_t2f_fxc_len,
-                             shader_fill_path.first.GetAddressOf(), layout_2f_4ub_2f,
-                             ARRAYSIZE(layout_2f_4ub_2f), vertex_layout_2f_4ub_2f_.GetAddressOf());
-    LoadCompiledPixelShader(fill_path_fxc, fill_path_fxc_len,
-                            shader_fill_path.second.GetAddressOf());
-  }
+  LoadCompiledVertexShader(vertex_path_vs_data, vertex_path_vs_size,
+                           shader_fill_path.first.GetAddressOf(), layout_2f_4ub_2f,
+                           ARRAYSIZE(layout_2f_4ub_2f), vertex_layout_2f_4ub_2f_.GetAddressOf());
+  LoadCompiledPixelShader(fill_path_ps_data, fill_path_ps_size,
+                          shader_fill_path.second.GetAddressOf());
 
   const D3D11_INPUT_ELEMENT_DESC layout_2f_4ub_2f_2f_28f[] = {
     { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
@@ -620,67 +513,56 @@ void GPUDriverD3D11::LoadShaders() {
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
     { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "COLOR", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "TEXCOORD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "COLOR", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "TEXCOORD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "COLOR", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "TEXCOORD", 4, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "COLOR", 4, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "TEXCOORD", 5, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "COLOR", 5, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "TEXCOORD", 6, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "COLOR", 6, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "TEXCOORD", 7, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "COLOR", 7, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "TEXCOORD", 8, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
   };
 
+  // Load Fill shader (uses vertex_quad vertex shader)
   auto& shader_fill = shaders_[ShaderType::Fill];
-  if (App::instance()->settings().load_shaders_from_file_system) {
-    LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f_t2f_d28f.hlsl", shader_fill.first.GetAddressOf(),
-                     layout_2f_4ub_2f_2f_28f, ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
-                     vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
-    LoadPixelShader("shaders/hlsl/ps/fill.hlsl", shader_fill.second.GetAddressOf());
-  } else {
-    LoadCompiledVertexShader(v2f_c4f_t2f_t2f_d28f_fxc, v2f_c4f_t2f_t2f_d28f_fxc_len,
-                             shader_fill.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
-                             ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
-                             vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
-    LoadCompiledPixelShader(fill_fxc, fill_fxc_len, shader_fill.second.GetAddressOf());
-  }
+  LoadCompiledVertexShader(vertex_quad_vs_data, vertex_quad_vs_size,
+                           shader_fill.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
+                           ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
+                           vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+  LoadCompiledPixelShader(fill_ps_data, fill_ps_size, shader_fill.second.GetAddressOf());
 
+  // Load FilterBasic shader (uses vertex_quad vertex shader)
   auto& shader_filter_basic = shaders_[ShaderType::FilterBasic];
-  if (App::instance()->settings().load_shaders_from_file_system) {
-    LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f_t2f_d28f.hlsl",
-                     shader_filter_basic.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
-                     ARRAYSIZE(layout_2f_4ub_2f_2f_28f), vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
-    LoadPixelShader("shaders/hlsl/ps/filter_basic.hlsl",
-                    shader_filter_basic.second.GetAddressOf());
-  } else {
-    LoadCompiledVertexShader(v2f_c4f_t2f_t2f_d28f_fxc, v2f_c4f_t2f_t2f_d28f_fxc_len,
-                             shader_filter_basic.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
-                             ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
-                             vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
-    LoadCompiledPixelShader(filter_basic_fxc, filter_basic_fxc_len,
-                            shader_filter_basic.second.GetAddressOf());
-  }
+  LoadCompiledVertexShader(vertex_quad_vs_data, vertex_quad_vs_size,
+                           shader_filter_basic.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
+                           ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
+                           vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+  LoadCompiledPixelShader(filter_basic_ps_data, filter_basic_ps_size,
+                          shader_filter_basic.second.GetAddressOf());
 
+  // Load FilterBlur shader (uses vertex_quad vertex shader)
   auto& shader_filter_blur = shaders_[ShaderType::FilterBlur];
-  if (App::instance()->settings().load_shaders_from_file_system) {
-    LoadVertexShader("shaders/hlsl/vs/v2f_c4f_t2f_t2f_d28f.hlsl",
-      shader_filter_blur.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
-                     ARRAYSIZE(layout_2f_4ub_2f_2f_28f), vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
-    LoadPixelShader("shaders/hlsl/ps/filter_blur.hlsl",
-      shader_filter_blur.second.GetAddressOf());
-  } else {
-    LoadCompiledVertexShader(v2f_c4f_t2f_t2f_d28f_fxc, v2f_c4f_t2f_t2f_d28f_fxc_len,
-      shader_filter_blur.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
-                             ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
-                             vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
-    LoadCompiledPixelShader(filter_blur_fxc, filter_blur_fxc_len,
-      shader_filter_blur.second.GetAddressOf());
-  }
+  LoadCompiledVertexShader(vertex_quad_vs_data, vertex_quad_vs_size,
+                           shader_filter_blur.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
+                           ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
+                           vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+  LoadCompiledPixelShader(filter_blur_ps_data, filter_blur_ps_size,
+                          shader_filter_blur.second.GetAddressOf());
+  
+  // Load FilterDropShadow shader (uses vertex_quad vertex shader)
+  auto& shader_filter_dropshadow = shaders_[ShaderType::FilterDropShadow];
+  LoadCompiledVertexShader(vertex_quad_vs_data, vertex_quad_vs_size,
+                           shader_filter_dropshadow.first.GetAddressOf(), layout_2f_4ub_2f_2f_28f,
+                           ARRAYSIZE(layout_2f_4ub_2f_2f_28f),
+                           vertex_layout_2f_4ub_2f_2f_28f_.GetAddressOf());
+  LoadCompiledPixelShader(filter_dropshadow_ps_data, filter_dropshadow_ps_size,
+                          shader_filter_dropshadow.second.GetAddressOf());
 }
 
 void GPUDriverD3D11::BindShader(ShaderType shader) {
@@ -712,14 +594,12 @@ void GPUDriverD3D11::BindShader(ShaderType shader) {
     context_->immediate_context()->PSSetShader(shader.second.Get(), nullptr, 0);
     break;
   }
-  /*
   case ShaderType::FilterDropShadow: {
     auto& shader = shaders_[ShaderType::FilterDropShadow];
     context_->immediate_context()->VSSetShader(shader.first.Get(), nullptr, 0);
     context_->immediate_context()->PSSetShader(shader.second.Get(), nullptr, 0);
     break;
   }
-    */
   }
 }
 
@@ -857,6 +737,11 @@ void GPUDriverD3D11::UpdateConstantBuffer(const GPUState& state) {
   Uniforms uniforms;
   uniforms.State = { 0.0f, screen_width, screen_height, (float)1.0f };
   uniforms.Transform = DirectX::XMMATRIX(model_view_projection.GetMatrix4x4().data);
+  
+  // Initialize integer values (for discrete parameters like fill types, blend modes)
+  uniforms.Integer4[0] = { 0, 0, 0, 0 };
+  uniforms.Integer4[1] = { 0, 0, 0, 0 };
+  
   uniforms.Scalar4[0] = { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2],
                           state.uniform_scalar[3] };
   uniforms.Scalar4[1] = { state.uniform_scalar[4], state.uniform_scalar[5], state.uniform_scalar[6],
@@ -864,7 +749,7 @@ void GPUDriverD3D11::UpdateConstantBuffer(const GPUState& state) {
   for (size_t i = 0; i < 8; ++i)
     uniforms.Vector[i] = DirectX::XMFLOAT4(state.uniform_vector[i].x, state.uniform_vector[i].y,
                                            state.uniform_vector[i].z, state.uniform_vector[i].w);
-  uniforms.ClipSize = state.clip_size;
+  uniforms.ClipData = { (int)state.clip_size, 0, 0, 0 };
   for (size_t i = 0; i < state.clip_size; ++i)
     uniforms.Clip[i] = DirectX::XMMATRIX(state.clip[i].data);
 

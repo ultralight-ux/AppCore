@@ -5,19 +5,15 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#if ENABLE_OFFSCREEN_GL
-#include "shader_fill_frag.h"
-#include "shader_fill_path_frag.h"
-#include "shader_v2f_c4f_t2f_t2f_d28f_vert.h"
-#include "shader_v2f_c4f_t2f_vert.h"
-#else
-#include "../../../shaders/glsl/shader_fill_frag.h"
-#include "../../../shaders/glsl/shader_fill_path_frag.h"
-#include "../../../shaders/glsl/shader_v2f_c4f_t2f_t2f_d28f_vert.h"
-#include "../../../shaders/glsl/shader_v2f_c4f_t2f_vert.h"
-#endif
+// Include generated GLSL shader headers
+#include "vertex_path_vs.h"
+#include "vertex_quad_vs.h"
+#include "fill_ps.h"
+#include "fill_path_ps.h"
+#include "filter_basic_ps.h"
+#include "filter_blur_ps.h"
+#include "filter_dropshadow_ps.h"
 
-#define SHADER_PATH "glsl/"
 
 #ifdef _DEBUG
 #if _WIN32
@@ -41,24 +37,6 @@
   std::cin.get(); exit(-1); }
 #endif
 
-static void ReadFile(const char* filepath, std::string& result) {
-  // To maintain predictable behavior across platforms we use
-  // whatever FileSystem that Ultralight is using:
-  ultralight::FileSystem* fs = ultralight::Platform::instance().file_system();
-  if (!fs)
-    FATAL("No FileSystem defined.");
-
-  if (!fs->FileExists(filepath))
-    FATAL("Error loading shader from file path: " << filepath);
-
-  ultralight::RefPtr<ultralight::Buffer> buffer = fs->OpenFile(filepath);
-  if (!buffer)
-    FATAL("Could not open file path: " << filepath);
-
-  size_t fileSize = buffer->size();
-  result.resize(fileSize);
-  memcpy(&result[0], buffer->data(), fileSize);
-}
 
 inline char const* glErrorString(GLenum const err) noexcept
 {
@@ -556,6 +534,9 @@ void GPUDriverGL::BindUltralightTexture(uint32_t ultralight_texture_id) {
 void GPUDriverGL::LoadPrograms(void) {
   LoadProgram(ultralight::ShaderType::Fill);
   LoadProgram(ultralight::ShaderType::FillPath);
+  LoadProgram(ultralight::ShaderType::FilterBasic);
+  LoadProgram(ultralight::ShaderType::FilterBlur);
+  LoadProgram(ultralight::ShaderType::FilterDropShadow);
 }
 
 void GPUDriverGL::DestroyPrograms(void) {
@@ -575,29 +556,58 @@ void GPUDriverGL::DestroyPrograms(void) {
 void GPUDriverGL::LoadProgram(ProgramType type) {
   GLenum ErrorCheckValue = glGetError();
   ProgramEntry prog;
-  if (type == ShaderType::Fill)
-  {
-    prog.vert_shader_id = LoadShaderFromSource(GL_VERTEX_SHADER,
-      shader_v2f_c4f_t2f_t2f_d28f_vert().c_str(), "shader_v2f_c4f_t2f_t2f_d28f.vert");
-    prog.frag_shader_id = LoadShaderFromSource(GL_FRAGMENT_SHADER,
-      shader_fill_frag().c_str(), "shader_fill.frag");
-  }
-  else if (type == ShaderType::FillPath) {
-    prog.vert_shader_id = LoadShaderFromSource(GL_VERTEX_SHADER,
-      shader_v2f_c4f_t2f_vert().c_str(), "shader_v2f_c4f_t2f.vert");
-    prog.frag_shader_id = LoadShaderFromSource(GL_FRAGMENT_SHADER,
-      shader_fill_path_frag().c_str(), "shader_fill_path.frag");
+  
+  // Map shader types to vertex and fragment shaders
+  switch (type) {
+    case ShaderType::Fill:
+      prog.vert_shader_id = LoadShaderFromSource(GL_VERTEX_SHADER,
+        vertex_quad_vs_source, "vertex_quad.vs");
+      prog.frag_shader_id = LoadShaderFromSource(GL_FRAGMENT_SHADER,
+        fill_ps_source, "fill.fs");
+      break;
+    case ShaderType::FillPath:
+      prog.vert_shader_id = LoadShaderFromSource(GL_VERTEX_SHADER,
+        vertex_path_vs_source, "vertex_path.vs");
+      prog.frag_shader_id = LoadShaderFromSource(GL_FRAGMENT_SHADER,
+        fill_path_ps_source, "fill_path.fs");
+      break;
+    case ShaderType::FilterBasic:
+      prog.vert_shader_id = LoadShaderFromSource(GL_VERTEX_SHADER,
+        vertex_quad_vs_source, "vertex_quad.vs");
+      prog.frag_shader_id = LoadShaderFromSource(GL_FRAGMENT_SHADER,
+        filter_basic_ps_source, "filter_basic.fs");
+      break;
+    case ShaderType::FilterBlur:
+      prog.vert_shader_id = LoadShaderFromSource(GL_VERTEX_SHADER,
+        vertex_quad_vs_source, "vertex_quad.vs");
+      prog.frag_shader_id = LoadShaderFromSource(GL_FRAGMENT_SHADER,
+        filter_blur_ps_source, "filter_blur.fs");
+      break;
+    case ShaderType::FilterDropShadow:
+      prog.vert_shader_id = LoadShaderFromSource(GL_VERTEX_SHADER,
+        vertex_quad_vs_source, "vertex_quad.vs");
+      prog.frag_shader_id = LoadShaderFromSource(GL_FRAGMENT_SHADER,
+        filter_dropshadow_ps_source, "filter_dropshadow.fs");
+      break;
+    default:
+      FATAL("Unknown shader type: " << (int)type);
+      break;
   }
 
   prog.program_id = glCreateProgram();
   glAttachShader(prog.program_id, prog.vert_shader_id);
   glAttachShader(prog.program_id, prog.frag_shader_id);
 
+  // Bind vertex attributes - common attributes for all shaders
   glBindAttribLocation(prog.program_id, 0, "in_Position");
   glBindAttribLocation(prog.program_id, 1, "in_Color");
   glBindAttribLocation(prog.program_id, 2, "in_TexCoord");
 
-  if (type == ShaderType::Fill) {
+  // FillPath uses simple vertex format, others use complex format
+  if (type == ShaderType::FillPath) {
+    glBindAttribLocation(prog.program_id, 3, "in_ObjCoord");
+  } else {
+    // Fill, FilterBasic, FilterBlur, FilterDropShadow use complex vertex format
     glBindAttribLocation(prog.program_id, 3, "in_ObjCoord");
     glBindAttribLocation(prog.program_id, 4, "in_Data0");
     glBindAttribLocation(prog.program_id, 5, "in_Data1");
@@ -611,10 +621,11 @@ void GPUDriverGL::LoadProgram(ProgramType type) {
   glLinkProgram(prog.program_id);
   glUseProgram(prog.program_id);
 
-  if (type == ShaderType::Fill) {
-    glUniform1i(glGetUniformLocation(prog.program_id, "Texture1"), 0);
-    glUniform1i(glGetUniformLocation(prog.program_id, "Texture2"), 1);
-    glUniform1i(glGetUniformLocation(prog.program_id, "Texture3"), 2);
+  // Set texture uniforms for shaders that use textures
+  if (type == ShaderType::Fill || type == ShaderType::FilterBasic || 
+      type == ShaderType::FilterBlur || type == ShaderType::FilterDropShadow) {
+    glUniform1i(glGetUniformLocation(prog.program_id, "Texture0"), 0);
+    glUniform1i(glGetUniformLocation(prog.program_id, "Texture1"), 1);
   }
 
   if (glGetError())
@@ -637,18 +648,35 @@ void GPUDriverGL::UpdateUniforms(const GPUState& state) {
   bool flip_y = state.render_buffer_id != 0;
   Matrix model_view_projection = ApplyProjection(state.transform, (float)state.viewport_width, (float)state.viewport_height, flip_y);
 
+  // State uniform: time, screenWidth, screenHeight, screenScale
   float params[4] = { (float)(glfwGetTime() / 1000.0), (float)state.viewport_width, (float)state.viewport_height, 1.0f };
   SetUniform4f("State", params);
   CHECK_GL();
+  
+  // Transform matrix
   ultralight::Matrix4x4 mat = model_view_projection.GetMatrix4x4();
   SetUniformMatrix4fv("Transform", 1, mat.data);
   CHECK_GL();
+  
+  // Integer4 uniform (for discrete parameters - initialized to zero for now)
+  int integer_params[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+  glUniform4iv(glGetUniformLocation(cur_program_id_, "Integer4"), 2, integer_params);
+  CHECK_GL();
+  
+  // Scalar4 uniform (8 scalar values)
   SetUniform4fv("Scalar4", 2, &state.uniform_scalar[0]);
   CHECK_GL();
+  
+  // Vector uniform (8 vector values)
   SetUniform4fv("Vector", 8, &state.uniform_vector[0].x);
   CHECK_GL();
-  SetUniform1ui("ClipSize", state.clip_size);
+  
+  // ClipData uniform (x = ClipSize, yzw = reserved)
+  int clip_data[4] = { (int)state.clip_size, 0, 0, 0 };
+  glUniform4iv(glGetUniformLocation(cur_program_id_, "ClipData"), 1, clip_data);
   CHECK_GL();
+  
+  // Clip matrices
   SetUniformMatrix4fv("Clip", 8, &state.clip[0].data[0]);
   CHECK_GL();
 }

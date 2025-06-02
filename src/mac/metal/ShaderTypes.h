@@ -1,0 +1,53 @@
+#ifndef ShaderTypes_h
+#define ShaderTypes_h
+
+#include <simd/simd.h>
+
+typedef enum VertexIndex
+{
+    VertexIndex_Vertices = 0,
+    VertexIndex_Uniforms = 1,
+} VertexInputIndex;
+
+typedef enum FragmentIndex
+{
+    FragmentIndex_Uniforms = 0,
+} FragmentIndex;
+
+typedef struct
+{
+    simd::float4 State;           // time, screenWidth, screenHeight, screenScale
+    simd::float4x4 Transform;     // Model-view-projection matrix
+    simd::int4 Integer4[2];       // 8 integer values for shader parameters
+    simd::float4 Scalar4[2];      // 8 scalar values for shader parameters
+    simd::float4 Vector[8];       // 8 vector values for colors, gradients, etc.
+    simd::int4 ClipData;          // x = ClipSize, yzw = reserved for future use
+    simd::float4x4 Clip[8];       // Clip region matrices
+} Uniforms;
+
+#pragma pack(push, 1)
+typedef struct
+{
+    simd::float2 Position;
+    simd::uchar4 Color;
+    simd::float2 TexCoord;
+    simd::float2 ObjCoord;
+    simd::float4 Data0;
+    simd::float4 Data1;
+    simd::float4 Data2;
+    simd::float4 Data3;
+    simd::float4 Data4;
+    simd::float4 Data5;
+    simd::float4 Data6;
+} Vertex;
+
+typedef struct
+{
+    simd::float2 Position;
+    simd::uchar4 Color;
+    simd::float2 ObjCoord;
+} PathVertex;
+#pragma pack(pop)
+
+
+#endif /* ShaderTypes_h */

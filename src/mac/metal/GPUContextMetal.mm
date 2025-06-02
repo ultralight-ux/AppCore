@@ -1,6 +1,6 @@
 #import "GPUContextMetal.h"
 #import "GPUDriverMetal.h"
-#include "../../../shaders/metal/bin/metal_shader.h"
+#include "ShaderTypes.h"
 #import <dispatch/dispatch.h>
 #include <memory>
 #include <functional>
@@ -44,43 +44,8 @@ GPUContextMetal::GPUContextMetal(id<MTLDevice> device, bool enable_vsync, bool e
   // if we use semaphore == FrameCount. 
   fence_ = dispatch_semaphore_create(FrameCount - 1);
   
-  // Load all the shader files with a .metal file extension in the project
-  //id<MTLLibrary> defaultLibrary = [device_ newDefaultLibrary];
-  
-  if (App::instance()->settings().load_shaders_from_file_system) {
-    auto fs = ultralight::Platform::instance().file_system();
-    if (!fs) {
-      NSAlert *alert = [[NSAlert alloc] init];
-      [alert setMessageText:@"Could not load shaders, null FileSystem instance."];
-      [alert runModal];
-      exit(-1);
-    }
-    ultralight::RefPtr<ultralight::Buffer> fileContents = fs->OpenFile("shaders/metal/src/Shaders.metal");
-  
-    if (!fileContents) {
-      NSAlert *alert = [[NSAlert alloc] init];
-      [alert setMessageText:@"Could not load shaders, 'shaders/metal/src/Shaders.metal' not found in FileSystem."];
-      [alert runModal];
-      exit(-1);
-    }
-  
-    size_t file_size = fileContents->size();
-    std::unique_ptr<char[]> buffer(new char[file_size + 1]);
-    memcpy(buffer.get(), fileContents->data(), file_size);
-  
-    NSError* compileError;
-    library_ = [device_ newLibraryWithSource:[NSString stringWithUTF8String:buffer.get()] options:nil error:&compileError];
-    if (!library_) {
-      NSLog(@"Could not compile shader: %@", compileError);
-      NSAlert *alert = [[NSAlert alloc] init];
-      [alert setMessageText:@"Could not compile shader."];
-      [alert runModal];
-      exit(-1);
-    }
-  } else {
-    dispatch_data_t data = dispatch_data_create(metal_shader, metal_shader_len, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-    library_ = [device_ newLibraryWithData:data error:nil];
-  }
+  // Initialize shader libraries - will be loaded on-demand in LoadShaders()
+  library_ = nullptr;
   
   // Create the command queue
   command_queue_ = [device_ newCommandQueue];
@@ -154,8 +119,44 @@ WindowMac* GPUContextMetal::GetWindowByRenderBufferId(uint32_t render_buffer_id)
 
   return nullptr;
 }
+
+void GPUContextMetal::LoadShaders() {
+  if (!shader_libraries_.empty())
+    return;
+
+  // Load FillPath shader (uses vertex_path and fill_path)
+  NSData* vertex_path_data = [NSData dataWithBytes:vertex_path_vs_data length:vertex_path_vs_size];
+  NSData* fill_path_data = [NSData dataWithBytes:fill_path_ps_data length:fill_path_ps_size];
+  id<MTLLibrary> vertex_path_lib = [device_ newLibraryWithData:vertex_path_data error:nil];
+  id<MTLLibrary> fill_path_lib = [device_ newLibraryWithData:fill_path_data error:nil];
+  shader_libraries_[ShaderType::FillPath] = std::make_pair(vertex_path_lib, fill_path_lib);
+
+  // Load Fill shader (uses vertex_quad and fill)
+  NSData* vertex_quad_data = [NSData dataWithBytes:vertex_quad_vs_data length:vertex_quad_vs_size];
+  NSData* fill_data = [NSData dataWithBytes:fill_ps_data length:fill_ps_size];
+  id<MTLLibrary> vertex_quad_lib = [device_ newLibraryWithData:vertex_quad_data error:nil];
+  id<MTLLibrary> fill_lib = [device_ newLibraryWithData:fill_data error:nil];
+  shader_libraries_[ShaderType::Fill] = std::make_pair(vertex_quad_lib, fill_lib);
+
+  // Load FilterBasic shader (uses vertex_quad and filter_basic)
+  NSData* filter_basic_data = [NSData dataWithBytes:filter_basic_ps_data length:filter_basic_ps_size];
+  id<MTLLibrary> filter_basic_lib = [device_ newLibraryWithData:filter_basic_data error:nil];
+  shader_libraries_[ShaderType::FilterBasic] = std::make_pair(vertex_quad_lib, filter_basic_lib);
+
+  // Load FilterBlur shader (uses vertex_quad and filter_blur)
+  NSData* filter_blur_data = [NSData dataWithBytes:filter_blur_ps_data length:filter_blur_ps_size];
+  id<MTLLibrary> filter_blur_lib = [device_ newLibraryWithData:filter_blur_data error:nil];
+  shader_libraries_[ShaderType::FilterBlur] = std::make_pair(vertex_quad_lib, filter_blur_lib);
+
+  // Load FilterDropShadow shader (uses vertex_quad and filter_dropshadow)
+  NSData* filter_dropshadow_data = [NSData dataWithBytes:filter_dropshadow_ps_data length:filter_dropshadow_ps_size];
+  id<MTLLibrary> filter_dropshadow_lib = [device_ newLibraryWithData:filter_dropshadow_data error:nil];
+  shader_libraries_[ShaderType::FilterDropShadow] = std::make_pair(vertex_quad_lib, filter_dropshadow_lib);
+}
     
 id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
+  LoadShaders();
+  
   uint32_t hash = render_state_.Hash();
   
   auto i = render_pipeline_states_.find(hash);
@@ -164,31 +165,22 @@ id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
   
   // RenderPipelineState hasn't yet been created for this RenderState permutation. Create it now.
   
-  MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-  pipelineStateDescriptor.label = @"Ultralight RenderPipelineState";
-  if (render_state_.shader_type == ShaderType::Fill) {
-    pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"vertexShader"];
-    pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"fragmentShader"];
-  } else if (render_state_.shader_type == ShaderType::FillPath) {
-    pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"pathVertexShader"];
-    pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"pathFragmentShader"];
-  } else if (render_state_.shader_type == ShaderType::FilterBasic) {
-    pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"vertexShader"];
-    pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"filterBasicFragmentShader"];
-  } else if (render_state_.shader_type == ShaderType::FilterBlur) {
-    pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"vertexShader"];
-    pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"filterBlurFragmentShader"];
-  } else if (render_state_.shader_type == ShaderType::FilterDropShadow) {
-    NSLog(@"TODO: Implement FilterDropShadow shader");
-    pipelineStateDescriptor.vertexFunction = [library_ newFunctionWithName:@"vertexShader"];
-    pipelineStateDescriptor.fragmentFunction = [library_ newFunctionWithName:@"filterBlurFragmentShader"];
-  } else {
-    NSLog(@"Failed to create pipeline state, unhandled shader type");
+  auto shader_iter = shader_libraries_.find(render_state_.shader_type);
+  if (shader_iter == shader_libraries_.end()) {
+    NSLog(@"Failed to create pipeline state, shader type not loaded: %d", (int)render_state_.shader_type);
     NSAlert *alert = [[NSAlert alloc] init];
-    [alert setMessageText:@"Failed to create pipeline state, unhandled shader type"];
+    [alert setMessageText:@"Failed to create pipeline state, shader type not loaded"];
     [alert runModal];
     exit(-1);
   }
+  
+  id<MTLLibrary> vertex_library = shader_iter->second.first;
+  id<MTLLibrary> fragment_library = shader_iter->second.second;
+  
+  MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+  pipelineStateDescriptor.label = @"Ultralight RenderPipelineState";
+  pipelineStateDescriptor.vertexFunction = [vertex_library newFunctionWithName:@"main"];
+  pipelineStateDescriptor.fragmentFunction = [fragment_library newFunctionWithName:@"main"];
   
   pipelineStateDescriptor.sampleCount = render_state_.sample_count;
   pipelineStateDescriptor.colorAttachments[0].pixelFormat = render_state_.pixel_format;
