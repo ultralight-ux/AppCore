@@ -6,11 +6,7 @@ This directory contains a Windows-only offline shader build system for AppCore. 
 
 ```
 build-shaders/
-├── CMakeLists.txt              # CMake build configuration
 ├── build-shaders.ps1           # PowerShell build script
-├── GenerateBinaryHeader.cmake  # Binary to C header conversion
-├── GenerateTextHeader.cmake    # Text to C header conversion
-├── GenerateMasterHeader.cmake  # Master header generation
 ├── tools/                      # Tools directory (not included)
 │   ├── dxc/                    # DirectX Shader Compiler
 │   └── spirv-cross/            # SPIRV-Cross tool
@@ -76,22 +72,6 @@ No manual setup required - the build script handles everything automatically.
 
 # Custom tools directory
 .\build-shaders.ps1 -ToolsDir "C:\MyTools"
-```
-
-### CMake Build
-
-```bash
-# Configure
-mkdir build
-cd build
-cmake ..
-
-# Build
-cmake --build . --target compile_shaders
-
-# With debug info
-cmake -DSHADER_DEBUG=ON ..
-cmake --build . --target compile_shaders
 ```
 
 ## Output Files

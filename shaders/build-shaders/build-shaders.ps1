@@ -203,7 +203,6 @@ function Compile-Metal {
         $InputFile,
         "--msl",
         "--msl-version", "20100",
-        "--msl-argument-buffers",
         "--output", $OutputFile
     )
     

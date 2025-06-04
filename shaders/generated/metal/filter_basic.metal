@@ -3,12 +3,6 @@
 
 using namespace metal;
 
-struct spvDescriptorSetBuffer0
-{
-    texture2d<float> Texture0 [[id(0)]];
-    sampler Sampler0 [[id(1)]];
-};
-
 struct main0_out
 {
     float4 out_var_SV_Target [[color(0)]];
@@ -21,10 +15,10 @@ struct main0_in
     float4 in_var_COLOR1 [[user(locn3)]];
 };
 
-fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuffer0& spvDescriptorSet0 [[buffer(0)]])
+fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> Texture0 [[texture(0)]], sampler Sampler0 [[sampler(0)]])
 {
     main0_out out = {};
-    float4 _60 = spvDescriptorSet0.Texture0.sample(spvDescriptorSet0.Sampler0, in.in_var_TEXCOORD0);
+    float4 _60 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0);
     float4 _61 = _60 * in.in_var_COLOR0;
     float4 _266;
     switch (uint(in.in_var_COLOR1.x + 0.5))

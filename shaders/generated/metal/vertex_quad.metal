@@ -14,11 +14,6 @@ struct type_Uniforms
     float4x4 Clip[8];
 };
 
-struct spvDescriptorSetBuffer0
-{
-    constant type_Uniforms* Uniforms [[id(0)]];
-};
-
 struct main0_out
 {
     float4 out_var_COLOR0 [[user(locn0)]];
@@ -49,10 +44,10 @@ struct main0_in
     float4 in_var_COLOR7 [[attribute(10)]];
 };
 
-vertex main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuffer0& spvDescriptorSet0 [[buffer(0)]])
+vertex main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Uniforms [[buffer(0)]])
 {
     main0_out out = {};
-    out.gl_Position = (*spvDescriptorSet0.Uniforms).Transform * float4(in.in_var_POSITION, 0.0, 1.0);
+    out.gl_Position = Uniforms.Transform * float4(in.in_var_POSITION, 0.0, 1.0);
     out.out_var_COLOR0 = float4(in.in_var_COLOR0) * float4(0.0039215688593685626983642578125);
     out.out_var_TEXCOORD0 = in.in_var_TEXCOORD0;
     out.out_var_TEXCOORD1 = in.in_var_TEXCOORD1;

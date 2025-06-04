@@ -17,14 +17,6 @@ struct type_Uniforms
 constant float4 _103 = {};
 constant float _116 = {};
 
-struct spvDescriptorSetBuffer0
-{
-    constant type_Uniforms* Uniforms [[id(0)]];
-    texture2d<float> Texture0 [[id(1)]];
-    texture2d<float> Texture1 [[id(2)]];
-    sampler Sampler0 [[id(3)]];
-};
-
 struct main0_out
 {
     float4 out_var_SV_Target [[color(0)]];
@@ -44,7 +36,7 @@ struct main0_in
     float4 in_var_COLOR7 [[user(locn9)]];
 };
 
-fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuffer0& spvDescriptorSet0 [[buffer(0)]])
+fragment main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Uniforms [[buffer(0)]], texture2d<float> Texture0 [[texture(0)]], texture2d<float> Texture1 [[texture(1)]], sampler Sampler0 [[sampler(0)]])
 {
     main0_out out = {};
     float4 _2988;
@@ -57,12 +49,12 @@ fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuff
         }
         case 1u:
         {
-            _2988 = spvDescriptorSet0.Texture0.sample(spvDescriptorSet0.Sampler0, in.in_var_TEXCOORD0) * in.in_var_COLOR0;
+            _2988 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0) * in.in_var_COLOR0;
             break;
         }
         case 2u:
         {
-            _2988 = spvDescriptorSet0.Texture0.sample(spvDescriptorSet0.Sampler0, ((fract(((((*spvDescriptorSet0.Uniforms).Vector[2].xy * in.in_var_TEXCOORD1.x) + ((*spvDescriptorSet0.Uniforms).Vector[2].zw * in.in_var_TEXCOORD1.y)) + (*spvDescriptorSet0.Uniforms).Vector[3].xy) / (*spvDescriptorSet0.Uniforms).Vector[1].zw) * ((*spvDescriptorSet0.Uniforms).Vector[0].zw - (*spvDescriptorSet0.Uniforms).Vector[0].xy)) + (*spvDescriptorSet0.Uniforms).Vector[0].xy)) * in.in_var_COLOR0;
+            _2988 = Texture0.sample(Sampler0, ((fract((((Uniforms.Vector[2].xy * in.in_var_TEXCOORD1.x) + (Uniforms.Vector[2].zw * in.in_var_TEXCOORD1.y)) + Uniforms.Vector[3].xy) / Uniforms.Vector[1].zw) * (Uniforms.Vector[0].zw - Uniforms.Vector[0].xy)) + Uniforms.Vector[0].xy)) * in.in_var_COLOR0;
             break;
         }
         case 3u:
@@ -134,35 +126,35 @@ fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuff
                 float4 _2951;
                 if (_2756 > 3.0)
                 {
-                    float4 _2852 = mix(_2839, (*spvDescriptorSet0.Uniforms).Vector[0u], float4(fast::clamp((_2821 - in.in_var_COLOR4.z) / ((*spvDescriptorSet0.Uniforms).Scalar4[0].x - in.in_var_COLOR4.z), 0.0, 1.0)));
+                    float4 _2852 = mix(_2839, Uniforms.Vector[0u], float4(fast::clamp((_2821 - in.in_var_COLOR4.z) / (Uniforms.Scalar4[0].x - in.in_var_COLOR4.z), 0.0, 1.0)));
                     float4 _2950;
                     if (_2756 > 4.0)
                     {
-                        float4 _2865 = mix(_2852, (*spvDescriptorSet0.Uniforms).Vector[1u], float4(fast::clamp((_2821 - (*spvDescriptorSet0.Uniforms).Scalar4[0].x) / ((*spvDescriptorSet0.Uniforms).Scalar4[0].y - (*spvDescriptorSet0.Uniforms).Scalar4[0].x), 0.0, 1.0)));
+                        float4 _2865 = mix(_2852, Uniforms.Vector[1u], float4(fast::clamp((_2821 - Uniforms.Scalar4[0].x) / (Uniforms.Scalar4[0].y - Uniforms.Scalar4[0].x), 0.0, 1.0)));
                         float4 _2949;
                         if (_2756 > 5.0)
                         {
-                            float4 _2878 = mix(_2865, (*spvDescriptorSet0.Uniforms).Vector[2u], float4(fast::clamp((_2821 - (*spvDescriptorSet0.Uniforms).Scalar4[0].y) / ((*spvDescriptorSet0.Uniforms).Scalar4[0].z - (*spvDescriptorSet0.Uniforms).Scalar4[0].y), 0.0, 1.0)));
+                            float4 _2878 = mix(_2865, Uniforms.Vector[2u], float4(fast::clamp((_2821 - Uniforms.Scalar4[0].y) / (Uniforms.Scalar4[0].z - Uniforms.Scalar4[0].y), 0.0, 1.0)));
                             float4 _2948;
                             if (_2756 > 6.0)
                             {
-                                float4 _2891 = mix(_2878, (*spvDescriptorSet0.Uniforms).Vector[3u], float4(fast::clamp((_2821 - (*spvDescriptorSet0.Uniforms).Scalar4[0].z) / ((*spvDescriptorSet0.Uniforms).Scalar4[0].w - (*spvDescriptorSet0.Uniforms).Scalar4[0].z), 0.0, 1.0)));
+                                float4 _2891 = mix(_2878, Uniforms.Vector[3u], float4(fast::clamp((_2821 - Uniforms.Scalar4[0].z) / (Uniforms.Scalar4[0].w - Uniforms.Scalar4[0].z), 0.0, 1.0)));
                                 float4 _2947;
                                 if (_2756 > 7.0)
                                 {
-                                    float4 _2904 = mix(_2891, (*spvDescriptorSet0.Uniforms).Vector[4u], float4(fast::clamp((_2821 - (*spvDescriptorSet0.Uniforms).Scalar4[0].w) / ((*spvDescriptorSet0.Uniforms).Scalar4[1].x - (*spvDescriptorSet0.Uniforms).Scalar4[0].w), 0.0, 1.0)));
+                                    float4 _2904 = mix(_2891, Uniforms.Vector[4u], float4(fast::clamp((_2821 - Uniforms.Scalar4[0].w) / (Uniforms.Scalar4[1].x - Uniforms.Scalar4[0].w), 0.0, 1.0)));
                                     float4 _2946;
                                     if (_2756 > 8.0)
                                     {
-                                        float4 _2917 = mix(_2904, (*spvDescriptorSet0.Uniforms).Vector[5u], float4(fast::clamp((_2821 - (*spvDescriptorSet0.Uniforms).Scalar4[1].x) / ((*spvDescriptorSet0.Uniforms).Scalar4[1].y - (*spvDescriptorSet0.Uniforms).Scalar4[1].x), 0.0, 1.0)));
+                                        float4 _2917 = mix(_2904, Uniforms.Vector[5u], float4(fast::clamp((_2821 - Uniforms.Scalar4[1].x) / (Uniforms.Scalar4[1].y - Uniforms.Scalar4[1].x), 0.0, 1.0)));
                                         float4 _2945;
                                         if (_2756 > 9.0)
                                         {
-                                            float4 _2930 = mix(_2917, (*spvDescriptorSet0.Uniforms).Vector[6u], float4(fast::clamp((_2821 - (*spvDescriptorSet0.Uniforms).Scalar4[1].y) / ((*spvDescriptorSet0.Uniforms).Scalar4[1].z - (*spvDescriptorSet0.Uniforms).Scalar4[1].y), 0.0, 1.0)));
+                                            float4 _2930 = mix(_2917, Uniforms.Vector[6u], float4(fast::clamp((_2821 - Uniforms.Scalar4[1].y) / (Uniforms.Scalar4[1].z - Uniforms.Scalar4[1].y), 0.0, 1.0)));
                                             float4 _2944;
                                             if (_2756 > 10.0)
                                             {
-                                                _2944 = mix(_2930, (*spvDescriptorSet0.Uniforms).Vector[7u], float4(fast::clamp((_2821 - (*spvDescriptorSet0.Uniforms).Scalar4[1].z) / ((*spvDescriptorSet0.Uniforms).Scalar4[1].w - (*spvDescriptorSet0.Uniforms).Scalar4[1].z), 0.0, 1.0)));
+                                                _2944 = mix(_2930, Uniforms.Vector[7u], float4(fast::clamp((_2821 - Uniforms.Scalar4[1].z) / (Uniforms.Scalar4[1].w - Uniforms.Scalar4[1].z), 0.0, 1.0)));
                                             }
                                             else
                                             {
@@ -1370,9 +1362,9 @@ fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuff
             float4 _820;
             do
             {
-                float4 _199 = spvDescriptorSet0.Texture0.sample(spvDescriptorSet0.Sampler0, in.in_var_TEXCOORD0);
+                float4 _199 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0);
                 float4 _200 = _199 * in.in_var_COLOR0;
-                float4 _204 = spvDescriptorSet0.Texture1.sample(spvDescriptorSet0.Sampler0, in.in_var_TEXCOORD1);
+                float4 _204 = Texture1.sample(Sampler0, in.in_var_TEXCOORD1);
                 float4 _817;
                 bool _818;
                 switch (uint(in.in_var_COLOR1.y + 0.5))
@@ -1706,15 +1698,15 @@ fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuff
         }
         case 10u:
         {
-            float4 _180 = spvDescriptorSet0.Texture0.sample(spvDescriptorSet0.Sampler0, in.in_var_TEXCOORD0) * in.in_var_COLOR0;
-            float4 _184 = spvDescriptorSet0.Texture1.sample(spvDescriptorSet0.Sampler0, in.in_var_TEXCOORD1);
+            float4 _180 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0) * in.in_var_COLOR0;
+            float4 _184 = Texture1.sample(Sampler0, in.in_var_TEXCOORD1);
             float _185 = _184.w;
             _2988 = float4(_180.xyz * _185, _180.w * _185);
             break;
         }
         case 11u:
         {
-            float4 _168 = spvDescriptorSet0.Texture1.sample(spvDescriptorSet0.Sampler0, float2(spvDescriptorSet0.Texture0.sample(spvDescriptorSet0.Sampler0, in.in_var_TEXCOORD0).w * in.in_var_COLOR0.w, in.in_var_COLOR1.y));
+            float4 _168 = Texture1.sample(Sampler0, float2(Texture0.sample(Sampler0, in.in_var_TEXCOORD0).w * in.in_var_COLOR0.w, in.in_var_COLOR1.y));
             float _169 = _168.w;
             _2988 = float4(in.in_var_COLOR0.xyz * _169, _169);
             break;
@@ -1728,14 +1720,14 @@ fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuff
     float4 _2990;
     _2990 = _2988;
     float4 _2991;
-    for (uint _2993 = 0u; _2993 < uint((*spvDescriptorSet0.Uniforms).ClipData.x); _2990 = _2991, _2993++)
+    for (uint _2993 = 0u; _2993 < uint(Uniforms.ClipData.x); _2990 = _2991, _2993++)
     {
-        float4 _3007 = float4((*spvDescriptorSet0.Uniforms).Clip[_2993][0][0], (*spvDescriptorSet0.Uniforms).Clip[_2993][0][1], (*spvDescriptorSet0.Uniforms).Clip[_2993][0][2], (*spvDescriptorSet0.Uniforms).Clip[_2993][0][3]);
-        float4 _3014 = float4((*spvDescriptorSet0.Uniforms).Clip[_2993][1][0], (*spvDescriptorSet0.Uniforms).Clip[_2993][1][1], (*spvDescriptorSet0.Uniforms).Clip[_2993][1][2], (*spvDescriptorSet0.Uniforms).Clip[_2993][1][3]);
+        float4 _3007 = float4(Uniforms.Clip[_2993][0][0], Uniforms.Clip[_2993][0][1], Uniforms.Clip[_2993][0][2], Uniforms.Clip[_2993][0][3]);
+        float4 _3014 = float4(Uniforms.Clip[_2993][1][0], Uniforms.Clip[_2993][1][1], Uniforms.Clip[_2993][1][2], Uniforms.Clip[_2993][1][3]);
         float4 _3016 = floor(_3014 * float4(1.52587890625e-05));
         float4 _3019 = floor(_3014 - (_3016 * 65536.0));
-        float4 _3029 = float4((*spvDescriptorSet0.Uniforms).Clip[_2993][2][0], (*spvDescriptorSet0.Uniforms).Clip[_2993][2][1], (*spvDescriptorSet0.Uniforms).Clip[_2993][2][2], (*spvDescriptorSet0.Uniforms).Clip[_2993][2][3]);
-        float2 _3039 = (((_3029.xy * in.in_var_TEXCOORD1.x) + (_3029.zw * in.in_var_TEXCOORD1.y)) + float4((*spvDescriptorSet0.Uniforms).Clip[_2993][3][0], (*spvDescriptorSet0.Uniforms).Clip[_2993][3][1], (*spvDescriptorSet0.Uniforms).Clip[_2993][3][2], _116).xy) - _3007.xy;
+        float4 _3029 = float4(Uniforms.Clip[_2993][2][0], Uniforms.Clip[_2993][2][1], Uniforms.Clip[_2993][2][2], Uniforms.Clip[_2993][2][3]);
+        float2 _3039 = (((_3029.xy * in.in_var_TEXCOORD1.x) + (_3029.zw * in.in_var_TEXCOORD1.y)) + float4(Uniforms.Clip[_2993][3][0], Uniforms.Clip[_2993][3][1], Uniforms.Clip[_2993][3][2], _116).xy) - _3007.xy;
         float _3652;
         do
         {
@@ -2104,7 +2096,7 @@ fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuff
             _3652 = precise::min(precise::max(_3644.x, _3644.y), 0.0) + length(precise::max(_3644, float2(0.0)));
             break;
         } while(false);
-        float _3655 = -(_3652 * (((*spvDescriptorSet0.Uniforms).Clip[_2993][3][2] != 0.0) ? (-1.0) : 1.0));
+        float _3655 = -(_3652 * ((Uniforms.Clip[_2993][3][2] != 0.0) ? (-1.0) : 1.0));
         float _3658 = smoothstep(-0.61804687976837158203125, 0.61804687976837158203125, _3655 / fwidth(_3655));
         _2991 = float4(_2990.xyz * _3658, _2990.w * _3658);
     }

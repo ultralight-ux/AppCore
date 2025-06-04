@@ -16,11 +16,6 @@ struct type_Uniforms
 
 constant float _53 = {};
 
-struct spvDescriptorSetBuffer0
-{
-    constant type_Uniforms* Uniforms [[id(0)]];
-};
-
 struct main0_out
 {
     float4 out_var_SV_Target [[color(0)]];
@@ -32,20 +27,20 @@ struct main0_in
     float2 in_var_TEXCOORD1 [[user(locn2)]];
 };
 
-fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuffer0& spvDescriptorSet0 [[buffer(0)]])
+fragment main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Uniforms [[buffer(0)]])
 {
     main0_out out = {};
     float4 _58;
     _58 = in.in_var_COLOR0;
     float4 _59;
-    for (uint _61 = 0u; _61 < uint((*spvDescriptorSet0.Uniforms).ClipData.x); _58 = _59, _61++)
+    for (uint _61 = 0u; _61 < uint(Uniforms.ClipData.x); _58 = _59, _61++)
     {
-        float4 _75 = float4((*spvDescriptorSet0.Uniforms).Clip[_61][0][0], (*spvDescriptorSet0.Uniforms).Clip[_61][0][1], (*spvDescriptorSet0.Uniforms).Clip[_61][0][2], (*spvDescriptorSet0.Uniforms).Clip[_61][0][3]);
-        float4 _82 = float4((*spvDescriptorSet0.Uniforms).Clip[_61][1][0], (*spvDescriptorSet0.Uniforms).Clip[_61][1][1], (*spvDescriptorSet0.Uniforms).Clip[_61][1][2], (*spvDescriptorSet0.Uniforms).Clip[_61][1][3]);
+        float4 _75 = float4(Uniforms.Clip[_61][0][0], Uniforms.Clip[_61][0][1], Uniforms.Clip[_61][0][2], Uniforms.Clip[_61][0][3]);
+        float4 _82 = float4(Uniforms.Clip[_61][1][0], Uniforms.Clip[_61][1][1], Uniforms.Clip[_61][1][2], Uniforms.Clip[_61][1][3]);
         float4 _84 = floor(_82 * float4(1.52587890625e-05));
         float4 _87 = floor(_82 - (_84 * 65536.0));
-        float4 _97 = float4((*spvDescriptorSet0.Uniforms).Clip[_61][2][0], (*spvDescriptorSet0.Uniforms).Clip[_61][2][1], (*spvDescriptorSet0.Uniforms).Clip[_61][2][2], (*spvDescriptorSet0.Uniforms).Clip[_61][2][3]);
-        float2 _107 = (((_97.xy * in.in_var_TEXCOORD1.x) + (_97.zw * in.in_var_TEXCOORD1.y)) + float4((*spvDescriptorSet0.Uniforms).Clip[_61][3][0], (*spvDescriptorSet0.Uniforms).Clip[_61][3][1], (*spvDescriptorSet0.Uniforms).Clip[_61][3][2], _53).xy) - _75.xy;
+        float4 _97 = float4(Uniforms.Clip[_61][2][0], Uniforms.Clip[_61][2][1], Uniforms.Clip[_61][2][2], Uniforms.Clip[_61][2][3]);
+        float2 _107 = (((_97.xy * in.in_var_TEXCOORD1.x) + (_97.zw * in.in_var_TEXCOORD1.y)) + float4(Uniforms.Clip[_61][3][0], Uniforms.Clip[_61][3][1], Uniforms.Clip[_61][3][2], _53).xy) - _75.xy;
         float _720;
         do
         {
@@ -414,7 +409,7 @@ fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuff
             _720 = precise::min(precise::max(_712.x, _712.y), 0.0) + length(precise::max(_712, float2(0.0)));
             break;
         } while(false);
-        float _723 = -(_720 * (((*spvDescriptorSet0.Uniforms).Clip[_61][3][2] != 0.0) ? (-1.0) : 1.0));
+        float _723 = -(_720 * ((Uniforms.Clip[_61][3][2] != 0.0) ? (-1.0) : 1.0));
         float _726 = smoothstep(-0.61804687976837158203125, 0.61804687976837158203125, _723 / fwidth(_723));
         _59 = float4(_58.xyz * _726, _58.w * _726);
     }

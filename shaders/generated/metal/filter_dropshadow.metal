@@ -57,13 +57,6 @@ struct type_Uniforms
 
 constant float4 _63 = {};
 
-struct spvDescriptorSetBuffer0
-{
-    constant type_Uniforms* Uniforms [[id(0)]];
-    texture2d<float> Texture0 [[id(1)]];
-    sampler Sampler0 [[id(2)]];
-};
-
 constant spvUnsafeArray<float2, 9> _64 = spvUnsafeArray<float2, 9>({ float2(0.0), float2(-1.0), float2(0.0, -1.0), float2(1.0, -1.0), float2(-1.0, 0.0), float2(1.0, 0.0), float2(-1.0, 1.0), float2(0.0, 1.0), float2(1.0) });
 
 struct main0_out
@@ -77,12 +70,12 @@ struct main0_in
     float2 in_var_TEXCOORD0 [[user(locn1)]];
 };
 
-fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuffer0& spvDescriptorSet0 [[buffer(0)]])
+fragment main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Uniforms [[buffer(0)]], texture2d<float> Texture0 [[texture(0)]], sampler Sampler0 [[sampler(0)]])
 {
     main0_out out = {};
-    float2 _78 = float2((*spvDescriptorSet0.Uniforms).Scalar4[0].x, (*spvDescriptorSet0.Uniforms).Scalar4[0].y) / (*spvDescriptorSet0.Uniforms).State.yz;
-    float _86 = (*spvDescriptorSet0.Uniforms).Scalar4[0].z / precise::max((*spvDescriptorSet0.Uniforms).State.y, (*spvDescriptorSet0.Uniforms).State.z);
-    float4 _92 = spvDescriptorSet0.Texture0.sample(spvDescriptorSet0.Sampler0, in.in_var_TEXCOORD0);
+    float2 _78 = float2(Uniforms.Scalar4[0].x, Uniforms.Scalar4[0].y) / Uniforms.State.yz;
+    float _86 = Uniforms.Scalar4[0].z / precise::max(Uniforms.State.y, Uniforms.State.z);
+    float4 _92 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0);
     float4 _93 = _92 * in.in_var_COLOR0;
     float _131;
     if (_86 > 0.001000000047497451305389404296875)
@@ -96,7 +89,7 @@ fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuff
         {
             float _121 = (_113 == 0) ? 2.0 : 1.0;
             _108 += _121;
-            _111 += (spvDescriptorSet0.Texture0.sample(spvDescriptorSet0.Sampler0, fast::clamp(_106 + (_64[_113] * _86), float2(0.0), float2(1.0))).w * _121);
+            _111 += (Texture0.sample(Sampler0, fast::clamp(_106 + (_64[_113] * _86), float2(0.0), float2(1.0))).w * _121);
             _113++;
             continue;
         }
@@ -104,9 +97,9 @@ fragment main0_out main0(main0_in in [[stage_in]], constant spvDescriptorSetBuff
     }
     else
     {
-        _131 = spvDescriptorSet0.Texture0.sample(spvDescriptorSet0.Sampler0, fast::clamp(in.in_var_TEXCOORD0 + (-_78), float2(0.0), float2(1.0))).w;
+        _131 = Texture0.sample(Sampler0, fast::clamp(in.in_var_TEXCOORD0 + (-_78), float2(0.0), float2(1.0))).w;
     }
-    float4 _132 = (*spvDescriptorSet0.Uniforms).Vector[0] * _131;
+    float4 _132 = Uniforms.Vector[0] * _131;
     float _135 = _93.w;
     float _136 = 1.0 - _135;
     float3 _138 = _93.xyz + (_132.xyz * _136);
