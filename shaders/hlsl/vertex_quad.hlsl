@@ -9,8 +9,8 @@ VS_OUTPUT main(VS_INPUT_QUAD input) {
     // Transform position from 2D to clip space
     output.position = mul(Transform, float4(input.pos, 0.0, 1.0));
     
-    // Normalize color from 0-255 to 0-1 range
-    output.color = input.color / 255.0;
+    // Normalize color from UINT format (0-255 range to 0.0-1.0 range)
+    output.color = float4(input.color) / 255.0;
     
     // Pass through texture coordinates
     output.tex = input.tex;

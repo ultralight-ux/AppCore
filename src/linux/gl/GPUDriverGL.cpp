@@ -6,13 +6,7 @@
 #include <fstream>
 #include <sstream>
 // Include generated GLSL shader headers
-#include "vertex_path_vs.h"
-#include "vertex_quad_vs.h"
-#include "fill_ps.h"
-#include "fill_path_ps.h"
-#include "filter_basic_ps.h"
-#include "filter_blur_ps.h"
-#include "filter_dropshadow_ps.h"
+#include "glsl/shaders.h"
 
 
 #ifdef _DEBUG
@@ -853,7 +847,7 @@ void GPUDriverGL::CreateVAOIfNeededForActiveContext(uint32_t geometry_id) {
     GLsizei stride = 140;
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (GLvoid*)0);
-    glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (GLvoid*)8);
+    glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_FALSE, stride, (GLvoid*)8);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (GLvoid*)12);
     glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (GLvoid*)20);
     glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, stride, (GLvoid*)28);

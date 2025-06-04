@@ -388,7 +388,7 @@ float4 fillGlyph(VS_OUTPUT input) {
 
 // Main pixel shader entry point
 float4 main(VS_OUTPUT input) : SV_Target
-{
+{    
     const uint FillType_Solid = 0u;
     const uint FillType_Image = 1u;
     const uint FillType_Pattern_Image = 2u;

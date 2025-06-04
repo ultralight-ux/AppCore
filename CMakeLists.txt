@@ -216,9 +216,16 @@ else ()
     add_library(AppCore SHARED ${AppCore_SOURCES} ${Extra_SOURCES})
 endif ()
 
-# Include shader compilation
-include(ShaderCompilation)
-compile_shaders_for_platform(AppCore)
+# Include pre-generated shader headers
+# Shaders are compiled offline using shaders/build-shaders/build-shaders.ps1 on Windows
+# and the generated headers are committed to the repository
+target_include_directories(AppCore PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/shaders/generated/headers)
+
+# On macOS, compile pre-generated Metal source files to metallib bytecode
+if(APPLE)
+    include(CompileMetalShaders)
+    compile_metal_shaders_if_needed(AppCore)
+endif()
 
 if (ALLINONE_BUILD)
     add_dependencies(AppCore Ultralight)

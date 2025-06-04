@@ -5,4 +5,7 @@ build_*/
 /deps/
 .directory
 
-# Generated shader files are output to build directory, not source directory
+# Generated shader files are committed to shaders/generated/ 
+# DXC download cache and temp files should be ignored
+shaders/tools/dxc/
+shaders/generated/temp/

@@ -59,11 +59,11 @@ class GPUDriverD3D11 : public GPUDriverImpl {
                             const GPUState& state) override;
 
  protected:
-  void LoadCompiledVertexShader(unsigned char* data, unsigned int len,
+  void LoadCompiledVertexShader(const unsigned char* data, unsigned int len,
                                 ID3D11VertexShader** ppVertexShader,
                                 const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs,
                                 UINT NumElements, ID3D11InputLayout** ppInputLayout);
-  void LoadCompiledPixelShader(unsigned char* data, unsigned int len,
+  void LoadCompiledPixelShader(const unsigned char* data, unsigned int len,
                                ID3D11PixelShader** ppPixelShader);
   void LoadShaders();
   void BindShader(ShaderType shader);

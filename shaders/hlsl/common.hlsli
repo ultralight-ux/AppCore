@@ -15,43 +15,42 @@ cbuffer Uniforms : register(b0) {
 
 // Texture and sampler bindings
 Texture2D Texture0 : register(t0);
-SamplerState Sampler0 : register(s0);
 Texture2D Texture1 : register(t1);
-SamplerState Sampler1 : register(s1);
+SamplerState Sampler0 : register(s0);
 
 // Vertex input/output structures
 struct VS_INPUT_PATH {
     float2 pos : POSITION;
-    float4 color : COLOR;
+    uint4 color : COLOR0;
     float2 obj : TEXCOORD0;
 };
 
 struct VS_INPUT_QUAD {
     float2 pos : POSITION;
-    float4 color : COLOR;
+    uint4 color : COLOR0;
     float2 tex : TEXCOORD0;
     float2 obj : TEXCOORD1;
-    float4 data0 : TEXCOORD2;
-    float4 data1 : TEXCOORD3;
-    float4 data2 : TEXCOORD4;
-    float4 data3 : TEXCOORD5;
-    float4 data4 : TEXCOORD6;
-    float4 data5 : TEXCOORD7;
-    float4 data6 : TEXCOORD8;
+    float4 data0 : COLOR1;
+    float4 data1 : COLOR2;
+    float4 data2 : COLOR3;
+    float4 data3 : COLOR4;
+    float4 data4 : COLOR5;
+    float4 data5 : COLOR6;
+    float4 data6 : COLOR7;
 };
 
 struct VS_OUTPUT {
     float4 position : SV_POSITION;
-    float4 color : COLOR;
+    float4 color : COLOR0;
     float2 tex : TEXCOORD0;
     float2 obj : TEXCOORD1;
-    float4 data0 : TEXCOORD2;
-    float4 data1 : TEXCOORD3;
-    float4 data2 : TEXCOORD4;
-    float4 data3 : TEXCOORD5;
-    float4 data4 : TEXCOORD6;
-    float4 data5 : TEXCOORD7;
-    float4 data6 : TEXCOORD8;
+    float4 data0 : COLOR1;
+    float4 data1 : COLOR2;
+    float4 data2 : COLOR3;
+    float4 data3 : COLOR4;
+    float4 data4 : COLOR5;
+    float4 data5 : COLOR6;
+    float4 data6 : COLOR7;
 };
 
 // Common constants
@@ -62,8 +61,8 @@ float3 sRGBToLinear(float3 srgb) {
     return srgb * (srgb * (srgb * 0.305306011 + 0.682171111) + 0.012522878);
 }
 
-float3 LinearTosRGB(float3 linear) {
-    float3 S1 = sqrt(linear);
+float3 LinearTosRGB(float3 linearColor) {
+    float3 S1 = sqrt(linearColor);
     float3 S2 = sqrt(S1);
     float3 S3 = sqrt(S2);
     return 0.585122381 * S1 + 0.783140355 * S2 - 0.368262736 * S3;

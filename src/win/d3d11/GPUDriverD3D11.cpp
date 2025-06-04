@@ -7,13 +7,7 @@
 #include <string>
 #include <sstream>
 // Include generated shader headers
-#include "vertex_path_vs.h"
-#include "vertex_quad_vs.h"
-#include "fill_ps.h"
-#include "fill_path_ps.h"
-#include "filter_basic_ps.h"
-#include "filter_blur_ps.h"
-#include "filter_dropshadow_ps.h"
+#include "d3d11/shaders.h"
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/FileSystem.h>
 #include <AppCore/App.h>
@@ -436,7 +430,7 @@ void GPUDriverD3D11::DrawGeometry(uint32_t geometry_id,
 }
 
 
-void GPUDriverD3D11::LoadCompiledVertexShader(unsigned char* data,
+void GPUDriverD3D11::LoadCompiledVertexShader(const unsigned char* data,
                                               unsigned int len,
                                               ID3D11VertexShader** ppVertexShader,
                                               const D3D11_INPUT_ELEMENT_DESC* pInputElementDescs,
@@ -466,7 +460,7 @@ void GPUDriverD3D11::LoadCompiledVertexShader(unsigned char* data,
   }
 }
 
-void GPUDriverD3D11::LoadCompiledPixelShader(unsigned char* data,
+void GPUDriverD3D11::LoadCompiledPixelShader(const unsigned char* data,
                                              unsigned int len,
                                              ID3D11PixelShader** ppPixelShader) {
   HRESULT hr;
@@ -513,19 +507,19 @@ void GPUDriverD3D11::LoadShaders() {
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
     { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "TEXCOORD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "COLOR", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "TEXCOORD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "COLOR", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "TEXCOORD", 4, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "COLOR", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "TEXCOORD", 5, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "COLOR", 4, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "TEXCOORD", 6, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "COLOR", 5, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "TEXCOORD", 7, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "COLOR", 6, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    { "TEXCOORD", 8, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
+    { "COLOR", 7, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
       D3D11_INPUT_PER_VERTEX_DATA, 0 },
   };
 
