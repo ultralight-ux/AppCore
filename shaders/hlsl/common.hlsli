@@ -21,13 +21,13 @@ SamplerState Sampler0 : register(s0);
 // Vertex input/output structures
 struct VS_INPUT_PATH {
     float2 pos : POSITION;
-    uint4 color : COLOR0;
+    float4 color : COLOR0;  // Changed from uint4 to float4 to match D3D11/Metal normalized color semantics
     float2 obj : TEXCOORD0;
 };
 
 struct VS_INPUT_QUAD {
     float2 pos : POSITION;
-    uint4 color : COLOR0;
+    float4 color : COLOR0;  // Changed from uint4 to float4 to match D3D11/Metal normalized color semantics
     float2 tex : TEXCOORD0;
     float2 obj : TEXCOORD1;
     float4 data0 : COLOR1;

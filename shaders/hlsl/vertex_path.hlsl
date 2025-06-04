@@ -9,8 +9,8 @@ VS_OUTPUT main(VS_INPUT_PATH input) {
     // Transform position from 2D to clip space
     output.position = mul(Transform, float4(input.pos, 0.0, 1.0));
     
-    // Normalize color from UINT format (0-255 range to 0.0-1.0 range)
-    output.color = float4(input.color) / 255.0;
+    // Pass through color (D3D11 will normalize UNORM format automatically)
+    output.color = input.color;
     
     // Pass through object coordinates for clipping
     output.obj = input.obj;
