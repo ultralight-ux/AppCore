@@ -32,7 +32,7 @@ struct main0_out
 struct main0_in
 {
     float2 in_var_POSITION [[attribute(0)]];
-    uint4 in_var_COLOR0 [[attribute(1)]];
+    float4 in_var_COLOR0 [[attribute(1)]];
     float2 in_var_TEXCOORD0 [[attribute(2)]];
 };
 
@@ -40,7 +40,7 @@ vertex main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Uniform
 {
     main0_out out = {};
     out.gl_Position = Uniforms.Transform * float4(in.in_var_POSITION, 0.0, 1.0);
-    out.out_var_COLOR0 = float4(in.in_var_COLOR0) * float4(0.0039215688593685626983642578125);
+    out.out_var_COLOR0 = in.in_var_COLOR0;
     out.out_var_TEXCOORD0 = float2(0.0);
     out.out_var_TEXCOORD1 = in.in_var_TEXCOORD0;
     out.out_var_COLOR1 = float4(0.0);
