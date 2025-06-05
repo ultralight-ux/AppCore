@@ -2,6 +2,8 @@
 #import "GPUDriverMetal.h"
 #include "ShaderTypes.h"
 #import <dispatch/dispatch.h>
+// Include generated Metal shader headers
+#include "shaders.h"
 #include <memory>
 #include <functional>
 #include <AppCore/App.h>
@@ -49,6 +51,16 @@ GPUContextMetal::GPUContextMetal(id<MTLDevice> device, bool enable_vsync, bool e
   
   // Create the command queue
   command_queue_ = [device_ newCommandQueue];
+  
+  // Create a default sampler state for texture sampling
+  MTLSamplerDescriptor *samplerDescriptor = [[MTLSamplerDescriptor alloc] init];
+  samplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
+  samplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
+  samplerDescriptor.mipFilter = MTLSamplerMipFilterNotMipmapped;
+  samplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
+  samplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
+  samplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
+  sampler_state_ = [device_ newSamplerStateWithDescriptor:samplerDescriptor];
   
   MTLCaptureManager *sharedCaptureManager = [MTLCaptureManager sharedCaptureManager];
   id<MTLCaptureScope> myCaptureScope = [sharedCaptureManager newCaptureScopeWithDevice:device_];
@@ -124,33 +136,56 @@ void GPUContextMetal::LoadShaders() {
   if (!shader_libraries_.empty())
     return;
 
+  NSError* error = nil;
+
   // Load FillPath shader (uses vertex_path and fill_path)
-  NSData* vertex_path_data = [NSData dataWithBytes:vertex_path_vs_data length:vertex_path_vs_size];
-  NSData* fill_path_data = [NSData dataWithBytes:fill_path_ps_data length:fill_path_ps_size];
-  id<MTLLibrary> vertex_path_lib = [device_ newLibraryWithData:vertex_path_data error:nil];
-  id<MTLLibrary> fill_path_lib = [device_ newLibraryWithData:fill_path_data error:nil];
+  dispatch_data_t vertex_path_data = dispatch_data_create(vertex_path_vs_data, vertex_path_vs_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  dispatch_data_t fill_path_data = dispatch_data_create(fill_path_ps_data, fill_path_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  id<MTLLibrary> vertex_path_lib = [device_ newLibraryWithData:vertex_path_data error:&error];
+  if (!vertex_path_lib) {
+    NSLog(@"Failed to load vertex_path shader: %@", error);
+  }
+  id<MTLLibrary> fill_path_lib = [device_ newLibraryWithData:fill_path_data error:&error];
+  if (!fill_path_lib) {
+    NSLog(@"Failed to load fill_path shader: %@", error);
+  }
   shader_libraries_[ShaderType::FillPath] = std::make_pair(vertex_path_lib, fill_path_lib);
 
   // Load Fill shader (uses vertex_quad and fill)
-  NSData* vertex_quad_data = [NSData dataWithBytes:vertex_quad_vs_data length:vertex_quad_vs_size];
-  NSData* fill_data = [NSData dataWithBytes:fill_ps_data length:fill_ps_size];
-  id<MTLLibrary> vertex_quad_lib = [device_ newLibraryWithData:vertex_quad_data error:nil];
-  id<MTLLibrary> fill_lib = [device_ newLibraryWithData:fill_data error:nil];
+  dispatch_data_t vertex_quad_data = dispatch_data_create(vertex_quad_vs_data, vertex_quad_vs_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  dispatch_data_t fill_data = dispatch_data_create(fill_ps_data, fill_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  id<MTLLibrary> vertex_quad_lib = [device_ newLibraryWithData:vertex_quad_data error:&error];
+  if (!vertex_quad_lib) {
+    NSLog(@"Failed to load vertex_quad shader: %@", error);
+  }
+  id<MTLLibrary> fill_lib = [device_ newLibraryWithData:fill_data error:&error];
+  if (!fill_lib) {
+    NSLog(@"Failed to load fill shader: %@", error);
+  }
   shader_libraries_[ShaderType::Fill] = std::make_pair(vertex_quad_lib, fill_lib);
 
   // Load FilterBasic shader (uses vertex_quad and filter_basic)
-  NSData* filter_basic_data = [NSData dataWithBytes:filter_basic_ps_data length:filter_basic_ps_size];
-  id<MTLLibrary> filter_basic_lib = [device_ newLibraryWithData:filter_basic_data error:nil];
+  dispatch_data_t filter_basic_data = dispatch_data_create(filter_basic_ps_data, filter_basic_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  id<MTLLibrary> filter_basic_lib = [device_ newLibraryWithData:filter_basic_data error:&error];
+  if (!filter_basic_lib) {
+    NSLog(@"Failed to load filter_basic shader: %@", error);
+  }
   shader_libraries_[ShaderType::FilterBasic] = std::make_pair(vertex_quad_lib, filter_basic_lib);
 
   // Load FilterBlur shader (uses vertex_quad and filter_blur)
-  NSData* filter_blur_data = [NSData dataWithBytes:filter_blur_ps_data length:filter_blur_ps_size];
-  id<MTLLibrary> filter_blur_lib = [device_ newLibraryWithData:filter_blur_data error:nil];
+  dispatch_data_t filter_blur_data = dispatch_data_create(filter_blur_ps_data, filter_blur_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  id<MTLLibrary> filter_blur_lib = [device_ newLibraryWithData:filter_blur_data error:&error];
+  if (!filter_blur_lib) {
+    NSLog(@"Failed to load filter_blur shader: %@", error);
+  }
   shader_libraries_[ShaderType::FilterBlur] = std::make_pair(vertex_quad_lib, filter_blur_lib);
 
   // Load FilterDropShadow shader (uses vertex_quad and filter_dropshadow)
-  NSData* filter_dropshadow_data = [NSData dataWithBytes:filter_dropshadow_ps_data length:filter_dropshadow_ps_size];
-  id<MTLLibrary> filter_dropshadow_lib = [device_ newLibraryWithData:filter_dropshadow_data error:nil];
+  dispatch_data_t filter_dropshadow_data = dispatch_data_create(filter_dropshadow_ps_data, filter_dropshadow_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  id<MTLLibrary> filter_dropshadow_lib = [device_ newLibraryWithData:filter_dropshadow_data error:&error];
+  if (!filter_dropshadow_lib) {
+    NSLog(@"Failed to load filter_dropshadow shader: %@", error);
+  }
   shader_libraries_[ShaderType::FilterDropShadow] = std::make_pair(vertex_quad_lib, filter_dropshadow_lib);
 }
     
@@ -179,9 +214,62 @@ id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
   
   MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
   pipelineStateDescriptor.label = @"Ultralight RenderPipelineState";
-  pipelineStateDescriptor.vertexFunction = [vertex_library newFunctionWithName:@"main"];
-  pipelineStateDescriptor.fragmentFunction = [fragment_library newFunctionWithName:@"main"];
+  pipelineStateDescriptor.vertexFunction = [vertex_library newFunctionWithName:@"main0"];
+  pipelineStateDescriptor.fragmentFunction = [fragment_library newFunctionWithName:@"main0"];
   
+  // Create vertex descriptor based on shader type
+  MTLVertexDescriptor *vertexDescriptor = [[MTLVertexDescriptor alloc] init];
+  
+  if (render_state_.shader_type == ShaderType::FillPath) {
+    // Simple vertex format: float2 pos, uchar4 color, float2 obj
+    vertexDescriptor.attributes[0].format = MTLVertexFormatFloat2;
+    vertexDescriptor.attributes[0].offset = 0;
+    vertexDescriptor.attributes[0].bufferIndex = 1;
+    
+    // The vertex buffer has 4 bytes (RGBA as unsigned chars) and shader expects float4
+    // We use UChar4Normalized to automatically normalize 0-255 to 0.0-1.0
+    vertexDescriptor.attributes[1].format = MTLVertexFormatUChar4Normalized;
+    vertexDescriptor.attributes[1].offset = 8;
+    vertexDescriptor.attributes[1].bufferIndex = 1;
+    
+    vertexDescriptor.attributes[2].format = MTLVertexFormatFloat2;
+    vertexDescriptor.attributes[2].offset = 12;
+    vertexDescriptor.attributes[2].bufferIndex = 1;
+    
+    vertexDescriptor.layouts[1].stride = 20; // 8 + 4 + 8 = 20 bytes
+    vertexDescriptor.layouts[1].stepRate = 1;
+    vertexDescriptor.layouts[1].stepFunction = MTLVertexStepFunctionPerVertex;
+  } else {
+    // Complex vertex format: float2 pos, uchar4 color, float2 tex, float2 obj, float4[7] data
+    vertexDescriptor.attributes[0].format = MTLVertexFormatFloat2;
+    vertexDescriptor.attributes[0].offset = 0;
+    vertexDescriptor.attributes[0].bufferIndex = 1;
+    
+    vertexDescriptor.attributes[1].format = MTLVertexFormatUChar4Normalized;
+    vertexDescriptor.attributes[1].offset = 8;
+    vertexDescriptor.attributes[1].bufferIndex = 1;
+    
+    vertexDescriptor.attributes[2].format = MTLVertexFormatFloat2;
+    vertexDescriptor.attributes[2].offset = 12;
+    vertexDescriptor.attributes[2].bufferIndex = 1;
+    
+    vertexDescriptor.attributes[3].format = MTLVertexFormatFloat2;
+    vertexDescriptor.attributes[3].offset = 20;
+    vertexDescriptor.attributes[3].bufferIndex = 1;
+    
+    // Data0-Data6 (7 float4 attributes)
+    for (int i = 0; i < 7; i++) {
+      vertexDescriptor.attributes[4 + i].format = MTLVertexFormatFloat4;
+      vertexDescriptor.attributes[4 + i].offset = 28 + (i * 16);
+      vertexDescriptor.attributes[4 + i].bufferIndex = 1;
+    }
+    
+    vertexDescriptor.layouts[1].stride = 140; // 8 + 4 + 8 + 8 + (7 * 16) = 140 bytes
+    vertexDescriptor.layouts[1].stepRate = 1;
+    vertexDescriptor.layouts[1].stepFunction = MTLVertexStepFunctionPerVertex;
+  }
+  
+  pipelineStateDescriptor.vertexDescriptor = vertexDescriptor;
   pipelineStateDescriptor.sampleCount = render_state_.sample_count;
   pipelineStateDescriptor.colorAttachments[0].pixelFormat = render_state_.pixel_format;
   

@@ -14,6 +14,7 @@ typedef enum FragmentIndex
     FragmentIndex_Uniforms = 0,
 } FragmentIndex;
 
+#pragma pack(push, 1)
 typedef struct
 {
     simd::float4 State;           // time, screenWidth, screenHeight, screenScale
@@ -25,7 +26,6 @@ typedef struct
     simd::float4x4 Clip[8];       // Clip region matrices
 } Uniforms;
 
-#pragma pack(push, 1)
 typedef struct
 {
     simd::float2 Position;

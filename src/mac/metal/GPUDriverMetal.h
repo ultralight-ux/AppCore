@@ -1,6 +1,4 @@
 #pragma once
-// Include generated Metal shader headers
-#include "shaders.h"
 #import "GPUContextMetal.h"
 #include "GPUDriverImpl.h"
 #import <MetalKit/MetalKit.h>

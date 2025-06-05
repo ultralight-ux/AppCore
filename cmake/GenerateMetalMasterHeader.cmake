@@ -9,9 +9,8 @@ if(NOT OUTPUT_FILE)
     message(FATAL_ERROR "OUTPUT_FILE not defined")
 endif()
 
-# Convert semicolon-separated list to CMake list
-string(REPLACE ";" "\n" HEADER_FILES_NEWLINES "${METAL_HEADER_FILES}")
-string(REPLACE "\n" ";" HEADER_LIST "${HEADER_FILES_NEWLINES}")
+# The METAL_HEADER_FILES is already a proper CMake list when passed correctly
+set(HEADER_LIST ${METAL_HEADER_FILES})
 
 # Generate header content
 set(HEADER_CONTENT "// Generated Metal shader master header - macOS platform

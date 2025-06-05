@@ -25,7 +25,7 @@ function(compile_metal_shader_to_header METAL_SOURCE_FILE OUTPUT_HEADER_FILE VAR
         COMMAND xcrun -sdk macosx metal
             -c ${METAL_SOURCE_FILE}
             -o ${AIR_FILE}
-            -std=osx-metal2.1
+            -std=macos-metal2.1
             ${METAL_FLAGS}
         DEPENDS ${METAL_SOURCE_FILE}
         COMMENT "Compiling Metal shader: ${SHADER_NAME}.metal → ${SHADER_NAME}.air"
@@ -106,8 +106,8 @@ function(compile_metal_shaders_if_needed TARGET)
     add_custom_command(
         OUTPUT ${METAL_MASTER_HEADER}
         COMMAND ${CMAKE_COMMAND}
-            -DMETAL_HEADER_FILES="${METAL_HEADER_FILES}"
-            -DOUTPUT_FILE=${METAL_MASTER_HEADER}
+            "-DMETAL_HEADER_FILES=${METAL_HEADER_FILES}"
+            "-DOUTPUT_FILE=${METAL_MASTER_HEADER}"
             -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateMetalMasterHeader.cmake
         DEPENDS ${METAL_HEADER_FILES}
         COMMENT "Generating Metal master header"

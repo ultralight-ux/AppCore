@@ -60,6 +60,7 @@ class GPUContextMetal {
   
   // Inherited from PlatformGPUContext
   virtual id<MTLDevice> device() { return device_; }
+  virtual id<MTLSamplerState> sampler_state() { return sampler_state_; }
   virtual id<MTLRenderPipelineState> render_pipeline_state();
 
   virtual id<MTLCommandBuffer> command_buffer();
@@ -86,6 +87,7 @@ protected:
   std::map<ShaderType, std::pair<id<MTLLibrary>, id<MTLLibrary>>> shader_libraries_;
   id<MTLCommandQueue> command_queue_;
   id<MTLCommandBuffer> command_buffer_;
+  id<MTLSamplerState> sampler_state_;
   CAMetalLayer* layer_;
   std::unique_ptr<ultralight::GPUDriverMetal> driver_;
   bool msaa_enabled_;

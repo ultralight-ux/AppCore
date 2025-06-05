@@ -209,9 +209,12 @@ void GPUDriverMetal::BindTexture(uint8_t texture_unit,
     else
         tex = texture.texture_;
 
-    if (render_encoder_)
+    if (render_encoder_) {
         [render_encoder_ setFragmentTexture:tex
                                     atIndex:texture_unit];
+        [render_encoder_ setFragmentSamplerState:context_->sampler_state()
+                                         atIndex:texture_unit];
+    }
 }
 
 void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id)
@@ -383,9 +386,11 @@ void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
     auto& vertex_buffer = geometry.vertex_buffer;
     auto& index_buffer = geometry.index_buffer;
 
+    // Set vertex buffer for stage_in attribute data
+    // This MUST be at the same index configured in the vertex descriptor (bufferIndex)
     [render_encoder_ setVertexBuffer:vertex_buffer
                               offset:0
-                             atIndex:VertexIndex_Vertices];
+                             atIndex:0];
 
     [render_encoder_ drawIndexedPrimitives:MTLPrimitiveTypeTriangle
                                 indexCount:indices_count
@@ -400,7 +405,7 @@ void GPUDriverMetal::SetGPUState(const GPUState& state)
 {
     Matrix model_view_projection = ApplyProjection(state.transform, state.viewport_width, state.viewport_height);
 
-    Uniforms uniforms;
+    Uniforms uniforms = {};
     uniforms.State = { 0.0f, (float)state.viewport_width, (float)state.viewport_height, 1.0f };
     uniforms.Transform = ToFloat4x4(model_view_projection.GetMatrix4x4());
     
@@ -421,14 +426,19 @@ void GPUDriverMetal::SetGPUState(const GPUState& state)
     uniforms.ClipData = { (int)state.clip_size, 0, 0, 0 };
     for (size_t i = 0; i < (size_t)state.clip_size; i++)
         uniforms.Clip[i] = ToFloat4x4(state.clip[i]);
+    
+    // Create a buffer for uniforms since SPIRV-Cross expects a pointer to uniforms
+    id<MTLBuffer> uniformBuffer = [context_->device() newBufferWithBytes:&uniforms
+                                                                  length:sizeof(Uniforms)
+                                                                 options:MTLResourceStorageModeShared];
+    
+    [render_encoder_ setVertexBuffer:uniformBuffer
+                              offset:0
+                             atIndex:1];
 
-    [render_encoder_ setVertexBytes:&uniforms
-                             length:sizeof(Uniforms)
-                            atIndex:VertexIndex_Uniforms];
-
-    [render_encoder_ setFragmentBytes:&uniforms
-                               length:sizeof(Uniforms)
-                              atIndex:FragmentIndex_Uniforms];
+    [render_encoder_ setFragmentBuffer:uniformBuffer
+                                offset:0
+                               atIndex:0];
 }
 
 Matrix GPUDriverMetal::ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height)
