@@ -56,6 +56,18 @@ struct VS_OUTPUT {
 // Common constants
 #define PI 3.14159265359
 
+// Helper function to access integer values
+int Integer(int i) { 
+    if (i < 4) return Integer4[0][i]; 
+    else return Integer4[1][i - 4]; 
+}
+
+// Helper function to access scalar values
+float Scalar(int i) { 
+    if (i < 4) return Scalar4[0][i]; 
+    else return Scalar4[1][i - 4]; 
+}
+
 // Color conversion functions
 float3 sRGBToLinear(float3 srgb) {
     return srgb * (srgb * (srgb * 0.305306011 + 0.682171111) + 0.012522878);

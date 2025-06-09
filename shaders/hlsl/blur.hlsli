@@ -23,47 +23,47 @@ static const float GaussianKernel[11] = {
     0.01119472694350   // offset 2.0
 };
 
-float4 sampleColorAtRadius(VS_OUTPUT input, float radius, float2 blurRadius) {
+float4 sampleColorAtRadius(VS_OUTPUT input, float radius, float2 blurRadius, float2 texOffset) {
     float2 offset = radius * blurRadius;
-    float2 sampleCoord = clamp(input.tex + offset, 0.0, 1.0);
+    float2 sampleCoord = clamp(input.tex + offset + texOffset, 0.0, 1.0);
     return Texture0.Sample(Sampler0, sampleCoord);
 }
 
-float4 blur(VS_OUTPUT input, float2 blurRadius) {
+float4 blur(VS_OUTPUT input, float2 blurRadius, float2 texOffset) {
     if (blurRadius.x < 0.001 && blurRadius.y < 0.001) {
         // No blur, return single sample
-        return Texture0.Sample(Sampler0, input.tex);
+        return Texture0.Sample(Sampler0, input.tex + texOffset);
     }
 
-    float4 total = sampleColorAtRadius(input, 0.0, blurRadius) * GaussianKernel[0];
+    float4 total = sampleColorAtRadius(input, 0.0, blurRadius, texOffset) * GaussianKernel[0];
 
     [unroll]
     for (int i = 1; i < GAUSSIAN_HALF_WIDTH; i++) {
-        total += sampleColorAtRadius(input, float(i) * GAUSSIAN_KERNEL_STEP, blurRadius) * GaussianKernel[i];
-        total += sampleColorAtRadius(input, -float(i) * GAUSSIAN_KERNEL_STEP, blurRadius) * GaussianKernel[i];
+        total += sampleColorAtRadius(input, float(i) * GAUSSIAN_KERNEL_STEP, blurRadius, texOffset) * GaussianKernel[i];
+        total += sampleColorAtRadius(input, -float(i) * GAUSSIAN_KERNEL_STEP, blurRadius, texOffset) * GaussianKernel[i];
     }
 
     return total;
 }
 
-float sampleAlphaAtRadius(VS_OUTPUT input, float radius, float2 blurRadius) {
+float sampleAlphaAtRadius(VS_OUTPUT input, float radius, float2 blurRadius, float2 texOffset) {
     float2 offset = radius * blurRadius;
-    float2 sampleCoord = clamp(input.tex + offset, 0.0, 1.0);
-    return Texture0.Sample(Sampler0, sampleCoord).a;
+    float2 coord = input.tex + offset + texOffset;
+    return Texture0.Sample(Sampler0, coord).a * float(coord.x > 0.0 && coord.y > 0.0 && coord.x < 1.0 && coord.y < 1.0);
 }
 
-float blurAlpha(VS_OUTPUT input, float2 blurRadius) {
+float blurAlpha(VS_OUTPUT input, float2 blurRadius, float2 texOffset) {
     if (blurRadius.x < 0.001 && blurRadius.y < 0.001) {
         // No blur, return single sample alpha
-        return Texture0.Sample(Sampler0, input.tex).a;
+        return sampleAlphaAtRadius(input, 0.0, blurRadius, texOffset);
     }
 
-    float total = sampleAlphaAtRadius(input, 0.0, blurRadius) * GaussianKernel[0];
+    float total = sampleAlphaAtRadius(input, 0.0, blurRadius, texOffset) * GaussianKernel[0];
 
     [unroll]
     for (int i = 1; i < GAUSSIAN_HALF_WIDTH; i++) {
-        total += sampleAlphaAtRadius(input, float(i) * GAUSSIAN_KERNEL_STEP, blurRadius) * GaussianKernel[i];
-        total += sampleAlphaAtRadius(input, -float(i) * GAUSSIAN_KERNEL_STEP, blurRadius) * GaussianKernel[i];
+        total += sampleAlphaAtRadius(input, float(i) * GAUSSIAN_KERNEL_STEP, blurRadius, texOffset) * GaussianKernel[i];
+        total += sampleAlphaAtRadius(input, -float(i) * GAUSSIAN_KERNEL_STEP, blurRadius, texOffset) * GaussianKernel[i];
     }
 
     return total;

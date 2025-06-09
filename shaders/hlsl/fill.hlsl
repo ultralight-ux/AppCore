@@ -1,12 +1,6 @@
 #include "common.hlsli"
 #include "clip.hlsli"
 
-// Helper macros to access uniform data
-float Scalar(int i) { 
-    if (i < 4) return Scalar4[0][i]; 
-    else return Scalar4[1][i - 4]; 
-}
-
 // Fill type extraction from vertex data
 uint FillType(VS_OUTPUT input) { return uint(input.data0.x + 0.5); }
 

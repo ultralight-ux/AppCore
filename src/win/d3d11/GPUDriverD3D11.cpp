@@ -732,10 +732,10 @@ void GPUDriverD3D11::UpdateConstantBuffer(const GPUState& state) {
   uniforms.State = { 0.0f, screen_width, screen_height, (float)1.0f };
   uniforms.Transform = DirectX::XMMATRIX(model_view_projection.GetMatrix4x4().data);
   
-  // Initialize integer values (for discrete parameters like fill types, blend modes)
-  uniforms.Integer4[0] = { 0, 0, 0, 0 };
-  uniforms.Integer4[1] = { 0, 0, 0, 0 };
-  
+  uniforms.Integer4[0] = { state.uniform_integer[0], state.uniform_integer[1],
+                           state.uniform_integer[2], state.uniform_integer[3] };
+  uniforms.Integer4[1] = { state.uniform_integer[4], state.uniform_integer[5],
+                           state.uniform_integer[6], state.uniform_integer[7] };
   uniforms.Scalar4[0] = { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2],
                           state.uniform_scalar[3] };
   uniforms.Scalar4[1] = { state.uniform_scalar[4], state.uniform_scalar[5], state.uniform_scalar[6],
