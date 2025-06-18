@@ -390,7 +390,7 @@ void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
     // This MUST be at the same index configured in the vertex descriptor (bufferIndex)
     [render_encoder_ setVertexBuffer:vertex_buffer
                               offset:0
-                             atIndex:0];
+                             atIndex:1];
 
     [render_encoder_ drawIndexedPrimitives:MTLPrimitiveTypeTriangle
                                 indexCount:indices_count
@@ -434,7 +434,7 @@ void GPUDriverMetal::SetGPUState(const GPUState& state)
     
     [render_encoder_ setVertexBuffer:uniformBuffer
                               offset:0
-                             atIndex:1];
+                             atIndex:0];
 
     [render_encoder_ setFragmentBuffer:uniformBuffer
                                 offset:0
