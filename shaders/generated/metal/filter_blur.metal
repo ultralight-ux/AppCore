@@ -28,732 +28,733 @@ struct main0_in
 fragment main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Uniforms [[buffer(0)]], texture2d<float> Texture0 [[texture(0)]], sampler Sampler0 [[sampler(0)]])
 {
     main0_out out = {};
-    float4 _951;
+    float4 _959;
     if (Uniforms.Integer4[0].y != 0)
     {
-        float2 _325 = float2(Uniforms.Scalar4[0].x, Uniforms.Scalar4[0].y);
-        float2 _330 = float2(Uniforms.Scalar4[0].z, Uniforms.Scalar4[0].w);
-        float _949;
+        float2 _329 = float2(Uniforms.Scalar4[0].x, Uniforms.Scalar4[0].y);
+        float2 _334 = float2(Uniforms.Scalar4[0].z, Uniforms.Scalar4[0].w);
+        float _957;
         do
         {
-            bool _337;
+            bool _345;
             if (Uniforms.Scalar4[0].x < 0.001000000047497451305389404296875)
             {
-                _337 = Uniforms.Scalar4[0].y < 0.001000000047497451305389404296875;
+                _345 = Uniforms.Scalar4[0].y < 0.001000000047497451305389404296875;
             }
             else
             {
-                _337 = false;
+                _345 = false;
             }
-            if (_337)
+            if (_345)
             {
-                float2 _340 = in.in_var_TEXCOORD0 + _330;
-                float4 _344 = Texture0.sample(Sampler0, _340);
-                float _346 = _340.x;
-                bool _352;
-                if (_346 > 0.0)
+                float2 _348 = in.in_var_TEXCOORD0 + _334;
+                float4 _352 = Texture0.sample(Sampler0, _348);
+                float _354 = _348.x;
+                bool _360;
+                if (_354 > 0.0)
                 {
-                    _352 = _340.y > 0.0;
+                    _360 = _348.y > 0.0;
                 }
                 else
                 {
-                    _352 = false;
+                    _360 = false;
                 }
-                bool _356;
-                if (_352)
+                bool _364;
+                if (_360)
                 {
-                    _356 = _346 < 1.0;
+                    _364 = _354 < Uniforms.Scalar4[1].x;
                 }
                 else
                 {
-                    _356 = false;
+                    _364 = false;
                 }
-                bool _361;
-                if (_356)
+                bool _369;
+                if (_364)
                 {
-                    _361 = _340.y < 1.0;
+                    _369 = _348.y < Uniforms.Scalar4[1].y;
                 }
                 else
                 {
-                    _361 = false;
+                    _369 = false;
                 }
-                _949 = _344.w * float(_361);
+                _957 = _352.w * float(_369);
                 break;
             }
-            float2 _364 = in.in_var_TEXCOORD0 + _330;
-            float4 _368 = Texture0.sample(Sampler0, _364);
-            float _370 = _364.x;
-            bool _376;
-            if (_370 > 0.0)
+            float2 _372 = in.in_var_TEXCOORD0 + _334;
+            float4 _376 = Texture0.sample(Sampler0, _372);
+            float _378 = _372.x;
+            bool _384;
+            if (_378 > 0.0)
             {
-                _376 = _364.y > 0.0;
+                _384 = _372.y > 0.0;
             }
             else
             {
-                _376 = false;
+                _384 = false;
             }
-            bool _380;
-            if (_376)
+            bool _388;
+            if (_384)
             {
-                _380 = _370 < 1.0;
-            }
-            else
-            {
-                _380 = false;
-            }
-            bool _385;
-            if (_380)
-            {
-                _385 = _364.y < 1.0;
+                _388 = _378 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _385 = false;
+                _388 = false;
             }
-            float2 _391 = (in.in_var_TEXCOORD0 + (_325 * 0.20000000298023223876953125)) + _330;
-            float4 _395 = Texture0.sample(Sampler0, _391);
-            float _397 = _391.x;
-            bool _403;
-            if (_397 > 0.0)
+            bool _393;
+            if (_388)
             {
-                _403 = _391.y > 0.0;
+                _393 = _372.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _403 = false;
+                _393 = false;
             }
-            bool _407;
-            if (_403)
+            float2 _399 = (in.in_var_TEXCOORD0 + (_329 * 0.20000000298023223876953125)) + _334;
+            float4 _403 = Texture0.sample(Sampler0, _399);
+            float _405 = _399.x;
+            bool _411;
+            if (_405 > 0.0)
             {
-                _407 = _397 < 1.0;
-            }
-            else
-            {
-                _407 = false;
-            }
-            bool _412;
-            if (_407)
-            {
-                _412 = _391.y < 1.0;
+                _411 = _399.y > 0.0;
             }
             else
             {
-                _412 = false;
+                _411 = false;
             }
-            float2 _419 = (in.in_var_TEXCOORD0 + (_325 * (-0.20000000298023223876953125))) + _330;
-            float4 _423 = Texture0.sample(Sampler0, _419);
-            float _425 = _419.x;
-            bool _431;
-            if (_425 > 0.0)
+            bool _415;
+            if (_411)
             {
-                _431 = _419.y > 0.0;
+                _415 = _405 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _431 = false;
+                _415 = false;
             }
-            bool _435;
-            if (_431)
+            bool _420;
+            if (_415)
             {
-                _435 = _425 < 1.0;
-            }
-            else
-            {
-                _435 = false;
-            }
-            bool _440;
-            if (_435)
-            {
-                _440 = _419.y < 1.0;
+                _420 = _399.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _440 = false;
+                _420 = false;
             }
-            float2 _447 = (in.in_var_TEXCOORD0 + (_325 * 0.4000000059604644775390625)) + _330;
-            float4 _451 = Texture0.sample(Sampler0, _447);
-            float _453 = _447.x;
-            bool _459;
-            if (_453 > 0.0)
+            float2 _427 = (in.in_var_TEXCOORD0 + (_329 * (-0.20000000298023223876953125))) + _334;
+            float4 _431 = Texture0.sample(Sampler0, _427);
+            float _433 = _427.x;
+            bool _439;
+            if (_433 > 0.0)
             {
-                _459 = _447.y > 0.0;
-            }
-            else
-            {
-                _459 = false;
-            }
-            bool _463;
-            if (_459)
-            {
-                _463 = _453 < 1.0;
+                _439 = _427.y > 0.0;
             }
             else
             {
-                _463 = false;
+                _439 = false;
             }
-            bool _468;
-            if (_463)
+            bool _443;
+            if (_439)
             {
-                _468 = _447.y < 1.0;
-            }
-            else
-            {
-                _468 = false;
-            }
-            float2 _475 = (in.in_var_TEXCOORD0 + (_325 * (-0.4000000059604644775390625))) + _330;
-            float4 _479 = Texture0.sample(Sampler0, _475);
-            float _481 = _475.x;
-            bool _487;
-            if (_481 > 0.0)
-            {
-                _487 = _475.y > 0.0;
+                _443 = _433 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _487 = false;
+                _443 = false;
             }
-            bool _491;
-            if (_487)
+            bool _448;
+            if (_443)
             {
-                _491 = _481 < 1.0;
-            }
-            else
-            {
-                _491 = false;
-            }
-            bool _496;
-            if (_491)
-            {
-                _496 = _475.y < 1.0;
+                _448 = _427.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _496 = false;
+                _448 = false;
             }
-            float2 _503 = (in.in_var_TEXCOORD0 + (_325 * 0.60000002384185791015625)) + _330;
-            float4 _507 = Texture0.sample(Sampler0, _503);
-            float _509 = _503.x;
-            bool _515;
-            if (_509 > 0.0)
+            float2 _455 = (in.in_var_TEXCOORD0 + (_329 * 0.4000000059604644775390625)) + _334;
+            float4 _459 = Texture0.sample(Sampler0, _455);
+            float _461 = _455.x;
+            bool _467;
+            if (_461 > 0.0)
             {
-                _515 = _503.y > 0.0;
-            }
-            else
-            {
-                _515 = false;
-            }
-            bool _519;
-            if (_515)
-            {
-                _519 = _509 < 1.0;
+                _467 = _455.y > 0.0;
             }
             else
             {
-                _519 = false;
+                _467 = false;
             }
-            bool _524;
-            if (_519)
+            bool _471;
+            if (_467)
             {
-                _524 = _503.y < 1.0;
-            }
-            else
-            {
-                _524 = false;
-            }
-            float2 _531 = (in.in_var_TEXCOORD0 + (_325 * (-0.60000002384185791015625))) + _330;
-            float4 _535 = Texture0.sample(Sampler0, _531);
-            float _537 = _531.x;
-            bool _543;
-            if (_537 > 0.0)
-            {
-                _543 = _531.y > 0.0;
+                _471 = _461 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _543 = false;
+                _471 = false;
             }
-            bool _547;
-            if (_543)
+            bool _476;
+            if (_471)
             {
-                _547 = _537 < 1.0;
-            }
-            else
-            {
-                _547 = false;
-            }
-            bool _552;
-            if (_547)
-            {
-                _552 = _531.y < 1.0;
+                _476 = _455.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _552 = false;
+                _476 = false;
             }
-            float2 _559 = (in.in_var_TEXCOORD0 + (_325 * 0.800000011920928955078125)) + _330;
-            float4 _563 = Texture0.sample(Sampler0, _559);
-            float _565 = _559.x;
-            bool _571;
-            if (_565 > 0.0)
+            float2 _483 = (in.in_var_TEXCOORD0 + (_329 * (-0.4000000059604644775390625))) + _334;
+            float4 _487 = Texture0.sample(Sampler0, _483);
+            float _489 = _483.x;
+            bool _495;
+            if (_489 > 0.0)
             {
-                _571 = _559.y > 0.0;
-            }
-            else
-            {
-                _571 = false;
-            }
-            bool _575;
-            if (_571)
-            {
-                _575 = _565 < 1.0;
+                _495 = _483.y > 0.0;
             }
             else
             {
-                _575 = false;
+                _495 = false;
             }
-            bool _580;
-            if (_575)
+            bool _499;
+            if (_495)
             {
-                _580 = _559.y < 1.0;
-            }
-            else
-            {
-                _580 = false;
-            }
-            float2 _587 = (in.in_var_TEXCOORD0 + (_325 * (-0.800000011920928955078125))) + _330;
-            float4 _591 = Texture0.sample(Sampler0, _587);
-            float _593 = _587.x;
-            bool _599;
-            if (_593 > 0.0)
-            {
-                _599 = _587.y > 0.0;
+                _499 = _489 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _599 = false;
+                _499 = false;
             }
-            bool _603;
-            if (_599)
+            bool _504;
+            if (_499)
             {
-                _603 = _593 < 1.0;
-            }
-            else
-            {
-                _603 = false;
-            }
-            bool _608;
-            if (_603)
-            {
-                _608 = _587.y < 1.0;
+                _504 = _483.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _608 = false;
+                _504 = false;
             }
-            float2 _615 = (in.in_var_TEXCOORD0 + (_325 * 1.0)) + _330;
-            float4 _619 = Texture0.sample(Sampler0, _615);
-            float _621 = _615.x;
-            bool _627;
-            if (_621 > 0.0)
+            float2 _511 = (in.in_var_TEXCOORD0 + (_329 * 0.60000002384185791015625)) + _334;
+            float4 _515 = Texture0.sample(Sampler0, _511);
+            float _517 = _511.x;
+            bool _523;
+            if (_517 > 0.0)
             {
-                _627 = _615.y > 0.0;
-            }
-            else
-            {
-                _627 = false;
-            }
-            bool _631;
-            if (_627)
-            {
-                _631 = _621 < 1.0;
+                _523 = _511.y > 0.0;
             }
             else
             {
-                _631 = false;
+                _523 = false;
             }
-            bool _636;
-            if (_631)
+            bool _527;
+            if (_523)
             {
-                _636 = _615.y < 1.0;
-            }
-            else
-            {
-                _636 = false;
-            }
-            float2 _643 = (in.in_var_TEXCOORD0 + (_325 * (-1.0))) + _330;
-            float4 _647 = Texture0.sample(Sampler0, _643);
-            float _649 = _643.x;
-            bool _655;
-            if (_649 > 0.0)
-            {
-                _655 = _643.y > 0.0;
+                _527 = _517 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _655 = false;
+                _527 = false;
             }
-            bool _659;
-            if (_655)
+            bool _532;
+            if (_527)
             {
-                _659 = _649 < 1.0;
-            }
-            else
-            {
-                _659 = false;
-            }
-            bool _664;
-            if (_659)
-            {
-                _664 = _643.y < 1.0;
+                _532 = _511.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _664 = false;
+                _532 = false;
             }
-            float2 _671 = (in.in_var_TEXCOORD0 + (_325 * 1.2000000476837158203125)) + _330;
-            float4 _675 = Texture0.sample(Sampler0, _671);
-            float _677 = _671.x;
-            bool _683;
-            if (_677 > 0.0)
+            float2 _539 = (in.in_var_TEXCOORD0 + (_329 * (-0.60000002384185791015625))) + _334;
+            float4 _543 = Texture0.sample(Sampler0, _539);
+            float _545 = _539.x;
+            bool _551;
+            if (_545 > 0.0)
             {
-                _683 = _671.y > 0.0;
+                _551 = _539.y > 0.0;
             }
             else
             {
-                _683 = false;
+                _551 = false;
             }
-            bool _687;
-            if (_683)
+            bool _555;
+            if (_551)
             {
-                _687 = _677 < 1.0;
+                _555 = _545 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _687 = false;
+                _555 = false;
             }
-            bool _692;
-            if (_687)
+            bool _560;
+            if (_555)
             {
-                _692 = _671.y < 1.0;
+                _560 = _539.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _692 = false;
+                _560 = false;
             }
-            float _696 = ((((((((((((_368.w * float(_385)) * 0.0827184617519378662109375) + ((_395.w * float(_412)) * 0.081080533564090728759765625)) + ((_423.w * float(_440)) * 0.081080533564090728759765625)) + ((_451.w * float(_468)) * 0.0763587653636932373046875)) + ((_479.w * float(_496)) * 0.0763587653636932373046875)) + ((_507.w * float(_524)) * 0.069092273712158203125)) + ((_535.w * float(_552)) * 0.069092273712158203125)) + ((_563.w * float(_580)) * 0.060065932571887969970703125)) + ((_591.w * float(_608)) * 0.060065932571887969970703125)) + ((_619.w * float(_636)) * 0.0501712858676910400390625)) + ((_647.w * float(_664)) * 0.0501712858676910400390625)) + ((_675.w * float(_692)) * 0.04026339948177337646484375);
-            float2 _699 = (in.in_var_TEXCOORD0 + (_325 * (-1.2000000476837158203125))) + _330;
-            float4 _703 = Texture0.sample(Sampler0, _699);
-            float _705 = _699.x;
-            bool _711;
-            if (_705 > 0.0)
+            float2 _567 = (in.in_var_TEXCOORD0 + (_329 * 0.800000011920928955078125)) + _334;
+            float4 _571 = Texture0.sample(Sampler0, _567);
+            float _573 = _567.x;
+            bool _579;
+            if (_573 > 0.0)
             {
-                _711 = _699.y > 0.0;
+                _579 = _567.y > 0.0;
             }
             else
             {
-                _711 = false;
+                _579 = false;
             }
-            bool _715;
-            if (_711)
+            bool _583;
+            if (_579)
             {
-                _715 = _705 < 1.0;
+                _583 = _573 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _715 = false;
+                _583 = false;
             }
-            bool _720;
-            if (_715)
+            bool _588;
+            if (_583)
             {
-                _720 = _699.y < 1.0;
+                _588 = _567.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _720 = false;
+                _588 = false;
             }
-            float2 _727 = (in.in_var_TEXCOORD0 + (_325 * 1.39999997615814208984375)) + _330;
-            float4 _731 = Texture0.sample(Sampler0, _727);
-            float _733 = _727.x;
-            bool _739;
-            if (_733 > 0.0)
+            float2 _595 = (in.in_var_TEXCOORD0 + (_329 * (-0.800000011920928955078125))) + _334;
+            float4 _599 = Texture0.sample(Sampler0, _595);
+            float _601 = _595.x;
+            bool _607;
+            if (_601 > 0.0)
             {
-                _739 = _727.y > 0.0;
+                _607 = _595.y > 0.0;
             }
             else
             {
-                _739 = false;
+                _607 = false;
             }
-            bool _743;
-            if (_739)
+            bool _611;
+            if (_607)
             {
-                _743 = _733 < 1.0;
+                _611 = _601 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _743 = false;
+                _611 = false;
             }
-            bool _748;
-            if (_743)
+            bool _616;
+            if (_611)
             {
-                _748 = _727.y < 1.0;
+                _616 = _595.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _748 = false;
+                _616 = false;
             }
-            float2 _755 = (in.in_var_TEXCOORD0 + (_325 * (-1.39999997615814208984375))) + _330;
-            float4 _759 = Texture0.sample(Sampler0, _755);
-            float _761 = _755.x;
-            bool _767;
-            if (_761 > 0.0)
+            float2 _623 = (in.in_var_TEXCOORD0 + (_329 * 1.0)) + _334;
+            float4 _627 = Texture0.sample(Sampler0, _623);
+            float _629 = _623.x;
+            bool _635;
+            if (_629 > 0.0)
             {
-                _767 = _755.y > 0.0;
+                _635 = _623.y > 0.0;
             }
             else
             {
-                _767 = false;
+                _635 = false;
             }
-            bool _771;
-            if (_767)
+            bool _639;
+            if (_635)
             {
-                _771 = _761 < 1.0;
+                _639 = _629 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _771 = false;
+                _639 = false;
             }
-            bool _776;
-            if (_771)
+            bool _644;
+            if (_639)
             {
-                _776 = _755.y < 1.0;
+                _644 = _623.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _776 = false;
+                _644 = false;
             }
-            float2 _783 = (in.in_var_TEXCOORD0 + (_325 * 1.60000002384185791015625)) + _330;
-            float4 _787 = Texture0.sample(Sampler0, _783);
-            float _789 = _783.x;
-            bool _795;
-            if (_789 > 0.0)
+            float2 _651 = (in.in_var_TEXCOORD0 + (_329 * (-1.0))) + _334;
+            float4 _655 = Texture0.sample(Sampler0, _651);
+            float _657 = _651.x;
+            bool _663;
+            if (_657 > 0.0)
             {
-                _795 = _783.y > 0.0;
+                _663 = _651.y > 0.0;
             }
             else
             {
-                _795 = false;
+                _663 = false;
             }
-            bool _799;
-            if (_795)
+            bool _667;
+            if (_663)
             {
-                _799 = _789 < 1.0;
+                _667 = _657 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _799 = false;
+                _667 = false;
             }
-            bool _804;
-            if (_799)
+            bool _672;
+            if (_667)
             {
-                _804 = _783.y < 1.0;
+                _672 = _651.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _804 = false;
+                _672 = false;
             }
-            float2 _811 = (in.in_var_TEXCOORD0 + (_325 * (-1.60000002384185791015625))) + _330;
-            float4 _815 = Texture0.sample(Sampler0, _811);
-            float _817 = _811.x;
-            bool _823;
-            if (_817 > 0.0)
+            float2 _679 = (in.in_var_TEXCOORD0 + (_329 * 1.2000000476837158203125)) + _334;
+            float4 _683 = Texture0.sample(Sampler0, _679);
+            float _685 = _679.x;
+            bool _691;
+            if (_685 > 0.0)
             {
-                _823 = _811.y > 0.0;
+                _691 = _679.y > 0.0;
             }
             else
             {
-                _823 = false;
+                _691 = false;
             }
-            bool _827;
-            if (_823)
+            bool _695;
+            if (_691)
             {
-                _827 = _817 < 1.0;
+                _695 = _685 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _827 = false;
+                _695 = false;
             }
-            bool _832;
-            if (_827)
+            bool _700;
+            if (_695)
             {
-                _832 = _811.y < 1.0;
+                _700 = _679.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _832 = false;
+                _700 = false;
             }
-            float2 _839 = (in.in_var_TEXCOORD0 + (_325 * 1.80000007152557373046875)) + _330;
-            float4 _843 = Texture0.sample(Sampler0, _839);
-            float _845 = _839.x;
-            bool _851;
-            if (_845 > 0.0)
+            float _704 = ((((((((((((_376.w * float(_393)) * 0.0827184617519378662109375) + ((_403.w * float(_420)) * 0.081080533564090728759765625)) + ((_431.w * float(_448)) * 0.081080533564090728759765625)) + ((_459.w * float(_476)) * 0.0763587653636932373046875)) + ((_487.w * float(_504)) * 0.0763587653636932373046875)) + ((_515.w * float(_532)) * 0.069092273712158203125)) + ((_543.w * float(_560)) * 0.069092273712158203125)) + ((_571.w * float(_588)) * 0.060065932571887969970703125)) + ((_599.w * float(_616)) * 0.060065932571887969970703125)) + ((_627.w * float(_644)) * 0.0501712858676910400390625)) + ((_655.w * float(_672)) * 0.0501712858676910400390625)) + ((_683.w * float(_700)) * 0.04026339948177337646484375);
+            float2 _707 = (in.in_var_TEXCOORD0 + (_329 * (-1.2000000476837158203125))) + _334;
+            float4 _711 = Texture0.sample(Sampler0, _707);
+            float _713 = _707.x;
+            bool _719;
+            if (_713 > 0.0)
             {
-                _851 = _839.y > 0.0;
+                _719 = _707.y > 0.0;
             }
             else
             {
-                _851 = false;
+                _719 = false;
             }
-            bool _855;
-            if (_851)
+            bool _723;
+            if (_719)
             {
-                _855 = _845 < 1.0;
+                _723 = _713 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _855 = false;
+                _723 = false;
             }
-            bool _860;
-            if (_855)
+            bool _728;
+            if (_723)
             {
-                _860 = _839.y < 1.0;
+                _728 = _707.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _860 = false;
+                _728 = false;
             }
-            float2 _867 = (in.in_var_TEXCOORD0 + (_325 * (-1.80000007152557373046875))) + _330;
-            float4 _871 = Texture0.sample(Sampler0, _867);
-            float _873 = _867.x;
-            bool _879;
-            if (_873 > 0.0)
+            float2 _735 = (in.in_var_TEXCOORD0 + (_329 * 1.39999997615814208984375)) + _334;
+            float4 _739 = Texture0.sample(Sampler0, _735);
+            float _741 = _735.x;
+            bool _747;
+            if (_741 > 0.0)
             {
-                _879 = _867.y > 0.0;
+                _747 = _735.y > 0.0;
             }
             else
             {
-                _879 = false;
+                _747 = false;
             }
-            bool _883;
-            if (_879)
+            bool _751;
+            if (_747)
             {
-                _883 = _873 < 1.0;
+                _751 = _741 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _883 = false;
+                _751 = false;
             }
-            bool _888;
-            if (_883)
+            bool _756;
+            if (_751)
             {
-                _888 = _867.y < 1.0;
+                _756 = _735.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _888 = false;
+                _756 = false;
             }
-            float2 _895 = (in.in_var_TEXCOORD0 + (_325 * 2.0)) + _330;
-            float4 _899 = Texture0.sample(Sampler0, _895);
-            float _901 = _895.x;
-            bool _907;
-            if (_901 > 0.0)
+            float2 _763 = (in.in_var_TEXCOORD0 + (_329 * (-1.39999997615814208984375))) + _334;
+            float4 _767 = Texture0.sample(Sampler0, _763);
+            float _769 = _763.x;
+            bool _775;
+            if (_769 > 0.0)
             {
-                _907 = _895.y > 0.0;
+                _775 = _763.y > 0.0;
             }
             else
             {
-                _907 = false;
+                _775 = false;
             }
-            bool _911;
-            if (_907)
+            bool _779;
+            if (_775)
             {
-                _911 = _901 < 1.0;
+                _779 = _769 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _911 = false;
+                _779 = false;
             }
-            bool _916;
-            if (_911)
+            bool _784;
+            if (_779)
             {
-                _916 = _895.y < 1.0;
+                _784 = _763.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _916 = false;
+                _784 = false;
             }
-            float2 _923 = (in.in_var_TEXCOORD0 + (_325 * (-2.0))) + _330;
-            float4 _927 = Texture0.sample(Sampler0, _923);
-            float _929 = _923.x;
-            bool _935;
-            if (_929 > 0.0)
+            float2 _791 = (in.in_var_TEXCOORD0 + (_329 * 1.60000002384185791015625)) + _334;
+            float4 _795 = Texture0.sample(Sampler0, _791);
+            float _797 = _791.x;
+            bool _803;
+            if (_797 > 0.0)
             {
-                _935 = _923.y > 0.0;
+                _803 = _791.y > 0.0;
             }
             else
             {
-                _935 = false;
+                _803 = false;
             }
-            bool _939;
-            if (_935)
+            bool _807;
+            if (_803)
             {
-                _939 = _929 < 1.0;
+                _807 = _797 < Uniforms.Scalar4[1].x;
             }
             else
             {
-                _939 = false;
+                _807 = false;
             }
-            bool _944;
-            if (_939)
+            bool _812;
+            if (_807)
             {
-                _944 = _923.y < 1.0;
+                _812 = _791.y < Uniforms.Scalar4[1].y;
             }
             else
             {
-                _944 = false;
+                _812 = false;
             }
-            _949 = ((((((((_696 + ((_703.w * float(_720)) * 0.04026339948177337646484375)) + ((_731.w * float(_748)) * 0.0310451574623584747314453125)) + ((_759.w * float(_776)) * 0.0310451574623584747314453125)) + ((_787.w * float(_804)) * 0.02299881912767887115478515625)) + ((_815.w * float(_832)) * 0.02299881912767887115478515625)) + ((_843.w * float(_860)) * 0.01636987738311290740966796875)) + ((_871.w * float(_888)) * 0.01636987738311290740966796875)) + ((_899.w * float(_916)) * 0.011194727383553981781005859375)) + ((_927.w * float(_944)) * 0.011194727383553981781005859375);
+            float2 _819 = (in.in_var_TEXCOORD0 + (_329 * (-1.60000002384185791015625))) + _334;
+            float4 _823 = Texture0.sample(Sampler0, _819);
+            float _825 = _819.x;
+            bool _831;
+            if (_825 > 0.0)
+            {
+                _831 = _819.y > 0.0;
+            }
+            else
+            {
+                _831 = false;
+            }
+            bool _835;
+            if (_831)
+            {
+                _835 = _825 < Uniforms.Scalar4[1].x;
+            }
+            else
+            {
+                _835 = false;
+            }
+            bool _840;
+            if (_835)
+            {
+                _840 = _819.y < Uniforms.Scalar4[1].y;
+            }
+            else
+            {
+                _840 = false;
+            }
+            float2 _847 = (in.in_var_TEXCOORD0 + (_329 * 1.80000007152557373046875)) + _334;
+            float4 _851 = Texture0.sample(Sampler0, _847);
+            float _853 = _847.x;
+            bool _859;
+            if (_853 > 0.0)
+            {
+                _859 = _847.y > 0.0;
+            }
+            else
+            {
+                _859 = false;
+            }
+            bool _863;
+            if (_859)
+            {
+                _863 = _853 < Uniforms.Scalar4[1].x;
+            }
+            else
+            {
+                _863 = false;
+            }
+            bool _868;
+            if (_863)
+            {
+                _868 = _847.y < Uniforms.Scalar4[1].y;
+            }
+            else
+            {
+                _868 = false;
+            }
+            float2 _875 = (in.in_var_TEXCOORD0 + (_329 * (-1.80000007152557373046875))) + _334;
+            float4 _879 = Texture0.sample(Sampler0, _875);
+            float _881 = _875.x;
+            bool _887;
+            if (_881 > 0.0)
+            {
+                _887 = _875.y > 0.0;
+            }
+            else
+            {
+                _887 = false;
+            }
+            bool _891;
+            if (_887)
+            {
+                _891 = _881 < Uniforms.Scalar4[1].x;
+            }
+            else
+            {
+                _891 = false;
+            }
+            bool _896;
+            if (_891)
+            {
+                _896 = _875.y < Uniforms.Scalar4[1].y;
+            }
+            else
+            {
+                _896 = false;
+            }
+            float2 _903 = (in.in_var_TEXCOORD0 + (_329 * 2.0)) + _334;
+            float4 _907 = Texture0.sample(Sampler0, _903);
+            float _909 = _903.x;
+            bool _915;
+            if (_909 > 0.0)
+            {
+                _915 = _903.y > 0.0;
+            }
+            else
+            {
+                _915 = false;
+            }
+            bool _919;
+            if (_915)
+            {
+                _919 = _909 < Uniforms.Scalar4[1].x;
+            }
+            else
+            {
+                _919 = false;
+            }
+            bool _924;
+            if (_919)
+            {
+                _924 = _903.y < Uniforms.Scalar4[1].y;
+            }
+            else
+            {
+                _924 = false;
+            }
+            float2 _931 = (in.in_var_TEXCOORD0 + (_329 * (-2.0))) + _334;
+            float4 _935 = Texture0.sample(Sampler0, _931);
+            float _937 = _931.x;
+            bool _943;
+            if (_937 > 0.0)
+            {
+                _943 = _931.y > 0.0;
+            }
+            else
+            {
+                _943 = false;
+            }
+            bool _947;
+            if (_943)
+            {
+                _947 = _937 < Uniforms.Scalar4[1].x;
+            }
+            else
+            {
+                _947 = false;
+            }
+            bool _952;
+            if (_947)
+            {
+                _952 = _931.y < Uniforms.Scalar4[1].y;
+            }
+            else
+            {
+                _952 = false;
+            }
+            _957 = ((((((((_704 + ((_711.w * float(_728)) * 0.04026339948177337646484375)) + ((_739.w * float(_756)) * 0.0310451574623584747314453125)) + ((_767.w * float(_784)) * 0.0310451574623584747314453125)) + ((_795.w * float(_812)) * 0.02299881912767887115478515625)) + ((_823.w * float(_840)) * 0.02299881912767887115478515625)) + ((_851.w * float(_868)) * 0.01636987738311290740966796875)) + ((_879.w * float(_896)) * 0.01636987738311290740966796875)) + ((_907.w * float(_924)) * 0.011194727383553981781005859375)) + ((_935.w * float(_952)) * 0.011194727383553981781005859375);
             break;
         } while(false);
-        _951 = float4(_949);
+        _959 = float4(_957);
     }
     else
     {
-        float2 _93 = float2(Uniforms.Scalar4[0].x, Uniforms.Scalar4[0].y);
-        float2 _98 = float2(Uniforms.Scalar4[0].z, Uniforms.Scalar4[0].w);
-        float4 _320;
+        float2 _92 = float2(Uniforms.Scalar4[0].x, Uniforms.Scalar4[0].y);
+        float2 _97 = float2(Uniforms.Scalar4[0].z, Uniforms.Scalar4[0].w);
+        float2 _102 = float2(Uniforms.Scalar4[1].x, Uniforms.Scalar4[1].y);
+        float4 _324;
         do
         {
-            bool _105;
+            bool _109;
             if (Uniforms.Scalar4[0].x < 0.001000000047497451305389404296875)
             {
-                _105 = Uniforms.Scalar4[0].y < 0.001000000047497451305389404296875;
+                _109 = Uniforms.Scalar4[0].y < 0.001000000047497451305389404296875;
             }
             else
             {
-                _105 = false;
+                _109 = false;
             }
-            if (_105)
+            if (_109)
             {
-                _320 = Texture0.sample(Sampler0, (in.in_var_TEXCOORD0 + _98));
+                _324 = Texture0.sample(Sampler0, (in.in_var_TEXCOORD0 + _97));
                 break;
             }
-            float4 _219 = ((((((((((Texture0.sample(Sampler0, fast::clamp(in.in_var_TEXCOORD0 + _98, float2(0.0), float2(1.0))) * 0.0827184617519378662109375) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 0.20000000298023223876953125)) + _98, float2(0.0), float2(1.0))) * 0.081080533564090728759765625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-0.20000000298023223876953125))) + _98, float2(0.0), float2(1.0))) * 0.081080533564090728759765625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 0.4000000059604644775390625)) + _98, float2(0.0), float2(1.0))) * 0.0763587653636932373046875)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-0.4000000059604644775390625))) + _98, float2(0.0), float2(1.0))) * 0.0763587653636932373046875)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 0.60000002384185791015625)) + _98, float2(0.0), float2(1.0))) * 0.069092273712158203125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-0.60000002384185791015625))) + _98, float2(0.0), float2(1.0))) * 0.069092273712158203125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 0.800000011920928955078125)) + _98, float2(0.0), float2(1.0))) * 0.060065932571887969970703125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-0.800000011920928955078125))) + _98, float2(0.0), float2(1.0))) * 0.060065932571887969970703125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 1.0)) + _98, float2(0.0), float2(1.0))) * 0.0501712858676910400390625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-1.0))) + _98, float2(0.0), float2(1.0))) * 0.0501712858676910400390625);
-            float4 _319 = (((((((((_219 + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 1.2000000476837158203125)) + _98, float2(0.0), float2(1.0))) * 0.04026339948177337646484375)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-1.2000000476837158203125))) + _98, float2(0.0), float2(1.0))) * 0.04026339948177337646484375)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 1.39999997615814208984375)) + _98, float2(0.0), float2(1.0))) * 0.0310451574623584747314453125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-1.39999997615814208984375))) + _98, float2(0.0), float2(1.0))) * 0.0310451574623584747314453125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 1.60000002384185791015625)) + _98, float2(0.0), float2(1.0))) * 0.02299881912767887115478515625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-1.60000002384185791015625))) + _98, float2(0.0), float2(1.0))) * 0.02299881912767887115478515625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 1.80000007152557373046875)) + _98, float2(0.0), float2(1.0))) * 0.01636987738311290740966796875)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-1.80000007152557373046875))) + _98, float2(0.0), float2(1.0))) * 0.01636987738311290740966796875)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * 2.0)) + _98, float2(0.0), float2(1.0))) * 0.011194727383553981781005859375)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_93 * (-2.0))) + _98, float2(0.0), float2(1.0))) * 0.011194727383553981781005859375);
-            _320 = _319;
+            float4 _223 = ((((((((((Texture0.sample(Sampler0, fast::clamp(in.in_var_TEXCOORD0 + _97, float2(0.0), _102)) * 0.0827184617519378662109375) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 0.20000000298023223876953125)) + _97, float2(0.0), _102)) * 0.081080533564090728759765625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-0.20000000298023223876953125))) + _97, float2(0.0), _102)) * 0.081080533564090728759765625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 0.4000000059604644775390625)) + _97, float2(0.0), _102)) * 0.0763587653636932373046875)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-0.4000000059604644775390625))) + _97, float2(0.0), _102)) * 0.0763587653636932373046875)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 0.60000002384185791015625)) + _97, float2(0.0), _102)) * 0.069092273712158203125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-0.60000002384185791015625))) + _97, float2(0.0), _102)) * 0.069092273712158203125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 0.800000011920928955078125)) + _97, float2(0.0), _102)) * 0.060065932571887969970703125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-0.800000011920928955078125))) + _97, float2(0.0), _102)) * 0.060065932571887969970703125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 1.0)) + _97, float2(0.0), _102)) * 0.0501712858676910400390625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-1.0))) + _97, float2(0.0), _102)) * 0.0501712858676910400390625);
+            float4 _323 = (((((((((_223 + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 1.2000000476837158203125)) + _97, float2(0.0), _102)) * 0.04026339948177337646484375)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-1.2000000476837158203125))) + _97, float2(0.0), _102)) * 0.04026339948177337646484375)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 1.39999997615814208984375)) + _97, float2(0.0), _102)) * 0.0310451574623584747314453125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-1.39999997615814208984375))) + _97, float2(0.0), _102)) * 0.0310451574623584747314453125)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 1.60000002384185791015625)) + _97, float2(0.0), _102)) * 0.02299881912767887115478515625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-1.60000002384185791015625))) + _97, float2(0.0), _102)) * 0.02299881912767887115478515625)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 1.80000007152557373046875)) + _97, float2(0.0), _102)) * 0.01636987738311290740966796875)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-1.80000007152557373046875))) + _97, float2(0.0), _102)) * 0.01636987738311290740966796875)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * 2.0)) + _97, float2(0.0), _102)) * 0.011194727383553981781005859375)) + (Texture0.sample(Sampler0, fast::clamp((in.in_var_TEXCOORD0 + (_92 * (-2.0))) + _97, float2(0.0), _102)) * 0.011194727383553981781005859375);
+            _324 = _323;
             break;
         } while(false);
-        _951 = _320;
+        _959 = _324;
     }
-    float4 _958;
+    float4 _966;
     if (Uniforms.Integer4[0].x == 1)
     {
-        _958 = _951 * in.in_var_COLOR0;
+        _966 = _959 * in.in_var_COLOR0;
     }
     else
     {
-        _958 = _951;
+        _966 = _959;
     }
-    out.out_var_SV_Target = _958;
+    out.out_var_SV_Target = _966;
     return out;
 }
 
