@@ -23,48 +23,104 @@ static const float GaussianKernel[11] = {
     0.01119472694350   // offset 2.0
 };
 
-float4 sampleColorAtRadius(VS_OUTPUT input, float radius, float2 blurRadius, float2 texOffset, float2 texExtents) {
-    float2 offset = radius * blurRadius;
-    float2 sampleCoord = clamp(input.tex + offset + texOffset, float2(0.0, 0.0), texExtents);
-    return Texture0.Sample(Sampler0, sampleCoord);
-}
-
-float4 blur(VS_OUTPUT input, float2 blurRadius, float2 texOffset, float2 texExtents) {
-    if (blurRadius.x < 0.001 && blurRadius.y < 0.001) {
-        // No blur, return single sample
+float4 blur(VS_OUTPUT input, float2 blurRadius, float2 texOffset, float2 texExtents)
+{
+    if (blurRadius.x < 0.001 && blurRadius.y < 0.001)
+    {
         return Texture0.Sample(Sampler0, input.tex + texOffset);
     }
-
-    float4 total = sampleColorAtRadius(input, 0.0, blurRadius, texOffset, texExtents) * GaussianKernel[0];
-
-    [unroll]
-    for (int i = 1; i < GAUSSIAN_HALF_WIDTH; i++) {
-        total += sampleColorAtRadius(input, float(i) * GAUSSIAN_KERNEL_STEP, blurRadius, texOffset, texExtents) * GaussianKernel[i];
-        total += sampleColorAtRadius(input, -float(i) * GAUSSIAN_KERNEL_STEP, blurRadius, texOffset, texExtents) * GaussianKernel[i];
+    
+    float4 total = float4(0, 0, 0, 0);
+    float totalWeight = 0.0;
+    
+    // Center sample
+    float2 centerCoord = input.tex + texOffset;
+    if (centerCoord.x >= 0.0 && centerCoord.y >= 0.0 &&
+        centerCoord.x <= texExtents.x && centerCoord.y <= texExtents.y)
+    {
+        total += Texture0.Sample(Sampler0, centerCoord) * GaussianKernel[0];
+        totalWeight += GaussianKernel[0];
     }
-
-    return total;
+    
+    [unroll]
+    for (int i = 1; i < GAUSSIAN_HALF_WIDTH; i++)
+    {
+        float2 offset1 = float(i) * GAUSSIAN_KERNEL_STEP * blurRadius;
+        float2 offset2 = -offset1;
+        
+        float2 coord1 = input.tex + offset1 + texOffset;
+        float2 coord2 = input.tex + offset2 + texOffset;
+        
+        // Only add samples that are within bounds
+        if (coord1.x >= 0.0 && coord1.y >= 0.0 &&
+            coord1.x <= texExtents.x && coord1.y <= texExtents.y)
+        {
+            total += Texture0.Sample(Sampler0, coord1) * GaussianKernel[i];
+            totalWeight += GaussianKernel[i];
+        }
+        
+        if (coord2.x >= 0.0 && coord2.y >= 0.0 &&
+            coord2.x <= texExtents.x && coord2.y <= texExtents.y)
+        {
+            total += Texture0.Sample(Sampler0, coord2) * GaussianKernel[i];
+            totalWeight += GaussianKernel[i];
+        }
+    }
+    
+    // Normalize by actual weight
+    return totalWeight > 0.0 ? total / totalWeight : float4(0, 0, 0, 0);
 }
 
-float sampleAlphaAtRadius(VS_OUTPUT input, float radius, float2 blurRadius, float2 texOffset, float2 texExtents) {
-    float2 offset = radius * blurRadius;
-    float2 coord = input.tex + offset + texOffset;
-    return Texture0.Sample(Sampler0, coord).a * float(coord.x > 0.0 && coord.y > 0.0 && coord.x < texExtents.x && coord.y < texExtents.y);
-}
-
-float blurAlpha(VS_OUTPUT input, float2 blurRadius, float2 texOffset, float2 texExtents) {
-    if (blurRadius.x < 0.001 && blurRadius.y < 0.001) {
+float blurAlpha(VS_OUTPUT input, float2 blurRadius, float2 texOffset, float2 texExtents)
+{
+    if (blurRadius.x < 0.001 && blurRadius.y < 0.001)
+    {
         // No blur, return single sample alpha
-        return sampleAlphaAtRadius(input, 0.0, blurRadius, texOffset, texExtents);
+        float2 coord = input.tex + texOffset;
+        if (coord.x >= 0.0 && coord.y >= 0.0 && coord.x <= texExtents.x && coord.y <= texExtents.y)
+        {
+            return Texture0.Sample(Sampler0, coord).a;
+        }
+        return 0.0;
     }
-
-    float total = sampleAlphaAtRadius(input, 0.0, blurRadius, texOffset, texExtents) * GaussianKernel[0];
-
+    
+    float total = 0.0;
+    float totalWeight = 0.0;
+    
+    // Center sample
+    float2 centerCoord = input.tex + texOffset;
+    if (centerCoord.x >= 0.0 && centerCoord.y >= 0.0 &&
+        centerCoord.x <= texExtents.x && centerCoord.y <= texExtents.y)
+    {
+        total += Texture0.Sample(Sampler0, centerCoord).a * GaussianKernel[0];
+        totalWeight += GaussianKernel[0];
+    }
+    
     [unroll]
-    for (int i = 1; i < GAUSSIAN_HALF_WIDTH; i++) {
-        total += sampleAlphaAtRadius(input, float(i) * GAUSSIAN_KERNEL_STEP, blurRadius, texOffset, texExtents) * GaussianKernel[i];
-        total += sampleAlphaAtRadius(input, -float(i) * GAUSSIAN_KERNEL_STEP, blurRadius, texOffset, texExtents) * GaussianKernel[i];
+    for (int i = 1; i < GAUSSIAN_HALF_WIDTH; i++)
+    {
+        float radius = float(i) * GAUSSIAN_KERNEL_STEP;
+        float2 offset = radius * blurRadius;
+        
+        // Positive offset
+        float2 coord1 = input.tex + offset + texOffset;
+        if (coord1.x >= 0.0 && coord1.y >= 0.0 &&
+            coord1.x <= texExtents.x && coord1.y <= texExtents.y)
+        {
+            total += Texture0.Sample(Sampler0, coord1).a * GaussianKernel[i];
+            totalWeight += GaussianKernel[i];
+        }
+        
+        // Negative offset
+        float2 coord2 = input.tex - offset + texOffset;
+        if (coord2.x >= 0.0 && coord2.y >= 0.0 &&
+            coord2.x <= texExtents.x && coord2.y <= texExtents.y)
+        {
+            total += Texture0.Sample(Sampler0, coord2).a * GaussianKernel[i];
+            totalWeight += GaussianKernel[i];
+        }
     }
-
-    return total;
+    
+    // Normalize by actual weight
+    return totalWeight > 0.0 ? total / totalWeight : 0.0;
 }
