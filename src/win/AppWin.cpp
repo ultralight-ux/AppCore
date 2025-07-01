@@ -197,7 +197,7 @@ void AppWin::Run()
 
     while (is_running_) {
         // Wait for the timer or a message, whichever comes first
-        DWORD result = MsgWaitForMultipleObjects(2, timers, FALSE, INFINITE, QS_ALLEVENTS);
+        DWORD result = MsgWaitForMultipleObjects(2, timers, FALSE, INFINITE, QS_ALLINPUT);
 
         if (result == WAIT_OBJECT_0) {
             Update();
