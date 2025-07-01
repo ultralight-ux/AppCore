@@ -82,6 +82,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_MOUSELEAVE:
         WINDOWDATA()->is_mouse_in_client = false;
         WINDOWDATA()->is_tracking_mouse = false;
+        // Synthesize a mouse event with coordinates outside the window to signal mouse leave
+        WINDOW()->FireMouseEvent(
+            { MouseEvent::kType_MouseMoved, -1, -1, MouseEvent::kButton_None });
         break;
     case WM_MOUSEMOVE: {
         if (!WINDOWDATA()->is_tracking_mouse) {

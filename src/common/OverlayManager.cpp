@@ -92,7 +92,23 @@ void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
 
   int x_px = (int)std::round(evt.x * window_scale_);
   int y_px = (int)std::round(evt.y * window_scale_);
+
+  RefPtr<Overlay> prev_overlay = hovered_overlay_;
   hovered_overlay_ = HitTest(x_px, y_px);
+
+  // If the hovered overlay changed (including to nullptr when mouse leaves window)
+  if (prev_overlay != hovered_overlay_) {
+      // Send mouse leave event to previous overlay
+      if (prev_overlay) {
+          MouseEvent leave_evt = evt;
+          leave_evt.type = MouseEvent::kType_MouseMoved;
+
+          // Convert to overlay-local coordinates
+          leave_evt.x -= (int)std::round(prev_overlay->x() / window_scale_);
+          leave_evt.y -= (int)std::round(prev_overlay->y() / window_scale_);
+          prev_overlay->view()->FireMouseEvent(leave_evt);
+      }
+  }
 
   if (hovered_overlay_) {
     if (evt.type == ultralight::MouseEvent::kType_MouseDown && evt.button == MouseEvent::kButton_Left) {
