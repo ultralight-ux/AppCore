@@ -14,8 +14,8 @@ struct type_Uniforms
     float4x4 Clip[8];
 };
 
-constant float4 _103 = {};
-constant float _116 = {};
+constant float4 _98 = {};
+constant float _110 = {};
 
 struct main0_out
 {
@@ -39,2067 +39,1311 @@ struct main0_in
 fragment main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Uniforms [[buffer(0)]], texture2d<float> Texture0 [[texture(0)]], texture2d<float> Texture1 [[texture(1)]], sampler Sampler0 [[sampler(0)]])
 {
     main0_out out = {};
-    float4 _2988;
+    float4 _1703;
     switch (uint(in.in_var_COLOR1.x + 0.5))
     {
         case 0u:
         {
-            _2988 = in.in_var_COLOR0;
+            _1703 = in.in_var_COLOR0;
             break;
         }
         case 1u:
         {
-            _2988 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0) * in.in_var_COLOR0;
+            _1703 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0) * in.in_var_COLOR0;
             break;
         }
         case 2u:
         {
-            _2988 = Texture0.sample(Sampler0, ((fract((((Uniforms.Vector[2].xy * in.in_var_TEXCOORD1.x) + (Uniforms.Vector[2].zw * in.in_var_TEXCOORD1.y)) + Uniforms.Vector[3].xy) / Uniforms.Vector[1].zw) * (Uniforms.Vector[0].zw - Uniforms.Vector[0].xy)) + Uniforms.Vector[0].xy)) * in.in_var_COLOR0;
+            _1703 = Texture0.sample(Sampler0, ((fract((((Uniforms.Vector[2].xy * in.in_var_TEXCOORD1.x) + (Uniforms.Vector[2].zw * in.in_var_TEXCOORD1.y)) + Uniforms.Vector[3].xy) / Uniforms.Vector[1].zw) * (Uniforms.Vector[0].zw - Uniforms.Vector[0].xy)) + Uniforms.Vector[0].xy)) * in.in_var_COLOR0;
             break;
         }
         case 3u:
         {
-            float _2756 = float(uint(in.in_var_COLOR1.y + 0.5));
-            float _2821;
+            float _1471 = float(uint(in.in_var_COLOR1.y + 0.5));
+            float _1536;
             if (uint(in.in_var_COLOR1.z + 0.5) != 0u)
             {
-                float2 _2774 = in.in_var_TEXCOORD0 - in.in_var_COLOR2.xy;
-                float _2776 = length(_2774 / in.in_var_COLOR3.zw);
-                bool _2783;
+                float2 _1489 = in.in_var_TEXCOORD0 - in.in_var_COLOR2.xy;
+                float _1491 = length(_1489 / in.in_var_COLOR3.zw);
+                bool _1498;
                 if (in.in_var_COLOR3.x > 9.9999997473787516355514526367188e-05)
                 {
-                    _2783 = in.in_var_COLOR3.y > 9.9999997473787516355514526367188e-05;
+                    _1498 = in.in_var_COLOR3.y > 9.9999997473787516355514526367188e-05;
                 }
                 else
                 {
-                    _2783 = false;
+                    _1498 = false;
                 }
-                float _2804;
-                if (_2783)
+                float _1519;
+                if (_1498)
                 {
-                    float _2789 = length(_2774 / in.in_var_COLOR3.xy);
-                    float _2803;
-                    if (_2789 <= 1.0)
+                    float _1504 = length(_1489 / in.in_var_COLOR3.xy);
+                    float _1518;
+                    if (_1504 <= 1.0)
                     {
-                        _2803 = 0.0;
+                        _1518 = 0.0;
                     }
                     else
                     {
-                        float _2802;
-                        if (_2776 >= 1.0)
+                        float _1517;
+                        if (_1491 >= 1.0)
                         {
-                            _2802 = 1.0;
+                            _1517 = 1.0;
                         }
                         else
                         {
-                            _2802 = fast::clamp((_2789 - 1.0) / (_2789 - _2776), 0.0, 1.0);
+                            _1517 = fast::clamp((_1504 - 1.0) / (_1504 - _1491), 0.0, 1.0);
                         }
-                        _2803 = _2802;
+                        _1518 = _1517;
                     }
-                    _2804 = _2803;
+                    _1519 = _1518;
                 }
                 else
                 {
-                    _2804 = fast::clamp(_2776, 0.0, 1.0);
+                    _1519 = fast::clamp(_1491, 0.0, 1.0);
                 }
-                float _2820;
+                float _1535;
                 if (length(in.in_var_COLOR2.zw - in.in_var_COLOR2.xy) > 9.9999997473787516355514526367188e-05)
                 {
-                    _2820 = fast::clamp(_2804 * (1.0 + ((1.0 - dot(fast::normalize(in.in_var_TEXCOORD0 - in.in_var_COLOR2.zw), fast::normalize(in.in_var_COLOR2.xy - in.in_var_COLOR2.zw))) * 0.5)), 0.0, 1.0);
+                    _1535 = fast::clamp(_1519 * (1.0 + ((1.0 - dot(fast::normalize(in.in_var_TEXCOORD0 - in.in_var_COLOR2.zw), fast::normalize(in.in_var_COLOR2.xy - in.in_var_COLOR2.zw))) * 0.5)), 0.0, 1.0);
                 }
                 else
                 {
-                    _2820 = _2804;
+                    _1535 = _1519;
                 }
-                _2821 = _2820;
+                _1536 = _1535;
             }
             else
             {
-                float2 _2768 = in.in_var_COLOR2.zw - in.in_var_COLOR2.xy;
-                _2821 = fast::clamp(dot(in.in_var_TEXCOORD0 - in.in_var_COLOR2.xy, _2768) / dot(_2768, _2768), 0.0, 1.0);
+                float2 _1483 = in.in_var_COLOR2.zw - in.in_var_COLOR2.xy;
+                _1536 = fast::clamp(dot(in.in_var_TEXCOORD0 - in.in_var_COLOR2.xy, _1483) / dot(_1483, _1483), 0.0, 1.0);
             }
-            float4 _2829 = mix(in.in_var_COLOR5, in.in_var_COLOR6, float4(fast::clamp((_2821 - in.in_var_COLOR4.x) / (in.in_var_COLOR4.y - in.in_var_COLOR4.x), 0.0, 1.0)));
-            float4 _2952;
-            if (_2756 > 2.0)
+            float4 _1544 = mix(in.in_var_COLOR5, in.in_var_COLOR6, float4(fast::clamp((_1536 - in.in_var_COLOR4.x) / (in.in_var_COLOR4.y - in.in_var_COLOR4.x), 0.0, 1.0)));
+            float4 _1667;
+            if (_1471 > 2.0)
             {
-                float4 _2839 = mix(_2829, in.in_var_COLOR7, float4(fast::clamp((_2821 - in.in_var_COLOR4.y) / (in.in_var_COLOR4.z - in.in_var_COLOR4.y), 0.0, 1.0)));
-                float4 _2951;
-                if (_2756 > 3.0)
+                float4 _1554 = mix(_1544, in.in_var_COLOR7, float4(fast::clamp((_1536 - in.in_var_COLOR4.y) / (in.in_var_COLOR4.z - in.in_var_COLOR4.y), 0.0, 1.0)));
+                float4 _1666;
+                if (_1471 > 3.0)
                 {
-                    float4 _2852 = mix(_2839, Uniforms.Vector[0u], float4(fast::clamp((_2821 - in.in_var_COLOR4.z) / (Uniforms.Scalar4[0].x - in.in_var_COLOR4.z), 0.0, 1.0)));
-                    float4 _2950;
-                    if (_2756 > 4.0)
+                    float4 _1567 = mix(_1554, Uniforms.Vector[0u], float4(fast::clamp((_1536 - in.in_var_COLOR4.z) / (Uniforms.Scalar4[0].x - in.in_var_COLOR4.z), 0.0, 1.0)));
+                    float4 _1665;
+                    if (_1471 > 4.0)
                     {
-                        float4 _2865 = mix(_2852, Uniforms.Vector[1u], float4(fast::clamp((_2821 - Uniforms.Scalar4[0].x) / (Uniforms.Scalar4[0].y - Uniforms.Scalar4[0].x), 0.0, 1.0)));
-                        float4 _2949;
-                        if (_2756 > 5.0)
+                        float4 _1580 = mix(_1567, Uniforms.Vector[1u], float4(fast::clamp((_1536 - Uniforms.Scalar4[0].x) / (Uniforms.Scalar4[0].y - Uniforms.Scalar4[0].x), 0.0, 1.0)));
+                        float4 _1664;
+                        if (_1471 > 5.0)
                         {
-                            float4 _2878 = mix(_2865, Uniforms.Vector[2u], float4(fast::clamp((_2821 - Uniforms.Scalar4[0].y) / (Uniforms.Scalar4[0].z - Uniforms.Scalar4[0].y), 0.0, 1.0)));
-                            float4 _2948;
-                            if (_2756 > 6.0)
+                            float4 _1593 = mix(_1580, Uniforms.Vector[2u], float4(fast::clamp((_1536 - Uniforms.Scalar4[0].y) / (Uniforms.Scalar4[0].z - Uniforms.Scalar4[0].y), 0.0, 1.0)));
+                            float4 _1663;
+                            if (_1471 > 6.0)
                             {
-                                float4 _2891 = mix(_2878, Uniforms.Vector[3u], float4(fast::clamp((_2821 - Uniforms.Scalar4[0].z) / (Uniforms.Scalar4[0].w - Uniforms.Scalar4[0].z), 0.0, 1.0)));
-                                float4 _2947;
-                                if (_2756 > 7.0)
+                                float4 _1606 = mix(_1593, Uniforms.Vector[3u], float4(fast::clamp((_1536 - Uniforms.Scalar4[0].z) / (Uniforms.Scalar4[0].w - Uniforms.Scalar4[0].z), 0.0, 1.0)));
+                                float4 _1662;
+                                if (_1471 > 7.0)
                                 {
-                                    float4 _2904 = mix(_2891, Uniforms.Vector[4u], float4(fast::clamp((_2821 - Uniforms.Scalar4[0].w) / (Uniforms.Scalar4[1].x - Uniforms.Scalar4[0].w), 0.0, 1.0)));
-                                    float4 _2946;
-                                    if (_2756 > 8.0)
+                                    float4 _1619 = mix(_1606, Uniforms.Vector[4u], float4(fast::clamp((_1536 - Uniforms.Scalar4[0].w) / (Uniforms.Scalar4[1].x - Uniforms.Scalar4[0].w), 0.0, 1.0)));
+                                    float4 _1661;
+                                    if (_1471 > 8.0)
                                     {
-                                        float4 _2917 = mix(_2904, Uniforms.Vector[5u], float4(fast::clamp((_2821 - Uniforms.Scalar4[1].x) / (Uniforms.Scalar4[1].y - Uniforms.Scalar4[1].x), 0.0, 1.0)));
-                                        float4 _2945;
-                                        if (_2756 > 9.0)
+                                        float4 _1632 = mix(_1619, Uniforms.Vector[5u], float4(fast::clamp((_1536 - Uniforms.Scalar4[1].x) / (Uniforms.Scalar4[1].y - Uniforms.Scalar4[1].x), 0.0, 1.0)));
+                                        float4 _1660;
+                                        if (_1471 > 9.0)
                                         {
-                                            float4 _2930 = mix(_2917, Uniforms.Vector[6u], float4(fast::clamp((_2821 - Uniforms.Scalar4[1].y) / (Uniforms.Scalar4[1].z - Uniforms.Scalar4[1].y), 0.0, 1.0)));
-                                            float4 _2944;
-                                            if (_2756 > 10.0)
+                                            float4 _1645 = mix(_1632, Uniforms.Vector[6u], float4(fast::clamp((_1536 - Uniforms.Scalar4[1].y) / (Uniforms.Scalar4[1].z - Uniforms.Scalar4[1].y), 0.0, 1.0)));
+                                            float4 _1659;
+                                            if (_1471 > 10.0)
                                             {
-                                                _2944 = mix(_2930, Uniforms.Vector[7u], float4(fast::clamp((_2821 - Uniforms.Scalar4[1].z) / (Uniforms.Scalar4[1].w - Uniforms.Scalar4[1].z), 0.0, 1.0)));
+                                                _1659 = mix(_1645, Uniforms.Vector[7u], float4(fast::clamp((_1536 - Uniforms.Scalar4[1].z) / (Uniforms.Scalar4[1].w - Uniforms.Scalar4[1].z), 0.0, 1.0)));
                                             }
                                             else
                                             {
-                                                _2944 = _2930;
+                                                _1659 = _1645;
                                             }
-                                            _2945 = _2944;
+                                            _1660 = _1659;
                                         }
                                         else
                                         {
-                                            _2945 = _2917;
+                                            _1660 = _1632;
                                         }
-                                        _2946 = _2945;
+                                        _1661 = _1660;
                                     }
                                     else
                                     {
-                                        _2946 = _2904;
+                                        _1661 = _1619;
                                     }
-                                    _2947 = _2946;
+                                    _1662 = _1661;
                                 }
                                 else
                                 {
-                                    _2947 = _2891;
+                                    _1662 = _1606;
                                 }
-                                _2948 = _2947;
+                                _1663 = _1662;
                             }
                             else
                             {
-                                _2948 = _2878;
+                                _1663 = _1593;
                             }
-                            _2949 = _2948;
+                            _1664 = _1663;
                         }
                         else
                         {
-                            _2949 = _2865;
+                            _1664 = _1580;
                         }
-                        _2950 = _2949;
+                        _1665 = _1664;
                     }
                     else
                     {
-                        _2950 = _2852;
+                        _1665 = _1567;
                     }
-                    _2951 = _2950;
+                    _1666 = _1665;
                 }
                 else
                 {
-                    _2951 = _2839;
+                    _1666 = _1554;
                 }
-                _2952 = _2951;
+                _1667 = _1666;
             }
             else
             {
-                _2952 = _2829;
+                _1667 = _1544;
             }
-            _2988 = _2952;
+            _1703 = _1667;
             break;
         }
         case 7u:
         {
-            float2 _2102 = (in.in_var_TEXCOORD0 - float2(0.5)) * in.in_var_COLOR1.zw;
-            float _2715;
+            float2 _817 = (in.in_var_TEXCOORD0 - float2(0.5)) * in.in_var_COLOR1.zw;
+            float _1430;
             do
             {
-                float2 _2105 = in.in_var_COLOR1.zw * 0.5;
-                float _2106 = _2105.x;
-                float _2107 = -_2106;
-                float _2109 = _2107 + in.in_var_COLOR2.x;
-                float _2110 = _2105.y;
-                float _2111 = -_2110;
-                float _2113 = _2111 + in.in_var_COLOR3.x;
-                float2 _2115 = _2102 - float2(_2109, _2113);
-                bool _2122;
+                float2 _820 = in.in_var_COLOR1.zw * 0.5;
+                float _821 = _820.x;
+                float _822 = -_821;
+                float _824 = _822 + in.in_var_COLOR2.x;
+                float _825 = _820.y;
+                float _826 = -_825;
+                float _828 = _826 + in.in_var_COLOR3.x;
+                float2 _830 = _817 - float2(_824, _828);
+                bool _837;
                 if ((in.in_var_COLOR2.x * in.in_var_COLOR3.x) > 0.0)
                 {
-                    _2122 = _2102.x < _2109;
+                    _837 = _817.x < _824;
                 }
                 else
                 {
-                    _2122 = false;
+                    _837 = false;
                 }
-                bool _2127;
-                if (_2122)
+                bool _842;
+                if (_837)
                 {
-                    _2127 = _2102.y <= _2113;
+                    _842 = _817.y <= _828;
                 }
                 else
                 {
-                    _2127 = false;
+                    _842 = false;
                 }
-                if (_2127)
+                if (_842)
                 {
-                    float2 _2130 = float2(in.in_var_COLOR2.x, in.in_var_COLOR3.x);
-                    float _2258;
+                    float2 _845 = float2(in.in_var_COLOR2.x, in.in_var_COLOR3.x);
+                    float _973;
                     do
                     {
                         if (abs(in.in_var_COLOR2.x - in.in_var_COLOR3.x) < 0.100000001490116119384765625)
                         {
-                            _2258 = length(_2115) - in.in_var_COLOR2.x;
+                            _973 = length(_830) - in.in_var_COLOR2.x;
                             break;
                         }
-                        float2 _2140 = abs(_2115);
-                        float2 _2148;
-                        float2 _2149;
-                        if (_2140.x > _2140.y)
+                        float2 _855 = abs(_830);
+                        float2 _863;
+                        float2 _864;
+                        if (_855.x > _855.y)
                         {
-                            _2148 = _2140.yx;
-                            _2149 = _2130.yx;
+                            _863 = _855.yx;
+                            _864 = _845.yx;
                         }
                         else
                         {
-                            _2148 = _2140;
-                            _2149 = _2130;
+                            _863 = _855;
+                            _864 = _845;
                         }
-                        float _2154 = (_2149.y * _2149.y) - (_2149.x * _2149.x);
-                        float _2157 = (_2149.x * _2148.x) / _2154;
-                        float _2160 = (_2149.y * _2148.y) / _2154;
-                        float _2161 = _2157 * _2157;
-                        float _2162 = _2160 * _2160;
-                        float _2164 = (_2161 + _2162) - 1.0;
-                        float _2165 = _2164 * 0.3333333432674407958984375;
-                        float _2167 = (_2165 * _2165) * _2165;
-                        float _2168 = _2161 * _2162;
-                        float _2170 = _2167 + (_2168 * 2.0);
-                        float _2171 = _2167 + _2168;
-                        float _2173 = _2157 + (_2157 * _2162);
-                        float _2244;
-                        if (_2171 < 0.0)
+                        float _869 = (_864.y * _864.y) - (_864.x * _864.x);
+                        float _872 = (_864.x * _863.x) / _869;
+                        float _875 = (_864.y * _863.y) / _869;
+                        float _876 = _872 * _872;
+                        float _877 = _875 * _875;
+                        float _879 = (_876 + _877) - 1.0;
+                        float _880 = _879 * 0.3333333432674407958984375;
+                        float _882 = (_880 * _880) * _880;
+                        float _883 = _876 * _877;
+                        float _885 = _882 + (_883 * 2.0);
+                        float _886 = _882 + _883;
+                        float _888 = _872 + (_872 * _877);
+                        float _959;
+                        if (_886 < 0.0)
                         {
-                            float _2218 = acos(_2170 / _2167) * 0.3333333432674407958984375;
-                            float _2219 = cos(_2218);
-                            float _2221 = sin(_2218) * 1.73205077648162841796875;
-                            float _2222 = _2164 * (-0.3333333432674407958984375);
-                            float _2227 = sqrt((_2222 * ((_2219 + _2221) + 2.0)) + _2161);
-                            float _2232 = sqrt((_2222 * ((_2219 - _2221) + 2.0)) + _2161);
-                            _2244 = (((_2232 + (float(int(sign(_2154))) * _2227)) + (abs(_2173) / (_2227 * _2232))) - _2157) * 0.5;
+                            float _933 = acos(_885 / _882) * 0.3333333432674407958984375;
+                            float _934 = cos(_933);
+                            float _936 = sin(_933) * 1.73205077648162841796875;
+                            float _937 = _879 * (-0.3333333432674407958984375);
+                            float _942 = sqrt((_937 * ((_934 + _936) + 2.0)) + _876);
+                            float _947 = sqrt((_937 * ((_934 - _936) + 2.0)) + _876);
+                            _959 = (((_947 + (float(int(sign(_869))) * _942)) + (abs(_888) / (_942 * _947))) - _872) * 0.5;
                         }
                         else
                         {
-                            float _2181 = ((2.0 * _2157) * _2160) * sqrt(_2171);
-                            float _2182 = _2170 + _2181;
-                            float _2188 = float(int(sign(_2182))) * powr(abs(_2182), 0.3333333432674407958984375);
-                            float _2189 = _2170 - _2181;
-                            float _2195 = float(int(sign(_2189))) * powr(abs(_2189), 0.3333333432674407958984375);
-                            float _2201 = (((-_2188) - _2195) - (_2164 * 1.33333337306976318359375)) + (2.0 * _2161);
-                            float _2203 = (_2188 - _2195) * 1.73205077648162841796875;
-                            float _2207 = sqrt((_2201 * _2201) + (_2203 * _2203));
-                            _2244 = (((_2203 / sqrt(_2207 - _2201)) + ((2.0 * _2173) / _2207)) - _2157) * 0.5;
+                            float _896 = ((2.0 * _872) * _875) * sqrt(_886);
+                            float _897 = _885 + _896;
+                            float _903 = float(int(sign(_897))) * powr(abs(_897), 0.3333333432674407958984375);
+                            float _904 = _885 - _896;
+                            float _910 = float(int(sign(_904))) * powr(abs(_904), 0.3333333432674407958984375);
+                            float _916 = (((-_903) - _910) - (_879 * 1.33333337306976318359375)) + (2.0 * _876);
+                            float _918 = (_903 - _910) * 1.73205077648162841796875;
+                            float _922 = sqrt((_916 * _916) + (_918 * _918));
+                            _959 = (((_918 / sqrt(_922 - _916)) + ((2.0 * _888) / _922)) - _872) * 0.5;
                         }
-                        float _2249 = _2149.y * sqrt(1.0 - (_2244 * _2244));
-                        _2258 = length(float2(_2149.x * _2244, _2249) - _2148) * float(int(sign(_2148.y - _2249)));
+                        float _964 = _864.y * sqrt(1.0 - (_959 * _959));
+                        _973 = length(float2(_864.x * _959, _964) - _863) * float(int(sign(_863.y - _964)));
                         break;
                     } while(false);
-                    _2715 = _2258;
+                    _1430 = _973;
                     break;
                 }
-                float _2260 = _2106 - in.in_var_COLOR2.y;
-                float _2262 = _2111 + in.in_var_COLOR3.y;
-                float2 _2264 = _2102 - float2(_2260, _2262);
-                bool _2271;
+                float _975 = _821 - in.in_var_COLOR2.y;
+                float _977 = _826 + in.in_var_COLOR3.y;
+                float2 _979 = _817 - float2(_975, _977);
+                bool _986;
                 if ((in.in_var_COLOR2.y * in.in_var_COLOR3.y) > 0.0)
                 {
-                    _2271 = _2102.x >= _2260;
+                    _986 = _817.x >= _975;
                 }
                 else
                 {
-                    _2271 = false;
+                    _986 = false;
                 }
-                bool _2276;
-                if (_2271)
+                bool _991;
+                if (_986)
                 {
-                    _2276 = _2102.y <= _2262;
+                    _991 = _817.y <= _977;
                 }
                 else
                 {
-                    _2276 = false;
+                    _991 = false;
                 }
-                if (_2276)
+                if (_991)
                 {
-                    float2 _2279 = float2(in.in_var_COLOR2.y, in.in_var_COLOR3.y);
-                    float _2407;
+                    float2 _994 = float2(in.in_var_COLOR2.y, in.in_var_COLOR3.y);
+                    float _1122;
                     do
                     {
                         if (abs(in.in_var_COLOR2.y - in.in_var_COLOR3.y) < 0.100000001490116119384765625)
                         {
-                            _2407 = length(_2264) - in.in_var_COLOR2.y;
+                            _1122 = length(_979) - in.in_var_COLOR2.y;
                             break;
                         }
-                        float2 _2289 = abs(_2264);
-                        float2 _2297;
-                        float2 _2298;
-                        if (_2289.x > _2289.y)
+                        float2 _1004 = abs(_979);
+                        float2 _1012;
+                        float2 _1013;
+                        if (_1004.x > _1004.y)
                         {
-                            _2297 = _2289.yx;
-                            _2298 = _2279.yx;
+                            _1012 = _1004.yx;
+                            _1013 = _994.yx;
                         }
                         else
                         {
-                            _2297 = _2289;
-                            _2298 = _2279;
+                            _1012 = _1004;
+                            _1013 = _994;
                         }
-                        float _2303 = (_2298.y * _2298.y) - (_2298.x * _2298.x);
-                        float _2306 = (_2298.x * _2297.x) / _2303;
-                        float _2309 = (_2298.y * _2297.y) / _2303;
-                        float _2310 = _2306 * _2306;
-                        float _2311 = _2309 * _2309;
-                        float _2313 = (_2310 + _2311) - 1.0;
-                        float _2314 = _2313 * 0.3333333432674407958984375;
-                        float _2316 = (_2314 * _2314) * _2314;
-                        float _2317 = _2310 * _2311;
-                        float _2319 = _2316 + (_2317 * 2.0);
-                        float _2320 = _2316 + _2317;
-                        float _2322 = _2306 + (_2306 * _2311);
-                        float _2393;
-                        if (_2320 < 0.0)
+                        float _1018 = (_1013.y * _1013.y) - (_1013.x * _1013.x);
+                        float _1021 = (_1013.x * _1012.x) / _1018;
+                        float _1024 = (_1013.y * _1012.y) / _1018;
+                        float _1025 = _1021 * _1021;
+                        float _1026 = _1024 * _1024;
+                        float _1028 = (_1025 + _1026) - 1.0;
+                        float _1029 = _1028 * 0.3333333432674407958984375;
+                        float _1031 = (_1029 * _1029) * _1029;
+                        float _1032 = _1025 * _1026;
+                        float _1034 = _1031 + (_1032 * 2.0);
+                        float _1035 = _1031 + _1032;
+                        float _1037 = _1021 + (_1021 * _1026);
+                        float _1108;
+                        if (_1035 < 0.0)
                         {
-                            float _2367 = acos(_2319 / _2316) * 0.3333333432674407958984375;
-                            float _2368 = cos(_2367);
-                            float _2370 = sin(_2367) * 1.73205077648162841796875;
-                            float _2371 = _2313 * (-0.3333333432674407958984375);
-                            float _2376 = sqrt((_2371 * ((_2368 + _2370) + 2.0)) + _2310);
-                            float _2381 = sqrt((_2371 * ((_2368 - _2370) + 2.0)) + _2310);
-                            _2393 = (((_2381 + (float(int(sign(_2303))) * _2376)) + (abs(_2322) / (_2376 * _2381))) - _2306) * 0.5;
+                            float _1082 = acos(_1034 / _1031) * 0.3333333432674407958984375;
+                            float _1083 = cos(_1082);
+                            float _1085 = sin(_1082) * 1.73205077648162841796875;
+                            float _1086 = _1028 * (-0.3333333432674407958984375);
+                            float _1091 = sqrt((_1086 * ((_1083 + _1085) + 2.0)) + _1025);
+                            float _1096 = sqrt((_1086 * ((_1083 - _1085) + 2.0)) + _1025);
+                            _1108 = (((_1096 + (float(int(sign(_1018))) * _1091)) + (abs(_1037) / (_1091 * _1096))) - _1021) * 0.5;
                         }
                         else
                         {
-                            float _2330 = ((2.0 * _2306) * _2309) * sqrt(_2320);
-                            float _2331 = _2319 + _2330;
-                            float _2337 = float(int(sign(_2331))) * powr(abs(_2331), 0.3333333432674407958984375);
-                            float _2338 = _2319 - _2330;
-                            float _2344 = float(int(sign(_2338))) * powr(abs(_2338), 0.3333333432674407958984375);
-                            float _2350 = (((-_2337) - _2344) - (_2313 * 1.33333337306976318359375)) + (2.0 * _2310);
-                            float _2352 = (_2337 - _2344) * 1.73205077648162841796875;
-                            float _2356 = sqrt((_2350 * _2350) + (_2352 * _2352));
-                            _2393 = (((_2352 / sqrt(_2356 - _2350)) + ((2.0 * _2322) / _2356)) - _2306) * 0.5;
+                            float _1045 = ((2.0 * _1021) * _1024) * sqrt(_1035);
+                            float _1046 = _1034 + _1045;
+                            float _1052 = float(int(sign(_1046))) * powr(abs(_1046), 0.3333333432674407958984375);
+                            float _1053 = _1034 - _1045;
+                            float _1059 = float(int(sign(_1053))) * powr(abs(_1053), 0.3333333432674407958984375);
+                            float _1065 = (((-_1052) - _1059) - (_1028 * 1.33333337306976318359375)) + (2.0 * _1025);
+                            float _1067 = (_1052 - _1059) * 1.73205077648162841796875;
+                            float _1071 = sqrt((_1065 * _1065) + (_1067 * _1067));
+                            _1108 = (((_1067 / sqrt(_1071 - _1065)) + ((2.0 * _1037) / _1071)) - _1021) * 0.5;
                         }
-                        float _2398 = _2298.y * sqrt(1.0 - (_2393 * _2393));
-                        _2407 = length(float2(_2298.x * _2393, _2398) - _2297) * float(int(sign(_2297.y - _2398)));
+                        float _1113 = _1013.y * sqrt(1.0 - (_1108 * _1108));
+                        _1122 = length(float2(_1013.x * _1108, _1113) - _1012) * float(int(sign(_1012.y - _1113)));
                         break;
                     } while(false);
-                    _2715 = _2407;
+                    _1430 = _1122;
                     break;
                 }
-                float _2409 = _2106 - in.in_var_COLOR2.z;
-                float _2411 = _2110 - in.in_var_COLOR3.z;
-                float2 _2413 = _2102 - float2(_2409, _2411);
-                bool _2420;
+                float _1124 = _821 - in.in_var_COLOR2.z;
+                float _1126 = _825 - in.in_var_COLOR3.z;
+                float2 _1128 = _817 - float2(_1124, _1126);
+                bool _1135;
                 if ((in.in_var_COLOR2.z * in.in_var_COLOR3.z) > 0.0)
                 {
-                    _2420 = _2102.x >= _2409;
+                    _1135 = _817.x >= _1124;
                 }
                 else
                 {
-                    _2420 = false;
+                    _1135 = false;
                 }
-                bool _2425;
-                if (_2420)
+                bool _1140;
+                if (_1135)
                 {
-                    _2425 = _2102.y >= _2411;
+                    _1140 = _817.y >= _1126;
                 }
                 else
                 {
-                    _2425 = false;
+                    _1140 = false;
                 }
-                if (_2425)
+                if (_1140)
                 {
-                    float2 _2428 = float2(in.in_var_COLOR2.z, in.in_var_COLOR3.z);
-                    float _2556;
+                    float2 _1143 = float2(in.in_var_COLOR2.z, in.in_var_COLOR3.z);
+                    float _1271;
                     do
                     {
                         if (abs(in.in_var_COLOR2.z - in.in_var_COLOR3.z) < 0.100000001490116119384765625)
                         {
-                            _2556 = length(_2413) - in.in_var_COLOR2.z;
+                            _1271 = length(_1128) - in.in_var_COLOR2.z;
                             break;
                         }
-                        float2 _2438 = abs(_2413);
-                        float2 _2446;
-                        float2 _2447;
-                        if (_2438.x > _2438.y)
+                        float2 _1153 = abs(_1128);
+                        float2 _1161;
+                        float2 _1162;
+                        if (_1153.x > _1153.y)
                         {
-                            _2446 = _2438.yx;
-                            _2447 = _2428.yx;
+                            _1161 = _1153.yx;
+                            _1162 = _1143.yx;
                         }
                         else
                         {
-                            _2446 = _2438;
-                            _2447 = _2428;
+                            _1161 = _1153;
+                            _1162 = _1143;
                         }
-                        float _2452 = (_2447.y * _2447.y) - (_2447.x * _2447.x);
-                        float _2455 = (_2447.x * _2446.x) / _2452;
-                        float _2458 = (_2447.y * _2446.y) / _2452;
-                        float _2459 = _2455 * _2455;
-                        float _2460 = _2458 * _2458;
-                        float _2462 = (_2459 + _2460) - 1.0;
-                        float _2463 = _2462 * 0.3333333432674407958984375;
-                        float _2465 = (_2463 * _2463) * _2463;
-                        float _2466 = _2459 * _2460;
-                        float _2468 = _2465 + (_2466 * 2.0);
-                        float _2469 = _2465 + _2466;
-                        float _2471 = _2455 + (_2455 * _2460);
-                        float _2542;
-                        if (_2469 < 0.0)
+                        float _1167 = (_1162.y * _1162.y) - (_1162.x * _1162.x);
+                        float _1170 = (_1162.x * _1161.x) / _1167;
+                        float _1173 = (_1162.y * _1161.y) / _1167;
+                        float _1174 = _1170 * _1170;
+                        float _1175 = _1173 * _1173;
+                        float _1177 = (_1174 + _1175) - 1.0;
+                        float _1178 = _1177 * 0.3333333432674407958984375;
+                        float _1180 = (_1178 * _1178) * _1178;
+                        float _1181 = _1174 * _1175;
+                        float _1183 = _1180 + (_1181 * 2.0);
+                        float _1184 = _1180 + _1181;
+                        float _1186 = _1170 + (_1170 * _1175);
+                        float _1257;
+                        if (_1184 < 0.0)
                         {
-                            float _2516 = acos(_2468 / _2465) * 0.3333333432674407958984375;
-                            float _2517 = cos(_2516);
-                            float _2519 = sin(_2516) * 1.73205077648162841796875;
-                            float _2520 = _2462 * (-0.3333333432674407958984375);
-                            float _2525 = sqrt((_2520 * ((_2517 + _2519) + 2.0)) + _2459);
-                            float _2530 = sqrt((_2520 * ((_2517 - _2519) + 2.0)) + _2459);
-                            _2542 = (((_2530 + (float(int(sign(_2452))) * _2525)) + (abs(_2471) / (_2525 * _2530))) - _2455) * 0.5;
+                            float _1231 = acos(_1183 / _1180) * 0.3333333432674407958984375;
+                            float _1232 = cos(_1231);
+                            float _1234 = sin(_1231) * 1.73205077648162841796875;
+                            float _1235 = _1177 * (-0.3333333432674407958984375);
+                            float _1240 = sqrt((_1235 * ((_1232 + _1234) + 2.0)) + _1174);
+                            float _1245 = sqrt((_1235 * ((_1232 - _1234) + 2.0)) + _1174);
+                            _1257 = (((_1245 + (float(int(sign(_1167))) * _1240)) + (abs(_1186) / (_1240 * _1245))) - _1170) * 0.5;
                         }
                         else
                         {
-                            float _2479 = ((2.0 * _2455) * _2458) * sqrt(_2469);
-                            float _2480 = _2468 + _2479;
-                            float _2486 = float(int(sign(_2480))) * powr(abs(_2480), 0.3333333432674407958984375);
-                            float _2487 = _2468 - _2479;
-                            float _2493 = float(int(sign(_2487))) * powr(abs(_2487), 0.3333333432674407958984375);
-                            float _2499 = (((-_2486) - _2493) - (_2462 * 1.33333337306976318359375)) + (2.0 * _2459);
-                            float _2501 = (_2486 - _2493) * 1.73205077648162841796875;
-                            float _2505 = sqrt((_2499 * _2499) + (_2501 * _2501));
-                            _2542 = (((_2501 / sqrt(_2505 - _2499)) + ((2.0 * _2471) / _2505)) - _2455) * 0.5;
+                            float _1194 = ((2.0 * _1170) * _1173) * sqrt(_1184);
+                            float _1195 = _1183 + _1194;
+                            float _1201 = float(int(sign(_1195))) * powr(abs(_1195), 0.3333333432674407958984375);
+                            float _1202 = _1183 - _1194;
+                            float _1208 = float(int(sign(_1202))) * powr(abs(_1202), 0.3333333432674407958984375);
+                            float _1214 = (((-_1201) - _1208) - (_1177 * 1.33333337306976318359375)) + (2.0 * _1174);
+                            float _1216 = (_1201 - _1208) * 1.73205077648162841796875;
+                            float _1220 = sqrt((_1214 * _1214) + (_1216 * _1216));
+                            _1257 = (((_1216 / sqrt(_1220 - _1214)) + ((2.0 * _1186) / _1220)) - _1170) * 0.5;
                         }
-                        float _2547 = _2447.y * sqrt(1.0 - (_2542 * _2542));
-                        _2556 = length(float2(_2447.x * _2542, _2547) - _2446) * float(int(sign(_2446.y - _2547)));
+                        float _1262 = _1162.y * sqrt(1.0 - (_1257 * _1257));
+                        _1271 = length(float2(_1162.x * _1257, _1262) - _1161) * float(int(sign(_1161.y - _1262)));
                         break;
                     } while(false);
-                    _2715 = _2556;
+                    _1430 = _1271;
                     break;
                 }
-                float _2558 = _2107 + in.in_var_COLOR2.w;
-                float _2560 = _2110 - in.in_var_COLOR3.w;
-                float2 _2562 = _2102 - float2(_2558, _2560);
-                bool _2569;
+                float _1273 = _822 + in.in_var_COLOR2.w;
+                float _1275 = _825 - in.in_var_COLOR3.w;
+                float2 _1277 = _817 - float2(_1273, _1275);
+                bool _1284;
                 if ((in.in_var_COLOR2.w * in.in_var_COLOR3.w) > 0.0)
                 {
-                    _2569 = _2102.x < _2558;
+                    _1284 = _817.x < _1273;
                 }
                 else
                 {
-                    _2569 = false;
+                    _1284 = false;
                 }
-                bool _2574;
-                if (_2569)
+                bool _1289;
+                if (_1284)
                 {
-                    _2574 = _2102.y > _2560;
+                    _1289 = _817.y > _1275;
                 }
                 else
                 {
-                    _2574 = false;
+                    _1289 = false;
                 }
-                if (_2574)
+                if (_1289)
                 {
-                    float2 _2577 = float2(in.in_var_COLOR2.w, in.in_var_COLOR3.w);
-                    float _2705;
+                    float2 _1292 = float2(in.in_var_COLOR2.w, in.in_var_COLOR3.w);
+                    float _1420;
                     do
                     {
                         if (abs(in.in_var_COLOR2.w - in.in_var_COLOR3.w) < 0.100000001490116119384765625)
                         {
-                            _2705 = length(_2562) - in.in_var_COLOR2.w;
+                            _1420 = length(_1277) - in.in_var_COLOR2.w;
                             break;
                         }
-                        float2 _2587 = abs(_2562);
-                        float2 _2595;
-                        float2 _2596;
-                        if (_2587.x > _2587.y)
+                        float2 _1302 = abs(_1277);
+                        float2 _1310;
+                        float2 _1311;
+                        if (_1302.x > _1302.y)
                         {
-                            _2595 = _2587.yx;
-                            _2596 = _2577.yx;
+                            _1310 = _1302.yx;
+                            _1311 = _1292.yx;
                         }
                         else
                         {
-                            _2595 = _2587;
-                            _2596 = _2577;
+                            _1310 = _1302;
+                            _1311 = _1292;
                         }
-                        float _2601 = (_2596.y * _2596.y) - (_2596.x * _2596.x);
-                        float _2604 = (_2596.x * _2595.x) / _2601;
-                        float _2607 = (_2596.y * _2595.y) / _2601;
-                        float _2608 = _2604 * _2604;
-                        float _2609 = _2607 * _2607;
-                        float _2611 = (_2608 + _2609) - 1.0;
-                        float _2612 = _2611 * 0.3333333432674407958984375;
-                        float _2614 = (_2612 * _2612) * _2612;
-                        float _2615 = _2608 * _2609;
-                        float _2617 = _2614 + (_2615 * 2.0);
-                        float _2618 = _2614 + _2615;
-                        float _2620 = _2604 + (_2604 * _2609);
-                        float _2691;
-                        if (_2618 < 0.0)
+                        float _1316 = (_1311.y * _1311.y) - (_1311.x * _1311.x);
+                        float _1319 = (_1311.x * _1310.x) / _1316;
+                        float _1322 = (_1311.y * _1310.y) / _1316;
+                        float _1323 = _1319 * _1319;
+                        float _1324 = _1322 * _1322;
+                        float _1326 = (_1323 + _1324) - 1.0;
+                        float _1327 = _1326 * 0.3333333432674407958984375;
+                        float _1329 = (_1327 * _1327) * _1327;
+                        float _1330 = _1323 * _1324;
+                        float _1332 = _1329 + (_1330 * 2.0);
+                        float _1333 = _1329 + _1330;
+                        float _1335 = _1319 + (_1319 * _1324);
+                        float _1406;
+                        if (_1333 < 0.0)
                         {
-                            float _2665 = acos(_2617 / _2614) * 0.3333333432674407958984375;
-                            float _2666 = cos(_2665);
-                            float _2668 = sin(_2665) * 1.73205077648162841796875;
-                            float _2669 = _2611 * (-0.3333333432674407958984375);
-                            float _2674 = sqrt((_2669 * ((_2666 + _2668) + 2.0)) + _2608);
-                            float _2679 = sqrt((_2669 * ((_2666 - _2668) + 2.0)) + _2608);
-                            _2691 = (((_2679 + (float(int(sign(_2601))) * _2674)) + (abs(_2620) / (_2674 * _2679))) - _2604) * 0.5;
+                            float _1380 = acos(_1332 / _1329) * 0.3333333432674407958984375;
+                            float _1381 = cos(_1380);
+                            float _1383 = sin(_1380) * 1.73205077648162841796875;
+                            float _1384 = _1326 * (-0.3333333432674407958984375);
+                            float _1389 = sqrt((_1384 * ((_1381 + _1383) + 2.0)) + _1323);
+                            float _1394 = sqrt((_1384 * ((_1381 - _1383) + 2.0)) + _1323);
+                            _1406 = (((_1394 + (float(int(sign(_1316))) * _1389)) + (abs(_1335) / (_1389 * _1394))) - _1319) * 0.5;
                         }
                         else
                         {
-                            float _2628 = ((2.0 * _2604) * _2607) * sqrt(_2618);
-                            float _2629 = _2617 + _2628;
-                            float _2635 = float(int(sign(_2629))) * powr(abs(_2629), 0.3333333432674407958984375);
-                            float _2636 = _2617 - _2628;
-                            float _2642 = float(int(sign(_2636))) * powr(abs(_2636), 0.3333333432674407958984375);
-                            float _2648 = (((-_2635) - _2642) - (_2611 * 1.33333337306976318359375)) + (2.0 * _2608);
-                            float _2650 = (_2635 - _2642) * 1.73205077648162841796875;
-                            float _2654 = sqrt((_2648 * _2648) + (_2650 * _2650));
-                            _2691 = (((_2650 / sqrt(_2654 - _2648)) + ((2.0 * _2620) / _2654)) - _2604) * 0.5;
+                            float _1343 = ((2.0 * _1319) * _1322) * sqrt(_1333);
+                            float _1344 = _1332 + _1343;
+                            float _1350 = float(int(sign(_1344))) * powr(abs(_1344), 0.3333333432674407958984375);
+                            float _1351 = _1332 - _1343;
+                            float _1357 = float(int(sign(_1351))) * powr(abs(_1351), 0.3333333432674407958984375);
+                            float _1363 = (((-_1350) - _1357) - (_1326 * 1.33333337306976318359375)) + (2.0 * _1323);
+                            float _1365 = (_1350 - _1357) * 1.73205077648162841796875;
+                            float _1369 = sqrt((_1363 * _1363) + (_1365 * _1365));
+                            _1406 = (((_1365 / sqrt(_1369 - _1363)) + ((2.0 * _1335) / _1369)) - _1319) * 0.5;
                         }
-                        float _2696 = _2596.y * sqrt(1.0 - (_2691 * _2691));
-                        _2705 = length(float2(_2596.x * _2691, _2696) - _2595) * float(int(sign(_2595.y - _2696)));
+                        float _1411 = _1311.y * sqrt(1.0 - (_1406 * _1406));
+                        _1420 = length(float2(_1311.x * _1406, _1411) - _1310) * float(int(sign(_1310.y - _1411)));
                         break;
                     } while(false);
-                    _2715 = _2705;
+                    _1430 = _1420;
                     break;
                 }
-                float2 _2707 = abs(_2102) - _2105;
-                _2715 = precise::min(precise::max(_2707.x, _2707.y), 0.0) + length(precise::max(_2707, float2(0.0)));
+                float2 _1422 = abs(_817) - _820;
+                _1430 = precise::min(precise::max(_1422.x, _1422.y), 0.0) + length(precise::max(_1422, float2(0.0)));
                 break;
             } while(false);
-            float _2716 = -_2715;
-            float _2717 = smoothstep(-0.3540000021457672119140625, 0.3540000021457672119140625, _2716);
-            float _2719 = _2717 * in.in_var_COLOR0.w;
-            float4 _2725 = float4(in.in_var_COLOR0.xyz * _2719, _2719);
-            float4 _2752;
+            float _1431 = -_1430;
+            float _1432 = smoothstep(-0.3540000021457672119140625, 0.3540000021457672119140625, _1431);
+            float _1434 = _1432 * in.in_var_COLOR0.w;
+            float4 _1440 = float4(in.in_var_COLOR0.xyz * _1434, _1434);
+            float4 _1467;
             if (in.in_var_COLOR4.x > 0.0)
             {
-                float _2736 = precise::min(_2717, 1.0 - smoothstep(in.in_var_COLOR4.x - 0.3540000021457672119140625, in.in_var_COLOR4.x + 0.3540000021457672119140625, _2716)) * in.in_var_COLOR5.w;
-                float _2745 = 1.0 - _2736;
-                float3 _2747 = float4(in.in_var_COLOR5.xyz * _2736, _2736).xyz + (_2725.xyz * _2745);
-                float4 _2748 = float4(_2747.x, _2747.y, _2747.z, _103.w);
-                _2748.w = _2736 + (_2719 * _2745);
-                _2752 = _2748;
+                float _1451 = precise::min(_1432, 1.0 - smoothstep(in.in_var_COLOR4.x - 0.3540000021457672119140625, in.in_var_COLOR4.x + 0.3540000021457672119140625, _1431)) * in.in_var_COLOR5.w;
+                float _1460 = 1.0 - _1451;
+                float3 _1462 = float4(in.in_var_COLOR5.xyz * _1451, _1451).xyz + (_1440.xyz * _1460);
+                float4 _1463 = float4(_1462.x, _1462.y, _1462.z, _98.w);
+                _1463.w = _1451 + (_1434 * _1460);
+                _1467 = _1463;
             }
             else
             {
-                _2752 = _2725;
+                _1467 = _1440;
             }
-            _2988 = _2752;
+            _1703 = _1467;
             break;
         }
         case 8u:
         {
-            bool _824 = uint(in.in_var_COLOR1.y + 0.5) != 0u;
-            float2 _830 = in.in_var_TEXCOORD1 - in.in_var_COLOR5.xy;
-            float _1443;
-            do
-            {
-                float2 _833 = in.in_var_COLOR5.zw * 0.5;
-                float _834 = _833.x;
-                float _835 = -_834;
-                float _837 = _835 + in.in_var_COLOR6.x;
-                float _838 = _833.y;
-                float _839 = -_838;
-                float _841 = _839 + in.in_var_COLOR7.x;
-                float2 _843 = _830 - float2(_837, _841);
-                bool _850;
-                if ((in.in_var_COLOR6.x * in.in_var_COLOR7.x) > 0.0)
-                {
-                    _850 = _830.x < _837;
-                }
-                else
-                {
-                    _850 = false;
-                }
-                bool _855;
-                if (_850)
-                {
-                    _855 = _830.y <= _841;
-                }
-                else
-                {
-                    _855 = false;
-                }
-                if (_855)
-                {
-                    float2 _858 = float2(in.in_var_COLOR6.x, in.in_var_COLOR7.x);
-                    float _986;
-                    do
-                    {
-                        if (abs(in.in_var_COLOR6.x - in.in_var_COLOR7.x) < 0.100000001490116119384765625)
-                        {
-                            _986 = length(_843) - in.in_var_COLOR6.x;
-                            break;
-                        }
-                        float2 _868 = abs(_843);
-                        float2 _876;
-                        float2 _877;
-                        if (_868.x > _868.y)
-                        {
-                            _876 = _868.yx;
-                            _877 = _858.yx;
-                        }
-                        else
-                        {
-                            _876 = _868;
-                            _877 = _858;
-                        }
-                        float _882 = (_877.y * _877.y) - (_877.x * _877.x);
-                        float _885 = (_877.x * _876.x) / _882;
-                        float _888 = (_877.y * _876.y) / _882;
-                        float _889 = _885 * _885;
-                        float _890 = _888 * _888;
-                        float _892 = (_889 + _890) - 1.0;
-                        float _893 = _892 * 0.3333333432674407958984375;
-                        float _895 = (_893 * _893) * _893;
-                        float _896 = _889 * _890;
-                        float _898 = _895 + (_896 * 2.0);
-                        float _899 = _895 + _896;
-                        float _901 = _885 + (_885 * _890);
-                        float _972;
-                        if (_899 < 0.0)
-                        {
-                            float _946 = acos(_898 / _895) * 0.3333333432674407958984375;
-                            float _947 = cos(_946);
-                            float _949 = sin(_946) * 1.73205077648162841796875;
-                            float _950 = _892 * (-0.3333333432674407958984375);
-                            float _955 = sqrt((_950 * ((_947 + _949) + 2.0)) + _889);
-                            float _960 = sqrt((_950 * ((_947 - _949) + 2.0)) + _889);
-                            _972 = (((_960 + (float(int(sign(_882))) * _955)) + (abs(_901) / (_955 * _960))) - _885) * 0.5;
-                        }
-                        else
-                        {
-                            float _909 = ((2.0 * _885) * _888) * sqrt(_899);
-                            float _910 = _898 + _909;
-                            float _916 = float(int(sign(_910))) * powr(abs(_910), 0.3333333432674407958984375);
-                            float _917 = _898 - _909;
-                            float _923 = float(int(sign(_917))) * powr(abs(_917), 0.3333333432674407958984375);
-                            float _929 = (((-_916) - _923) - (_892 * 1.33333337306976318359375)) + (2.0 * _889);
-                            float _931 = (_916 - _923) * 1.73205077648162841796875;
-                            float _935 = sqrt((_929 * _929) + (_931 * _931));
-                            _972 = (((_931 / sqrt(_935 - _929)) + ((2.0 * _901) / _935)) - _885) * 0.5;
-                        }
-                        float _977 = _877.y * sqrt(1.0 - (_972 * _972));
-                        _986 = length(float2(_877.x * _972, _977) - _876) * float(int(sign(_876.y - _977)));
-                        break;
-                    } while(false);
-                    _1443 = _986;
-                    break;
-                }
-                float _988 = _834 - in.in_var_COLOR6.y;
-                float _990 = _839 + in.in_var_COLOR7.y;
-                float2 _992 = _830 - float2(_988, _990);
-                bool _999;
-                if ((in.in_var_COLOR6.y * in.in_var_COLOR7.y) > 0.0)
-                {
-                    _999 = _830.x >= _988;
-                }
-                else
-                {
-                    _999 = false;
-                }
-                bool _1004;
-                if (_999)
-                {
-                    _1004 = _830.y <= _990;
-                }
-                else
-                {
-                    _1004 = false;
-                }
-                if (_1004)
-                {
-                    float2 _1007 = float2(in.in_var_COLOR6.y, in.in_var_COLOR7.y);
-                    float _1135;
-                    do
-                    {
-                        if (abs(in.in_var_COLOR6.y - in.in_var_COLOR7.y) < 0.100000001490116119384765625)
-                        {
-                            _1135 = length(_992) - in.in_var_COLOR6.y;
-                            break;
-                        }
-                        float2 _1017 = abs(_992);
-                        float2 _1025;
-                        float2 _1026;
-                        if (_1017.x > _1017.y)
-                        {
-                            _1025 = _1017.yx;
-                            _1026 = _1007.yx;
-                        }
-                        else
-                        {
-                            _1025 = _1017;
-                            _1026 = _1007;
-                        }
-                        float _1031 = (_1026.y * _1026.y) - (_1026.x * _1026.x);
-                        float _1034 = (_1026.x * _1025.x) / _1031;
-                        float _1037 = (_1026.y * _1025.y) / _1031;
-                        float _1038 = _1034 * _1034;
-                        float _1039 = _1037 * _1037;
-                        float _1041 = (_1038 + _1039) - 1.0;
-                        float _1042 = _1041 * 0.3333333432674407958984375;
-                        float _1044 = (_1042 * _1042) * _1042;
-                        float _1045 = _1038 * _1039;
-                        float _1047 = _1044 + (_1045 * 2.0);
-                        float _1048 = _1044 + _1045;
-                        float _1050 = _1034 + (_1034 * _1039);
-                        float _1121;
-                        if (_1048 < 0.0)
-                        {
-                            float _1095 = acos(_1047 / _1044) * 0.3333333432674407958984375;
-                            float _1096 = cos(_1095);
-                            float _1098 = sin(_1095) * 1.73205077648162841796875;
-                            float _1099 = _1041 * (-0.3333333432674407958984375);
-                            float _1104 = sqrt((_1099 * ((_1096 + _1098) + 2.0)) + _1038);
-                            float _1109 = sqrt((_1099 * ((_1096 - _1098) + 2.0)) + _1038);
-                            _1121 = (((_1109 + (float(int(sign(_1031))) * _1104)) + (abs(_1050) / (_1104 * _1109))) - _1034) * 0.5;
-                        }
-                        else
-                        {
-                            float _1058 = ((2.0 * _1034) * _1037) * sqrt(_1048);
-                            float _1059 = _1047 + _1058;
-                            float _1065 = float(int(sign(_1059))) * powr(abs(_1059), 0.3333333432674407958984375);
-                            float _1066 = _1047 - _1058;
-                            float _1072 = float(int(sign(_1066))) * powr(abs(_1066), 0.3333333432674407958984375);
-                            float _1078 = (((-_1065) - _1072) - (_1041 * 1.33333337306976318359375)) + (2.0 * _1038);
-                            float _1080 = (_1065 - _1072) * 1.73205077648162841796875;
-                            float _1084 = sqrt((_1078 * _1078) + (_1080 * _1080));
-                            _1121 = (((_1080 / sqrt(_1084 - _1078)) + ((2.0 * _1050) / _1084)) - _1034) * 0.5;
-                        }
-                        float _1126 = _1026.y * sqrt(1.0 - (_1121 * _1121));
-                        _1135 = length(float2(_1026.x * _1121, _1126) - _1025) * float(int(sign(_1025.y - _1126)));
-                        break;
-                    } while(false);
-                    _1443 = _1135;
-                    break;
-                }
-                float _1137 = _834 - in.in_var_COLOR6.z;
-                float _1139 = _838 - in.in_var_COLOR7.z;
-                float2 _1141 = _830 - float2(_1137, _1139);
-                bool _1148;
-                if ((in.in_var_COLOR6.z * in.in_var_COLOR7.z) > 0.0)
-                {
-                    _1148 = _830.x >= _1137;
-                }
-                else
-                {
-                    _1148 = false;
-                }
-                bool _1153;
-                if (_1148)
-                {
-                    _1153 = _830.y >= _1139;
-                }
-                else
-                {
-                    _1153 = false;
-                }
-                if (_1153)
-                {
-                    float2 _1156 = float2(in.in_var_COLOR6.z, in.in_var_COLOR7.z);
-                    float _1284;
-                    do
-                    {
-                        if (abs(in.in_var_COLOR6.z - in.in_var_COLOR7.z) < 0.100000001490116119384765625)
-                        {
-                            _1284 = length(_1141) - in.in_var_COLOR6.z;
-                            break;
-                        }
-                        float2 _1166 = abs(_1141);
-                        float2 _1174;
-                        float2 _1175;
-                        if (_1166.x > _1166.y)
-                        {
-                            _1174 = _1166.yx;
-                            _1175 = _1156.yx;
-                        }
-                        else
-                        {
-                            _1174 = _1166;
-                            _1175 = _1156;
-                        }
-                        float _1180 = (_1175.y * _1175.y) - (_1175.x * _1175.x);
-                        float _1183 = (_1175.x * _1174.x) / _1180;
-                        float _1186 = (_1175.y * _1174.y) / _1180;
-                        float _1187 = _1183 * _1183;
-                        float _1188 = _1186 * _1186;
-                        float _1190 = (_1187 + _1188) - 1.0;
-                        float _1191 = _1190 * 0.3333333432674407958984375;
-                        float _1193 = (_1191 * _1191) * _1191;
-                        float _1194 = _1187 * _1188;
-                        float _1196 = _1193 + (_1194 * 2.0);
-                        float _1197 = _1193 + _1194;
-                        float _1199 = _1183 + (_1183 * _1188);
-                        float _1270;
-                        if (_1197 < 0.0)
-                        {
-                            float _1244 = acos(_1196 / _1193) * 0.3333333432674407958984375;
-                            float _1245 = cos(_1244);
-                            float _1247 = sin(_1244) * 1.73205077648162841796875;
-                            float _1248 = _1190 * (-0.3333333432674407958984375);
-                            float _1253 = sqrt((_1248 * ((_1245 + _1247) + 2.0)) + _1187);
-                            float _1258 = sqrt((_1248 * ((_1245 - _1247) + 2.0)) + _1187);
-                            _1270 = (((_1258 + (float(int(sign(_1180))) * _1253)) + (abs(_1199) / (_1253 * _1258))) - _1183) * 0.5;
-                        }
-                        else
-                        {
-                            float _1207 = ((2.0 * _1183) * _1186) * sqrt(_1197);
-                            float _1208 = _1196 + _1207;
-                            float _1214 = float(int(sign(_1208))) * powr(abs(_1208), 0.3333333432674407958984375);
-                            float _1215 = _1196 - _1207;
-                            float _1221 = float(int(sign(_1215))) * powr(abs(_1215), 0.3333333432674407958984375);
-                            float _1227 = (((-_1214) - _1221) - (_1190 * 1.33333337306976318359375)) + (2.0 * _1187);
-                            float _1229 = (_1214 - _1221) * 1.73205077648162841796875;
-                            float _1233 = sqrt((_1227 * _1227) + (_1229 * _1229));
-                            _1270 = (((_1229 / sqrt(_1233 - _1227)) + ((2.0 * _1199) / _1233)) - _1183) * 0.5;
-                        }
-                        float _1275 = _1175.y * sqrt(1.0 - (_1270 * _1270));
-                        _1284 = length(float2(_1175.x * _1270, _1275) - _1174) * float(int(sign(_1174.y - _1275)));
-                        break;
-                    } while(false);
-                    _1443 = _1284;
-                    break;
-                }
-                float _1286 = _835 + in.in_var_COLOR6.w;
-                float _1288 = _838 - in.in_var_COLOR7.w;
-                float2 _1290 = _830 - float2(_1286, _1288);
-                bool _1297;
-                if ((in.in_var_COLOR6.w * in.in_var_COLOR7.w) > 0.0)
-                {
-                    _1297 = _830.x < _1286;
-                }
-                else
-                {
-                    _1297 = false;
-                }
-                bool _1302;
-                if (_1297)
-                {
-                    _1302 = _830.y > _1288;
-                }
-                else
-                {
-                    _1302 = false;
-                }
-                if (_1302)
-                {
-                    float2 _1305 = float2(in.in_var_COLOR6.w, in.in_var_COLOR7.w);
-                    float _1433;
-                    do
-                    {
-                        if (abs(in.in_var_COLOR6.w - in.in_var_COLOR7.w) < 0.100000001490116119384765625)
-                        {
-                            _1433 = length(_1290) - in.in_var_COLOR6.w;
-                            break;
-                        }
-                        float2 _1315 = abs(_1290);
-                        float2 _1323;
-                        float2 _1324;
-                        if (_1315.x > _1315.y)
-                        {
-                            _1323 = _1315.yx;
-                            _1324 = _1305.yx;
-                        }
-                        else
-                        {
-                            _1323 = _1315;
-                            _1324 = _1305;
-                        }
-                        float _1329 = (_1324.y * _1324.y) - (_1324.x * _1324.x);
-                        float _1332 = (_1324.x * _1323.x) / _1329;
-                        float _1335 = (_1324.y * _1323.y) / _1329;
-                        float _1336 = _1332 * _1332;
-                        float _1337 = _1335 * _1335;
-                        float _1339 = (_1336 + _1337) - 1.0;
-                        float _1340 = _1339 * 0.3333333432674407958984375;
-                        float _1342 = (_1340 * _1340) * _1340;
-                        float _1343 = _1336 * _1337;
-                        float _1345 = _1342 + (_1343 * 2.0);
-                        float _1346 = _1342 + _1343;
-                        float _1348 = _1332 + (_1332 * _1337);
-                        float _1419;
-                        if (_1346 < 0.0)
-                        {
-                            float _1393 = acos(_1345 / _1342) * 0.3333333432674407958984375;
-                            float _1394 = cos(_1393);
-                            float _1396 = sin(_1393) * 1.73205077648162841796875;
-                            float _1397 = _1339 * (-0.3333333432674407958984375);
-                            float _1402 = sqrt((_1397 * ((_1394 + _1396) + 2.0)) + _1336);
-                            float _1407 = sqrt((_1397 * ((_1394 - _1396) + 2.0)) + _1336);
-                            _1419 = (((_1407 + (float(int(sign(_1329))) * _1402)) + (abs(_1348) / (_1402 * _1407))) - _1332) * 0.5;
-                        }
-                        else
-                        {
-                            float _1356 = ((2.0 * _1332) * _1335) * sqrt(_1346);
-                            float _1357 = _1345 + _1356;
-                            float _1363 = float(int(sign(_1357))) * powr(abs(_1357), 0.3333333432674407958984375);
-                            float _1364 = _1345 - _1356;
-                            float _1370 = float(int(sign(_1364))) * powr(abs(_1364), 0.3333333432674407958984375);
-                            float _1376 = (((-_1363) - _1370) - (_1339 * 1.33333337306976318359375)) + (2.0 * _1336);
-                            float _1378 = (_1363 - _1370) * 1.73205077648162841796875;
-                            float _1382 = sqrt((_1376 * _1376) + (_1378 * _1378));
-                            _1419 = (((_1378 / sqrt(_1382 - _1376)) + ((2.0 * _1348) / _1382)) - _1332) * 0.5;
-                        }
-                        float _1424 = _1324.y * sqrt(1.0 - (_1419 * _1419));
-                        _1433 = length(float2(_1324.x * _1419, _1424) - _1323) * float(int(sign(_1323.y - _1424)));
-                        break;
-                    } while(false);
-                    _1443 = _1433;
-                    break;
-                }
-                float2 _1435 = abs(_830) - _833;
-                _1443 = precise::min(precise::max(_1435.x, _1435.y), 0.0) + length(precise::max(_1435, float2(0.0)));
-                break;
-            } while(false);
-            float2 _1444 = in.in_var_TEXCOORD1 - in.in_var_COLOR2.xy;
-            float _2057;
-            do
-            {
-                float2 _1447 = in.in_var_COLOR2.zw * 0.5;
-                float _1448 = _1447.x;
-                float _1449 = -_1448;
-                float _1451 = _1449 + in.in_var_COLOR3.x;
-                float _1452 = _1447.y;
-                float _1453 = -_1452;
-                float _1455 = _1453 + in.in_var_COLOR4.x;
-                float2 _1457 = _1444 - float2(_1451, _1455);
-                bool _1464;
-                if ((in.in_var_COLOR3.x * in.in_var_COLOR4.x) > 0.0)
-                {
-                    _1464 = _1444.x < _1451;
-                }
-                else
-                {
-                    _1464 = false;
-                }
-                bool _1469;
-                if (_1464)
-                {
-                    _1469 = _1444.y <= _1455;
-                }
-                else
-                {
-                    _1469 = false;
-                }
-                if (_1469)
-                {
-                    float2 _1472 = float2(in.in_var_COLOR3.x, in.in_var_COLOR4.x);
-                    float _1600;
-                    do
-                    {
-                        if (abs(in.in_var_COLOR3.x - in.in_var_COLOR4.x) < 0.100000001490116119384765625)
-                        {
-                            _1600 = length(_1457) - in.in_var_COLOR3.x;
-                            break;
-                        }
-                        float2 _1482 = abs(_1457);
-                        float2 _1490;
-                        float2 _1491;
-                        if (_1482.x > _1482.y)
-                        {
-                            _1490 = _1482.yx;
-                            _1491 = _1472.yx;
-                        }
-                        else
-                        {
-                            _1490 = _1482;
-                            _1491 = _1472;
-                        }
-                        float _1496 = (_1491.y * _1491.y) - (_1491.x * _1491.x);
-                        float _1499 = (_1491.x * _1490.x) / _1496;
-                        float _1502 = (_1491.y * _1490.y) / _1496;
-                        float _1503 = _1499 * _1499;
-                        float _1504 = _1502 * _1502;
-                        float _1506 = (_1503 + _1504) - 1.0;
-                        float _1507 = _1506 * 0.3333333432674407958984375;
-                        float _1509 = (_1507 * _1507) * _1507;
-                        float _1510 = _1503 * _1504;
-                        float _1512 = _1509 + (_1510 * 2.0);
-                        float _1513 = _1509 + _1510;
-                        float _1515 = _1499 + (_1499 * _1504);
-                        float _1586;
-                        if (_1513 < 0.0)
-                        {
-                            float _1560 = acos(_1512 / _1509) * 0.3333333432674407958984375;
-                            float _1561 = cos(_1560);
-                            float _1563 = sin(_1560) * 1.73205077648162841796875;
-                            float _1564 = _1506 * (-0.3333333432674407958984375);
-                            float _1569 = sqrt((_1564 * ((_1561 + _1563) + 2.0)) + _1503);
-                            float _1574 = sqrt((_1564 * ((_1561 - _1563) + 2.0)) + _1503);
-                            _1586 = (((_1574 + (float(int(sign(_1496))) * _1569)) + (abs(_1515) / (_1569 * _1574))) - _1499) * 0.5;
-                        }
-                        else
-                        {
-                            float _1523 = ((2.0 * _1499) * _1502) * sqrt(_1513);
-                            float _1524 = _1512 + _1523;
-                            float _1530 = float(int(sign(_1524))) * powr(abs(_1524), 0.3333333432674407958984375);
-                            float _1531 = _1512 - _1523;
-                            float _1537 = float(int(sign(_1531))) * powr(abs(_1531), 0.3333333432674407958984375);
-                            float _1543 = (((-_1530) - _1537) - (_1506 * 1.33333337306976318359375)) + (2.0 * _1503);
-                            float _1545 = (_1530 - _1537) * 1.73205077648162841796875;
-                            float _1549 = sqrt((_1543 * _1543) + (_1545 * _1545));
-                            _1586 = (((_1545 / sqrt(_1549 - _1543)) + ((2.0 * _1515) / _1549)) - _1499) * 0.5;
-                        }
-                        float _1591 = _1491.y * sqrt(1.0 - (_1586 * _1586));
-                        _1600 = length(float2(_1491.x * _1586, _1591) - _1490) * float(int(sign(_1490.y - _1591)));
-                        break;
-                    } while(false);
-                    _2057 = _1600;
-                    break;
-                }
-                float _1602 = _1448 - in.in_var_COLOR3.y;
-                float _1604 = _1453 + in.in_var_COLOR4.y;
-                float2 _1606 = _1444 - float2(_1602, _1604);
-                bool _1613;
-                if ((in.in_var_COLOR3.y * in.in_var_COLOR4.y) > 0.0)
-                {
-                    _1613 = _1444.x >= _1602;
-                }
-                else
-                {
-                    _1613 = false;
-                }
-                bool _1618;
-                if (_1613)
-                {
-                    _1618 = _1444.y <= _1604;
-                }
-                else
-                {
-                    _1618 = false;
-                }
-                if (_1618)
-                {
-                    float2 _1621 = float2(in.in_var_COLOR3.y, in.in_var_COLOR4.y);
-                    float _1749;
-                    do
-                    {
-                        if (abs(in.in_var_COLOR3.y - in.in_var_COLOR4.y) < 0.100000001490116119384765625)
-                        {
-                            _1749 = length(_1606) - in.in_var_COLOR3.y;
-                            break;
-                        }
-                        float2 _1631 = abs(_1606);
-                        float2 _1639;
-                        float2 _1640;
-                        if (_1631.x > _1631.y)
-                        {
-                            _1639 = _1631.yx;
-                            _1640 = _1621.yx;
-                        }
-                        else
-                        {
-                            _1639 = _1631;
-                            _1640 = _1621;
-                        }
-                        float _1645 = (_1640.y * _1640.y) - (_1640.x * _1640.x);
-                        float _1648 = (_1640.x * _1639.x) / _1645;
-                        float _1651 = (_1640.y * _1639.y) / _1645;
-                        float _1652 = _1648 * _1648;
-                        float _1653 = _1651 * _1651;
-                        float _1655 = (_1652 + _1653) - 1.0;
-                        float _1656 = _1655 * 0.3333333432674407958984375;
-                        float _1658 = (_1656 * _1656) * _1656;
-                        float _1659 = _1652 * _1653;
-                        float _1661 = _1658 + (_1659 * 2.0);
-                        float _1662 = _1658 + _1659;
-                        float _1664 = _1648 + (_1648 * _1653);
-                        float _1735;
-                        if (_1662 < 0.0)
-                        {
-                            float _1709 = acos(_1661 / _1658) * 0.3333333432674407958984375;
-                            float _1710 = cos(_1709);
-                            float _1712 = sin(_1709) * 1.73205077648162841796875;
-                            float _1713 = _1655 * (-0.3333333432674407958984375);
-                            float _1718 = sqrt((_1713 * ((_1710 + _1712) + 2.0)) + _1652);
-                            float _1723 = sqrt((_1713 * ((_1710 - _1712) + 2.0)) + _1652);
-                            _1735 = (((_1723 + (float(int(sign(_1645))) * _1718)) + (abs(_1664) / (_1718 * _1723))) - _1648) * 0.5;
-                        }
-                        else
-                        {
-                            float _1672 = ((2.0 * _1648) * _1651) * sqrt(_1662);
-                            float _1673 = _1661 + _1672;
-                            float _1679 = float(int(sign(_1673))) * powr(abs(_1673), 0.3333333432674407958984375);
-                            float _1680 = _1661 - _1672;
-                            float _1686 = float(int(sign(_1680))) * powr(abs(_1680), 0.3333333432674407958984375);
-                            float _1692 = (((-_1679) - _1686) - (_1655 * 1.33333337306976318359375)) + (2.0 * _1652);
-                            float _1694 = (_1679 - _1686) * 1.73205077648162841796875;
-                            float _1698 = sqrt((_1692 * _1692) + (_1694 * _1694));
-                            _1735 = (((_1694 / sqrt(_1698 - _1692)) + ((2.0 * _1664) / _1698)) - _1648) * 0.5;
-                        }
-                        float _1740 = _1640.y * sqrt(1.0 - (_1735 * _1735));
-                        _1749 = length(float2(_1640.x * _1735, _1740) - _1639) * float(int(sign(_1639.y - _1740)));
-                        break;
-                    } while(false);
-                    _2057 = _1749;
-                    break;
-                }
-                float _1751 = _1448 - in.in_var_COLOR3.z;
-                float _1753 = _1452 - in.in_var_COLOR4.z;
-                float2 _1755 = _1444 - float2(_1751, _1753);
-                bool _1762;
-                if ((in.in_var_COLOR3.z * in.in_var_COLOR4.z) > 0.0)
-                {
-                    _1762 = _1444.x >= _1751;
-                }
-                else
-                {
-                    _1762 = false;
-                }
-                bool _1767;
-                if (_1762)
-                {
-                    _1767 = _1444.y >= _1753;
-                }
-                else
-                {
-                    _1767 = false;
-                }
-                if (_1767)
-                {
-                    float2 _1770 = float2(in.in_var_COLOR3.z, in.in_var_COLOR4.z);
-                    float _1898;
-                    do
-                    {
-                        if (abs(in.in_var_COLOR3.z - in.in_var_COLOR4.z) < 0.100000001490116119384765625)
-                        {
-                            _1898 = length(_1755) - in.in_var_COLOR3.z;
-                            break;
-                        }
-                        float2 _1780 = abs(_1755);
-                        float2 _1788;
-                        float2 _1789;
-                        if (_1780.x > _1780.y)
-                        {
-                            _1788 = _1780.yx;
-                            _1789 = _1770.yx;
-                        }
-                        else
-                        {
-                            _1788 = _1780;
-                            _1789 = _1770;
-                        }
-                        float _1794 = (_1789.y * _1789.y) - (_1789.x * _1789.x);
-                        float _1797 = (_1789.x * _1788.x) / _1794;
-                        float _1800 = (_1789.y * _1788.y) / _1794;
-                        float _1801 = _1797 * _1797;
-                        float _1802 = _1800 * _1800;
-                        float _1804 = (_1801 + _1802) - 1.0;
-                        float _1805 = _1804 * 0.3333333432674407958984375;
-                        float _1807 = (_1805 * _1805) * _1805;
-                        float _1808 = _1801 * _1802;
-                        float _1810 = _1807 + (_1808 * 2.0);
-                        float _1811 = _1807 + _1808;
-                        float _1813 = _1797 + (_1797 * _1802);
-                        float _1884;
-                        if (_1811 < 0.0)
-                        {
-                            float _1858 = acos(_1810 / _1807) * 0.3333333432674407958984375;
-                            float _1859 = cos(_1858);
-                            float _1861 = sin(_1858) * 1.73205077648162841796875;
-                            float _1862 = _1804 * (-0.3333333432674407958984375);
-                            float _1867 = sqrt((_1862 * ((_1859 + _1861) + 2.0)) + _1801);
-                            float _1872 = sqrt((_1862 * ((_1859 - _1861) + 2.0)) + _1801);
-                            _1884 = (((_1872 + (float(int(sign(_1794))) * _1867)) + (abs(_1813) / (_1867 * _1872))) - _1797) * 0.5;
-                        }
-                        else
-                        {
-                            float _1821 = ((2.0 * _1797) * _1800) * sqrt(_1811);
-                            float _1822 = _1810 + _1821;
-                            float _1828 = float(int(sign(_1822))) * powr(abs(_1822), 0.3333333432674407958984375);
-                            float _1829 = _1810 - _1821;
-                            float _1835 = float(int(sign(_1829))) * powr(abs(_1829), 0.3333333432674407958984375);
-                            float _1841 = (((-_1828) - _1835) - (_1804 * 1.33333337306976318359375)) + (2.0 * _1801);
-                            float _1843 = (_1828 - _1835) * 1.73205077648162841796875;
-                            float _1847 = sqrt((_1841 * _1841) + (_1843 * _1843));
-                            _1884 = (((_1843 / sqrt(_1847 - _1841)) + ((2.0 * _1813) / _1847)) - _1797) * 0.5;
-                        }
-                        float _1889 = _1789.y * sqrt(1.0 - (_1884 * _1884));
-                        _1898 = length(float2(_1789.x * _1884, _1889) - _1788) * float(int(sign(_1788.y - _1889)));
-                        break;
-                    } while(false);
-                    _2057 = _1898;
-                    break;
-                }
-                float _1900 = _1449 + in.in_var_COLOR3.w;
-                float _1902 = _1452 - in.in_var_COLOR4.w;
-                float2 _1904 = _1444 - float2(_1900, _1902);
-                bool _1911;
-                if ((in.in_var_COLOR3.w * in.in_var_COLOR4.w) > 0.0)
-                {
-                    _1911 = _1444.x < _1900;
-                }
-                else
-                {
-                    _1911 = false;
-                }
-                bool _1916;
-                if (_1911)
-                {
-                    _1916 = _1444.y > _1902;
-                }
-                else
-                {
-                    _1916 = false;
-                }
-                if (_1916)
-                {
-                    float2 _1919 = float2(in.in_var_COLOR3.w, in.in_var_COLOR4.w);
-                    float _2047;
-                    do
-                    {
-                        if (abs(in.in_var_COLOR3.w - in.in_var_COLOR4.w) < 0.100000001490116119384765625)
-                        {
-                            _2047 = length(_1904) - in.in_var_COLOR3.w;
-                            break;
-                        }
-                        float2 _1929 = abs(_1904);
-                        float2 _1937;
-                        float2 _1938;
-                        if (_1929.x > _1929.y)
-                        {
-                            _1937 = _1929.yx;
-                            _1938 = _1919.yx;
-                        }
-                        else
-                        {
-                            _1937 = _1929;
-                            _1938 = _1919;
-                        }
-                        float _1943 = (_1938.y * _1938.y) - (_1938.x * _1938.x);
-                        float _1946 = (_1938.x * _1937.x) / _1943;
-                        float _1949 = (_1938.y * _1937.y) / _1943;
-                        float _1950 = _1946 * _1946;
-                        float _1951 = _1949 * _1949;
-                        float _1953 = (_1950 + _1951) - 1.0;
-                        float _1954 = _1953 * 0.3333333432674407958984375;
-                        float _1956 = (_1954 * _1954) * _1954;
-                        float _1957 = _1950 * _1951;
-                        float _1959 = _1956 + (_1957 * 2.0);
-                        float _1960 = _1956 + _1957;
-                        float _1962 = _1946 + (_1946 * _1951);
-                        float _2033;
-                        if (_1960 < 0.0)
-                        {
-                            float _2007 = acos(_1959 / _1956) * 0.3333333432674407958984375;
-                            float _2008 = cos(_2007);
-                            float _2010 = sin(_2007) * 1.73205077648162841796875;
-                            float _2011 = _1953 * (-0.3333333432674407958984375);
-                            float _2016 = sqrt((_2011 * ((_2008 + _2010) + 2.0)) + _1950);
-                            float _2021 = sqrt((_2011 * ((_2008 - _2010) + 2.0)) + _1950);
-                            _2033 = (((_2021 + (float(int(sign(_1943))) * _2016)) + (abs(_1962) / (_2016 * _2021))) - _1946) * 0.5;
-                        }
-                        else
-                        {
-                            float _1970 = ((2.0 * _1946) * _1949) * sqrt(_1960);
-                            float _1971 = _1959 + _1970;
-                            float _1977 = float(int(sign(_1971))) * powr(abs(_1971), 0.3333333432674407958984375);
-                            float _1978 = _1959 - _1970;
-                            float _1984 = float(int(sign(_1978))) * powr(abs(_1978), 0.3333333432674407958984375);
-                            float _1990 = (((-_1977) - _1984) - (_1953 * 1.33333337306976318359375)) + (2.0 * _1950);
-                            float _1992 = (_1977 - _1984) * 1.73205077648162841796875;
-                            float _1996 = sqrt((_1990 * _1990) + (_1992 * _1992));
-                            _2033 = (((_1992 / sqrt(_1996 - _1990)) + ((2.0 * _1962) / _1996)) - _1946) * 0.5;
-                        }
-                        float _2038 = _1938.y * sqrt(1.0 - (_2033 * _2033));
-                        _2047 = length(float2(_1938.x * _2033, _2038) - _1937) * float(int(sign(_1937.y - _2038)));
-                        break;
-                    } while(false);
-                    _2057 = _2047;
-                    break;
-                }
-                float2 _2049 = abs(_1444) - _1447;
-                _2057 = precise::min(precise::max(_2049.x, _2049.y), 0.0) + length(precise::max(_2049, float2(0.0)));
-                break;
-            } while(false);
-            float _2062;
-            if (_824)
-            {
-                _2062 = -_2057;
-            }
-            else
-            {
-                _2062 = _1443;
-            }
-            float _2067;
-            if (_824)
-            {
-                _2067 = -_1443;
-            }
-            else
-            {
-                _2067 = _2057;
-            }
-            if (_2062 < 0.0)
-            {
-                
-            }
-            float _2090;
-            if (in.in_var_COLOR1.z >= 1.0)
-            {
-                float _2081 = in.in_var_COLOR1.z * 2.0;
-                _2090 = (powr(smoothstep((-0.20000000298023223876953125) - _2081, _2081 + 0.20000000298023223876953125, -_2067), 1.89999997615814208984375) * 3.2999999523162841796875) / powr(in.in_var_COLOR1.z * 1.2000000476837158203125, 0.1500000059604644775390625);
-            }
-            else
-            {
-                float _2076 = _824 ? (-1.0) : 1.0;
-                _2090 = smoothstep(_2076 - 0.3540000021457672119140625, _2076 + 0.3540000021457672119140625, -_2067);
-            }
-            float _2093 = fast::clamp(_2090, 0.0, 1.0) * in.in_var_COLOR0.w;
-            _2988 = float4(in.in_var_COLOR0.xyz * _2093, _2093);
+            _1703 = in.in_var_COLOR0;
             break;
         }
         case 9u:
         {
-            float4 _820;
+            float4 _814;
             do
             {
-                float4 _199 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0);
-                float4 _200 = _199 * in.in_var_COLOR0;
-                float4 _204 = Texture1.sample(Sampler0, in.in_var_TEXCOORD1);
-                float4 _817;
-                bool _818;
+                float4 _193 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0);
+                float4 _194 = _193 * in.in_var_COLOR0;
+                float4 _198 = Texture1.sample(Sampler0, in.in_var_TEXCOORD1);
+                float4 _811;
+                bool _812;
                 switch (uint(in.in_var_COLOR1.y + 0.5))
                 {
                     case 0u:
                     {
-                        _817 = float4(0.0);
-                        _818 = true;
+                        _811 = float4(0.0);
+                        _812 = true;
                         break;
                     }
                     case 1u:
                     {
-                        _817 = _200;
-                        _818 = true;
+                        _811 = _194;
+                        _812 = true;
                         break;
                     }
                     case 2u:
                     {
-                        _817 = _200 + (_204 * (1.0 - _200.w));
-                        _818 = true;
+                        _811 = _194 + (_198 * (1.0 - _194.w));
+                        _812 = true;
                         break;
                     }
                     case 3u:
                     {
-                        _817 = _200 * _204.w;
-                        _818 = true;
+                        _811 = _194 * _198.w;
+                        _812 = true;
                         break;
                     }
                     case 4u:
                     {
-                        _817 = _200 * (1.0 - _204.w);
-                        _818 = true;
+                        _811 = _194 * (1.0 - _198.w);
+                        _812 = true;
                         break;
                     }
                     case 5u:
                     {
-                        _817 = (_200 * _204.w) + (_204 * (1.0 - _200.w));
-                        _818 = true;
+                        _811 = (_194 * _198.w) + (_198 * (1.0 - _194.w));
+                        _812 = true;
                         break;
                     }
                     case 6u:
                     {
-                        _817 = (_200 * (1.0 - _204.w)) + _204;
-                        _818 = true;
+                        _811 = (_194 * (1.0 - _198.w)) + _198;
+                        _812 = true;
                         break;
                     }
                     case 7u:
                     {
-                        _817 = _204 * _200.w;
-                        _818 = true;
+                        _811 = _198 * _194.w;
+                        _812 = true;
                         break;
                     }
                     case 8u:
                     {
-                        _817 = _204 * (1.0 - _200.w);
-                        _818 = true;
+                        _811 = _198 * (1.0 - _194.w);
+                        _812 = true;
                         break;
                     }
                     case 9u:
                     {
-                        _817 = (_200 * (1.0 - _204.w)) + (_204 * _200.w);
-                        _818 = true;
+                        _811 = (_194 * (1.0 - _198.w)) + (_198 * _194.w);
+                        _812 = true;
                         break;
                     }
                     case 10u:
                     {
-                        _817 = fast::clamp((_200 * (1.0 - _204.w)) + (_204 * (1.0 - _200.w)), float4(0.0), float4(1.0));
-                        _818 = true;
+                        _811 = fast::clamp((_194 * (1.0 - _198.w)) + (_198 * (1.0 - _194.w)), float4(0.0), float4(1.0));
+                        _812 = true;
                         break;
                     }
                     case 11u:
                     {
-                        float _771 = _200.w;
-                        _817 = float4(precise::min(_200.xyz, _204.xyz) * _771, _204.w * _771);
-                        _818 = true;
+                        float _765 = _194.w;
+                        _811 = float4(precise::min(_194.xyz, _198.xyz) * _765, _198.w * _765);
+                        _812 = true;
                         break;
                     }
                     case 12u:
                     {
-                        _817 = fast::clamp(_200 + _204, float4(0.0), float4(1.0));
-                        _818 = true;
+                        _811 = fast::clamp(_194 + _198, float4(0.0), float4(1.0));
+                        _812 = true;
                         break;
                     }
                     case 13u:
                     {
-                        float _758 = _200.w;
-                        _817 = float4(abs(_204.xyz - _200.xyz) * _758, _204.w * _758);
-                        _818 = true;
+                        float _752 = _194.w;
+                        _811 = float4(abs(_198.xyz - _194.xyz) * _752, _198.w * _752);
+                        _812 = true;
                         break;
                     }
                     case 14u:
                     {
-                        float _746 = _200.w;
-                        _817 = float4((_200.xyz * _204.xyz) * _746, _204.w * _746);
-                        _818 = true;
+                        float _740 = _194.w;
+                        _811 = float4((_194.xyz * _198.xyz) * _740, _198.w * _740);
+                        _812 = true;
                         break;
                     }
                     case 15u:
                     {
-                        float _735 = _200.w;
-                        _817 = float4((float3(1.0) - ((float3(1.0) - _204.xyz) * (float3(1.0) - _200.xyz))) * _735, _204.w * _735);
-                        _818 = true;
+                        float _729 = _194.w;
+                        _811 = float4((float3(1.0) - ((float3(1.0) - _198.xyz) * (float3(1.0) - _194.xyz))) * _729, _198.w * _729);
+                        _812 = true;
                         break;
                     }
                     case 16u:
                     {
-                        float3 _123 = _200.xyz;
-                        float3 _124 = _204.xyz;
-                        float3 _118;
-                        for (uint _693 = 0u; _693 < 3u; _693++)
+                        float3 _117 = _194.xyz;
+                        float3 _118 = _198.xyz;
+                        float3 _112;
+                        for (uint _687 = 0u; _687 < 3u; _687++)
                         {
-                            float _718;
-                            if (_124[_693] < 0.5)
+                            float _712;
+                            if (_118[_687] < 0.5)
                             {
-                                _718 = (2.0 * _124[_693]) * _123[_693];
+                                _712 = (2.0 * _118[_687]) * _117[_687];
                             }
                             else
                             {
-                                _718 = 1.0 - ((2.0 * (1.0 - _124[_693])) * (1.0 - _123[_693]));
+                                _712 = 1.0 - ((2.0 * (1.0 - _118[_687])) * (1.0 - _117[_687]));
                             }
-                            _118[_693] = _718;
+                            _112[_687] = _712;
                         }
-                        float _721 = _200.w;
-                        _817 = float4(_118 * _721, _204.w * _721);
-                        _818 = true;
+                        float _715 = _194.w;
+                        _811 = float4(_112 * _715, _198.w * _715);
+                        _812 = true;
                         break;
                     }
                     case 17u:
                     {
-                        float _682 = _200.w;
-                        _817 = float4(precise::max(_200.xyz, _204.xyz) * _682, _204.w * _682);
-                        _818 = true;
+                        float _676 = _194.w;
+                        _811 = float4(precise::max(_194.xyz, _198.xyz) * _676, _198.w * _676);
+                        _812 = true;
                         break;
                     }
                     case 18u:
                     {
-                        float3 _125 = _200.xyz;
-                        float3 _126 = _204.xyz;
-                        float3 _119;
-                        for (uint _649 = 0u; _649 < 3u; _649++)
+                        float3 _119 = _194.xyz;
+                        float3 _120 = _198.xyz;
+                        float3 _113;
+                        for (uint _643 = 0u; _643 < 3u; _643++)
                         {
-                            float _668;
-                            if (_125[_649] == 1.0)
+                            float _662;
+                            if (_119[_643] == 1.0)
                             {
-                                _668 = _125[_649];
+                                _662 = _119[_643];
                             }
                             else
                             {
-                                _668 = precise::min(_126[_649] / (1.0 - _125[_649]), 1.0);
+                                _662 = precise::min(_120[_643] / (1.0 - _119[_643]), 1.0);
                             }
-                            _119[_649] = _668;
+                            _113[_643] = _662;
                         }
-                        float _671 = _200.w;
-                        _817 = float4(_119 * _671, _204.w * _671);
-                        _818 = true;
+                        float _665 = _194.w;
+                        _811 = float4(_113 * _665, _198.w * _665);
+                        _812 = true;
                         break;
                     }
                     case 19u:
                     {
-                        float3 _127 = _200.xyz;
-                        float3 _128 = _204.xyz;
-                        float3 _120;
-                        for (uint _615 = 0u; _615 < 3u; _615++)
+                        float3 _121 = _194.xyz;
+                        float3 _122 = _198.xyz;
+                        float3 _114;
+                        for (uint _609 = 0u; _609 < 3u; _609++)
                         {
-                            float _635;
-                            if (_127[_615] == 0.0)
+                            float _629;
+                            if (_121[_609] == 0.0)
                             {
-                                _635 = _127[_615];
+                                _629 = _121[_609];
                             }
                             else
                             {
-                                _635 = precise::max(1.0 - ((1.0 - _128[_615]) / _127[_615]), 0.0);
+                                _629 = precise::max(1.0 - ((1.0 - _122[_609]) / _121[_609]), 0.0);
                             }
-                            _120[_615] = _635;
+                            _114[_609] = _629;
                         }
-                        float _638 = _200.w;
-                        _817 = float4(_120 * _638, _204.w * _638);
-                        _818 = true;
+                        float _632 = _194.w;
+                        _811 = float4(_114 * _632, _198.w * _632);
+                        _812 = true;
                         break;
                     }
                     case 20u:
                     {
-                        float3 _129 = _204.xyz;
-                        float3 _130 = _200.xyz;
-                        float3 _121;
-                        for (uint _576 = 0u; _576 < 3u; _576++)
+                        float3 _123 = _198.xyz;
+                        float3 _124 = _194.xyz;
+                        float3 _115;
+                        for (uint _570 = 0u; _570 < 3u; _570++)
                         {
-                            float _601;
-                            if (_130[_576] < 0.5)
+                            float _595;
+                            if (_124[_570] < 0.5)
                             {
-                                _601 = (2.0 * _130[_576]) * _129[_576];
+                                _595 = (2.0 * _124[_570]) * _123[_570];
                             }
                             else
                             {
-                                _601 = 1.0 - ((2.0 * (1.0 - _130[_576])) * (1.0 - _129[_576]));
+                                _595 = 1.0 - ((2.0 * (1.0 - _124[_570])) * (1.0 - _123[_570]));
                             }
-                            _121[_576] = _601;
+                            _115[_570] = _595;
                         }
-                        float _604 = _200.w;
-                        _817 = float4(_121 * _604, _204.w * _604);
-                        _818 = true;
+                        float _598 = _194.w;
+                        _811 = float4(_115 * _598, _198.w * _598);
+                        _812 = true;
                         break;
                     }
                     case 21u:
                     {
-                        float3 _131 = _200.xyz;
-                        float3 _132 = _204.xyz;
-                        float3 _122;
-                        for (uint _524 = 0u; _524 < 3u; _524++)
+                        float3 _125 = _194.xyz;
+                        float3 _126 = _198.xyz;
+                        float3 _116;
+                        for (uint _518 = 0u; _518 < 3u; _518++)
                         {
-                            float _562;
-                            if (_131[_524] < 0.5)
+                            float _556;
+                            if (_125[_518] < 0.5)
                             {
-                                _562 = ((2.0 * _132[_524]) * _131[_524]) + ((_132[_524] * _132[_524]) * (1.0 - (2.0 * _131[_524])));
+                                _556 = ((2.0 * _126[_518]) * _125[_518]) + ((_126[_518] * _126[_518]) * (1.0 - (2.0 * _125[_518])));
                             }
                             else
                             {
-                                _562 = (sqrt(_132[_524]) * ((2.0 * _131[_524]) - 1.0)) + ((2.0 * _132[_524]) * (1.0 - _131[_524]));
+                                _556 = (sqrt(_126[_518]) * ((2.0 * _125[_518]) - 1.0)) + ((2.0 * _126[_518]) * (1.0 - _125[_518]));
                             }
-                            _122[_524] = _562;
+                            _116[_518] = _556;
                         }
-                        float _565 = _200.w;
-                        _817 = float4(_122 * _565, _204.w * _565);
-                        _818 = true;
+                        float _559 = _194.w;
+                        _811 = float4(_116 * _559, _198.w * _559);
+                        _812 = true;
                         break;
                     }
                     case 22u:
                     {
-                        float3 _507 = _204.xyz;
-                        float3 _508 = _200.xyz;
-                        float _513 = _200.w;
-                        _817 = float4(((_507 + _508) - ((_507 * 2.0) * _508)) * _513, _204.w * _513);
-                        _818 = true;
+                        float3 _501 = _198.xyz;
+                        float3 _502 = _194.xyz;
+                        float _507 = _194.w;
+                        _811 = float4(((_501 + _502) - ((_501 * 2.0) * _502)) * _507, _198.w * _507);
+                        _812 = true;
                         break;
                     }
                     case 23u:
                     {
-                        float3 _441 = _200.xyz;
-                        float _442 = _204.x;
-                        float _443 = _204.y;
-                        float _444 = _204.z;
-                        float _446 = precise::min(_442, precise::min(_443, _444));
-                        float _448 = precise::max(_442, precise::max(_443, _444));
-                        float _450 = _446 + _448;
-                        float _452 = abs(_450 - 1.0);
-                        float _456 = _200.x;
-                        float _457 = _200.y;
-                        float _458 = _200.z;
-                        float3 _477 = ((step(_200.yxx, _441) * step(_200.zzy, _441)) * (float3(0.0, 2.0, 4.0) + ((_200.yzx - _200.zxy) / float3((precise::max(_456, precise::max(_457, _458)) - precise::min(_456, precise::min(_457, _458))) + 1.0000000116860974230803549289703e-07)))) * float3(0.16666667163372039794921875);
-                        float _499 = _200.w;
-                        float3 _500 = (float3(_450 * 0.5) + (((fast::clamp(abs(fmod(float3(fract(((1.0 + _477.x) + _477.y) + _477.z) * 6.0) + float3(0.0, 4.0, 2.0), float3(6.0)) - float3(3.0)) - float3(1.0), float3(0.0), float3(1.0)) - float3(0.5)) * ((_448 - _446) / (1.00000011920928955078125 - _452))) * (1.0 - _452))) * _499;
-                        _817 = float4(_500, _204.w * _499);
-                        _818 = true;
+                        float3 _435 = _194.xyz;
+                        float _436 = _198.x;
+                        float _437 = _198.y;
+                        float _438 = _198.z;
+                        float _440 = precise::min(_436, precise::min(_437, _438));
+                        float _442 = precise::max(_436, precise::max(_437, _438));
+                        float _444 = _440 + _442;
+                        float _446 = abs(_444 - 1.0);
+                        float _450 = _194.x;
+                        float _451 = _194.y;
+                        float _452 = _194.z;
+                        float3 _471 = ((step(_194.yxx, _435) * step(_194.zzy, _435)) * (float3(0.0, 2.0, 4.0) + ((_194.yzx - _194.zxy) / float3((precise::max(_450, precise::max(_451, _452)) - precise::min(_450, precise::min(_451, _452))) + 1.0000000116860974230803549289703e-07)))) * float3(0.16666667163372039794921875);
+                        float _493 = _194.w;
+                        float3 _494 = (float3(_444 * 0.5) + (((fast::clamp(abs(fmod(float3(fract(((1.0 + _471.x) + _471.y) + _471.z) * 6.0) + float3(0.0, 4.0, 2.0), float3(6.0)) - float3(3.0)) - float3(1.0), float3(0.0), float3(1.0)) - float3(0.5)) * ((_442 - _440) / (1.00000011920928955078125 - _446))) * (1.0 - _446))) * _493;
+                        _811 = float4(_494, _198.w * _493);
+                        _812 = true;
                         break;
                     }
                     case 24u:
                     {
-                        float3 _372 = _204.xyz;
-                        float _373 = _204.x;
-                        float _374 = _204.y;
-                        float _375 = _204.z;
-                        float _377 = precise::min(_373, precise::min(_374, _375));
-                        float _379 = precise::max(_373, precise::max(_374, _375));
-                        float3 _394 = ((step(_204.yxx, _372) * step(_204.zzy, _372)) * (float3(0.0, 2.0, 4.0) + ((_204.yzx - _204.zxy) / float3((_379 - _377) + 1.0000000116860974230803549289703e-07)))) * float3(0.16666667163372039794921875);
-                        float _402 = _377 + _379;
-                        float _404 = _200.x;
-                        float _405 = _200.y;
-                        float _406 = _200.z;
-                        float _408 = precise::min(_404, precise::min(_405, _406));
-                        float _410 = precise::max(_404, precise::max(_405, _406));
-                        float _433 = _200.w;
-                        _817 = float4((float3(_402 * 0.5) + (((fast::clamp(abs(fmod(float3(fract(((1.0 + _394.x) + _394.y) + _394.z) * 6.0) + float3(0.0, 4.0, 2.0), float3(6.0)) - float3(3.0)) - float3(1.0), float3(0.0), float3(1.0)) - float3(0.5)) * ((_410 - _408) / (1.00000011920928955078125 - abs((_408 + _410) - 1.0)))) * (1.0 - abs(_402 - 1.0)))) * _433, _204.w * _433);
-                        _818 = true;
+                        float3 _366 = _198.xyz;
+                        float _367 = _198.x;
+                        float _368 = _198.y;
+                        float _369 = _198.z;
+                        float _371 = precise::min(_367, precise::min(_368, _369));
+                        float _373 = precise::max(_367, precise::max(_368, _369));
+                        float3 _388 = ((step(_198.yxx, _366) * step(_198.zzy, _366)) * (float3(0.0, 2.0, 4.0) + ((_198.yzx - _198.zxy) / float3((_373 - _371) + 1.0000000116860974230803549289703e-07)))) * float3(0.16666667163372039794921875);
+                        float _396 = _371 + _373;
+                        float _398 = _194.x;
+                        float _399 = _194.y;
+                        float _400 = _194.z;
+                        float _402 = precise::min(_398, precise::min(_399, _400));
+                        float _404 = precise::max(_398, precise::max(_399, _400));
+                        float _427 = _194.w;
+                        _811 = float4((float3(_396 * 0.5) + (((fast::clamp(abs(fmod(float3(fract(((1.0 + _388.x) + _388.y) + _388.z) * 6.0) + float3(0.0, 4.0, 2.0), float3(6.0)) - float3(3.0)) - float3(1.0), float3(0.0), float3(1.0)) - float3(0.5)) * ((_404 - _402) / (1.00000011920928955078125 - abs((_402 + _404) - 1.0)))) * (1.0 - abs(_396 - 1.0)))) * _427, _198.w * _427);
+                        _812 = true;
                         break;
                     }
                     case 25u:
                     {
-                        float3 _304 = _200.xyz;
-                        float _305 = _200.x;
-                        float _306 = _200.y;
-                        float _307 = _200.z;
-                        float _309 = precise::min(_305, precise::min(_306, _307));
-                        float _311 = precise::max(_305, precise::max(_306, _307));
-                        float _320 = _311 - _309;
-                        float3 _326 = ((step(_200.yxx, _304) * step(_200.zzy, _304)) * (float3(0.0, 2.0, 4.0) + ((_200.yzx - _200.zxy) / float3(_320 + 1.0000000116860974230803549289703e-07)))) * float3(0.16666667163372039794921875);
-                        float _339 = _204.x;
-                        float _340 = _204.y;
-                        float _341 = _204.z;
-                        float _346 = precise::min(_339, precise::min(_340, _341)) + precise::max(_339, precise::max(_340, _341));
-                        float _364 = _200.w;
-                        _817 = float4((float3(_346 * 0.5) + (((fast::clamp(abs(fmod(float3(fract(((1.0 + _326.x) + _326.y) + _326.z) * 6.0) + float3(0.0, 4.0, 2.0), float3(6.0)) - float3(3.0)) - float3(1.0), float3(0.0), float3(1.0)) - float3(0.5)) * (_320 / (1.00000011920928955078125 - abs((_309 + _311) - 1.0)))) * (1.0 - abs(_346 - 1.0)))) * _364, _204.w * _364);
-                        _818 = true;
+                        float3 _298 = _194.xyz;
+                        float _299 = _194.x;
+                        float _300 = _194.y;
+                        float _301 = _194.z;
+                        float _303 = precise::min(_299, precise::min(_300, _301));
+                        float _305 = precise::max(_299, precise::max(_300, _301));
+                        float _314 = _305 - _303;
+                        float3 _320 = ((step(_194.yxx, _298) * step(_194.zzy, _298)) * (float3(0.0, 2.0, 4.0) + ((_194.yzx - _194.zxy) / float3(_314 + 1.0000000116860974230803549289703e-07)))) * float3(0.16666667163372039794921875);
+                        float _333 = _198.x;
+                        float _334 = _198.y;
+                        float _335 = _198.z;
+                        float _340 = precise::min(_333, precise::min(_334, _335)) + precise::max(_333, precise::max(_334, _335));
+                        float _358 = _194.w;
+                        _811 = float4((float3(_340 * 0.5) + (((fast::clamp(abs(fmod(float3(fract(((1.0 + _320.x) + _320.y) + _320.z) * 6.0) + float3(0.0, 4.0, 2.0), float3(6.0)) - float3(3.0)) - float3(1.0), float3(0.0), float3(1.0)) - float3(0.5)) * (_314 / (1.00000011920928955078125 - abs((_303 + _305) - 1.0)))) * (1.0 - abs(_340 - 1.0)))) * _358, _198.w * _358);
+                        _812 = true;
                         break;
                     }
                     case 26u:
                     {
-                        float3 _236 = _204.xyz;
-                        float _237 = _204.x;
-                        float _238 = _204.y;
-                        float _239 = _204.z;
-                        float _241 = precise::min(_237, precise::min(_238, _239));
-                        float _243 = precise::max(_237, precise::max(_238, _239));
-                        float _252 = _243 - _241;
-                        float3 _258 = ((step(_204.yxx, _236) * step(_204.zzy, _236)) * (float3(0.0, 2.0, 4.0) + ((_204.yzx - _204.zxy) / float3(_252 + 1.0000000116860974230803549289703e-07)))) * float3(0.16666667163372039794921875);
-                        float _271 = _200.x;
-                        float _272 = _200.y;
-                        float _273 = _200.z;
-                        float _278 = precise::min(_271, precise::min(_272, _273)) + precise::max(_271, precise::max(_272, _273));
-                        float _296 = _200.w;
-                        _817 = float4((float3(_278 * 0.5) + (((fast::clamp(abs(fmod(float3(fract(((1.0 + _258.x) + _258.y) + _258.z) * 6.0) + float3(0.0, 4.0, 2.0), float3(6.0)) - float3(3.0)) - float3(1.0), float3(0.0), float3(1.0)) - float3(0.5)) * (_252 / (1.00000011920928955078125 - abs((_241 + _243) - 1.0)))) * (1.0 - abs(_278 - 1.0)))) * _296, _204.w * _296);
-                        _818 = true;
+                        float3 _230 = _198.xyz;
+                        float _231 = _198.x;
+                        float _232 = _198.y;
+                        float _233 = _198.z;
+                        float _235 = precise::min(_231, precise::min(_232, _233));
+                        float _237 = precise::max(_231, precise::max(_232, _233));
+                        float _246 = _237 - _235;
+                        float3 _252 = ((step(_198.yxx, _230) * step(_198.zzy, _230)) * (float3(0.0, 2.0, 4.0) + ((_198.yzx - _198.zxy) / float3(_246 + 1.0000000116860974230803549289703e-07)))) * float3(0.16666667163372039794921875);
+                        float _265 = _194.x;
+                        float _266 = _194.y;
+                        float _267 = _194.z;
+                        float _272 = precise::min(_265, precise::min(_266, _267)) + precise::max(_265, precise::max(_266, _267));
+                        float _290 = _194.w;
+                        _811 = float4((float3(_272 * 0.5) + (((fast::clamp(abs(fmod(float3(fract(((1.0 + _252.x) + _252.y) + _252.z) * 6.0) + float3(0.0, 4.0, 2.0), float3(6.0)) - float3(3.0)) - float3(1.0), float3(0.0), float3(1.0)) - float3(0.5)) * (_246 / (1.00000011920928955078125 - abs((_235 + _237) - 1.0)))) * (1.0 - abs(_272 - 1.0)))) * _290, _198.w * _290);
+                        _812 = true;
                         break;
                     }
                     default:
                     {
-                        _817 = _103;
-                        _818 = false;
+                        _811 = _98;
+                        _812 = false;
                         break;
                     }
                 }
-                if (_818)
+                if (_812)
                 {
-                    _820 = _817;
+                    _814 = _811;
                     break;
                 }
-                _820 = _200;
+                _814 = _194;
                 break;
             } while(false);
-            _2988 = _820;
+            _1703 = _814;
             break;
         }
         case 10u:
         {
-            float4 _180 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0) * in.in_var_COLOR0;
-            float4 _184 = Texture1.sample(Sampler0, in.in_var_TEXCOORD1);
-            float _185 = _184.w;
-            _2988 = float4(_180.xyz * _185, _180.w * _185);
+            float4 _174 = Texture0.sample(Sampler0, in.in_var_TEXCOORD0) * in.in_var_COLOR0;
+            float4 _178 = Texture1.sample(Sampler0, in.in_var_TEXCOORD1);
+            float _179 = _178.w;
+            _1703 = float4(_174.xyz * _179, _174.w * _179);
             break;
         }
         case 11u:
         {
-            float4 _168 = Texture1.sample(Sampler0, float2(Texture0.sample(Sampler0, in.in_var_TEXCOORD0).w * in.in_var_COLOR0.w, in.in_var_COLOR1.y));
-            float _169 = _168.w;
-            _2988 = float4(in.in_var_COLOR0.xyz * _169, _169);
+            float4 _162 = Texture1.sample(Sampler0, float2(Texture0.sample(Sampler0, in.in_var_TEXCOORD0).w * in.in_var_COLOR0.w, in.in_var_COLOR1.y));
+            float _163 = _162.w;
+            _1703 = float4(in.in_var_COLOR0.xyz * _163, _163);
             break;
         }
         default:
         {
-            _2988 = in.in_var_COLOR0;
+            _1703 = in.in_var_COLOR0;
             break;
         }
     }
-    float4 _2990;
-    _2990 = _2988;
-    float4 _2991;
-    for (uint _2993 = 0u; _2993 < uint(Uniforms.ClipData.x); _2990 = _2991, _2993++)
+    float4 _1705;
+    _1705 = _1703;
+    float4 _1706;
+    for (uint _1708 = 0u; _1708 < uint(Uniforms.ClipData.x); _1705 = _1706, _1708++)
     {
-        float4 _3007 = float4(Uniforms.Clip[_2993][0][0], Uniforms.Clip[_2993][0][1], Uniforms.Clip[_2993][0][2], Uniforms.Clip[_2993][0][3]);
-        float4 _3014 = float4(Uniforms.Clip[_2993][1][0], Uniforms.Clip[_2993][1][1], Uniforms.Clip[_2993][1][2], Uniforms.Clip[_2993][1][3]);
-        float4 _3016 = floor(_3014 * float4(1.52587890625e-05));
-        float4 _3019 = floor(_3014 - (_3016 * 65536.0));
-        float4 _3029 = float4(Uniforms.Clip[_2993][2][0], Uniforms.Clip[_2993][2][1], Uniforms.Clip[_2993][2][2], Uniforms.Clip[_2993][2][3]);
-        float2 _3039 = (((_3029.xy * in.in_var_TEXCOORD1.x) + (_3029.zw * in.in_var_TEXCOORD1.y)) + float4(Uniforms.Clip[_2993][3][0], Uniforms.Clip[_2993][3][1], Uniforms.Clip[_2993][3][2], _116).xy) - _3007.xy;
-        float _3652;
+        float4 _1722 = float4(Uniforms.Clip[_1708][0][0], Uniforms.Clip[_1708][0][1], Uniforms.Clip[_1708][0][2], Uniforms.Clip[_1708][0][3]);
+        float4 _1729 = float4(Uniforms.Clip[_1708][1][0], Uniforms.Clip[_1708][1][1], Uniforms.Clip[_1708][1][2], Uniforms.Clip[_1708][1][3]);
+        float4 _1731 = floor(_1729 * float4(1.52587890625e-05));
+        float4 _1734 = floor(_1729 - (_1731 * 65536.0));
+        float4 _1744 = float4(Uniforms.Clip[_1708][2][0], Uniforms.Clip[_1708][2][1], Uniforms.Clip[_1708][2][2], Uniforms.Clip[_1708][2][3]);
+        float2 _1754 = (((_1744.xy * in.in_var_TEXCOORD1.x) + (_1744.zw * in.in_var_TEXCOORD1.y)) + float4(Uniforms.Clip[_1708][3][0], Uniforms.Clip[_1708][3][1], Uniforms.Clip[_1708][3][2], _110).xy) - _1722.xy;
+        float _2367;
         do
         {
-            float2 _3042 = _3007.zw * 0.5;
-            float _3043 = _3042.x;
-            float _3044 = -_3043;
-            float _3045 = _3016.x;
-            float _3046 = _3044 + _3045;
-            float _3047 = _3042.y;
-            float _3048 = -_3047;
-            float _3049 = _3019.x;
-            float _3050 = _3048 + _3049;
-            float2 _3052 = _3039 - float2(_3046, _3050);
-            bool _3059;
-            if ((_3045 * _3049) > 0.0)
+            float2 _1757 = _1722.zw * 0.5;
+            float _1758 = _1757.x;
+            float _1759 = -_1758;
+            float _1760 = _1731.x;
+            float _1761 = _1759 + _1760;
+            float _1762 = _1757.y;
+            float _1763 = -_1762;
+            float _1764 = _1734.x;
+            float _1765 = _1763 + _1764;
+            float2 _1767 = _1754 - float2(_1761, _1765);
+            bool _1774;
+            if ((_1760 * _1764) > 0.0)
             {
-                _3059 = _3039.x < _3046;
+                _1774 = _1754.x < _1761;
             }
             else
             {
-                _3059 = false;
+                _1774 = false;
             }
-            bool _3064;
-            if (_3059)
+            bool _1779;
+            if (_1774)
             {
-                _3064 = _3039.y <= _3050;
+                _1779 = _1754.y <= _1765;
             }
             else
             {
-                _3064 = false;
+                _1779 = false;
             }
-            if (_3064)
+            if (_1779)
             {
-                float2 _3067 = float2(_3045, _3049);
-                float _3195;
+                float2 _1782 = float2(_1760, _1764);
+                float _1910;
                 do
                 {
-                    if (abs(_3045 - _3049) < 0.100000001490116119384765625)
+                    if (abs(_1760 - _1764) < 0.100000001490116119384765625)
                     {
-                        _3195 = length(_3052) - _3045;
+                        _1910 = length(_1767) - _1760;
                         break;
                     }
-                    float2 _3077 = abs(_3052);
-                    float2 _3085;
-                    float2 _3086;
-                    if (_3077.x > _3077.y)
+                    float2 _1792 = abs(_1767);
+                    float2 _1800;
+                    float2 _1801;
+                    if (_1792.x > _1792.y)
                     {
-                        _3085 = _3077.yx;
-                        _3086 = _3067.yx;
+                        _1800 = _1792.yx;
+                        _1801 = _1782.yx;
                     }
                     else
                     {
-                        _3085 = _3077;
-                        _3086 = _3067;
+                        _1800 = _1792;
+                        _1801 = _1782;
                     }
-                    float _3091 = (_3086.y * _3086.y) - (_3086.x * _3086.x);
-                    float _3094 = (_3086.x * _3085.x) / _3091;
-                    float _3097 = (_3086.y * _3085.y) / _3091;
-                    float _3098 = _3094 * _3094;
-                    float _3099 = _3097 * _3097;
-                    float _3101 = (_3098 + _3099) - 1.0;
-                    float _3102 = _3101 * 0.3333333432674407958984375;
-                    float _3104 = (_3102 * _3102) * _3102;
-                    float _3105 = _3098 * _3099;
-                    float _3107 = _3104 + (_3105 * 2.0);
-                    float _3108 = _3104 + _3105;
-                    float _3110 = _3094 + (_3094 * _3099);
-                    float _3181;
-                    if (_3108 < 0.0)
+                    float _1806 = (_1801.y * _1801.y) - (_1801.x * _1801.x);
+                    float _1809 = (_1801.x * _1800.x) / _1806;
+                    float _1812 = (_1801.y * _1800.y) / _1806;
+                    float _1813 = _1809 * _1809;
+                    float _1814 = _1812 * _1812;
+                    float _1816 = (_1813 + _1814) - 1.0;
+                    float _1817 = _1816 * 0.3333333432674407958984375;
+                    float _1819 = (_1817 * _1817) * _1817;
+                    float _1820 = _1813 * _1814;
+                    float _1822 = _1819 + (_1820 * 2.0);
+                    float _1823 = _1819 + _1820;
+                    float _1825 = _1809 + (_1809 * _1814);
+                    float _1896;
+                    if (_1823 < 0.0)
                     {
-                        float _3155 = acos(_3107 / _3104) * 0.3333333432674407958984375;
-                        float _3156 = cos(_3155);
-                        float _3158 = sin(_3155) * 1.73205077648162841796875;
-                        float _3159 = _3101 * (-0.3333333432674407958984375);
-                        float _3164 = sqrt((_3159 * ((_3156 + _3158) + 2.0)) + _3098);
-                        float _3169 = sqrt((_3159 * ((_3156 - _3158) + 2.0)) + _3098);
-                        _3181 = (((_3169 + (float(int(sign(_3091))) * _3164)) + (abs(_3110) / (_3164 * _3169))) - _3094) * 0.5;
+                        float _1870 = acos(_1822 / _1819) * 0.3333333432674407958984375;
+                        float _1871 = cos(_1870);
+                        float _1873 = sin(_1870) * 1.73205077648162841796875;
+                        float _1874 = _1816 * (-0.3333333432674407958984375);
+                        float _1879 = sqrt((_1874 * ((_1871 + _1873) + 2.0)) + _1813);
+                        float _1884 = sqrt((_1874 * ((_1871 - _1873) + 2.0)) + _1813);
+                        _1896 = (((_1884 + (float(int(sign(_1806))) * _1879)) + (abs(_1825) / (_1879 * _1884))) - _1809) * 0.5;
                     }
                     else
                     {
-                        float _3118 = ((2.0 * _3094) * _3097) * sqrt(_3108);
-                        float _3119 = _3107 + _3118;
-                        float _3125 = float(int(sign(_3119))) * powr(abs(_3119), 0.3333333432674407958984375);
-                        float _3126 = _3107 - _3118;
-                        float _3132 = float(int(sign(_3126))) * powr(abs(_3126), 0.3333333432674407958984375);
-                        float _3138 = (((-_3125) - _3132) - (_3101 * 1.33333337306976318359375)) + (2.0 * _3098);
-                        float _3140 = (_3125 - _3132) * 1.73205077648162841796875;
-                        float _3144 = sqrt((_3138 * _3138) + (_3140 * _3140));
-                        _3181 = (((_3140 / sqrt(_3144 - _3138)) + ((2.0 * _3110) / _3144)) - _3094) * 0.5;
+                        float _1833 = ((2.0 * _1809) * _1812) * sqrt(_1823);
+                        float _1834 = _1822 + _1833;
+                        float _1840 = float(int(sign(_1834))) * powr(abs(_1834), 0.3333333432674407958984375);
+                        float _1841 = _1822 - _1833;
+                        float _1847 = float(int(sign(_1841))) * powr(abs(_1841), 0.3333333432674407958984375);
+                        float _1853 = (((-_1840) - _1847) - (_1816 * 1.33333337306976318359375)) + (2.0 * _1813);
+                        float _1855 = (_1840 - _1847) * 1.73205077648162841796875;
+                        float _1859 = sqrt((_1853 * _1853) + (_1855 * _1855));
+                        _1896 = (((_1855 / sqrt(_1859 - _1853)) + ((2.0 * _1825) / _1859)) - _1809) * 0.5;
                     }
-                    float _3186 = _3086.y * sqrt(1.0 - (_3181 * _3181));
-                    _3195 = length(float2(_3086.x * _3181, _3186) - _3085) * float(int(sign(_3085.y - _3186)));
+                    float _1901 = _1801.y * sqrt(1.0 - (_1896 * _1896));
+                    _1910 = length(float2(_1801.x * _1896, _1901) - _1800) * float(int(sign(_1800.y - _1901)));
                     break;
                 } while(false);
-                _3652 = _3195;
+                _2367 = _1910;
                 break;
             }
-            float _3196 = _3016.y;
-            float _3197 = _3043 - _3196;
-            float _3198 = _3019.y;
-            float _3199 = _3048 + _3198;
-            float2 _3201 = _3039 - float2(_3197, _3199);
-            bool _3208;
-            if ((_3196 * _3198) > 0.0)
+            float _1911 = _1731.y;
+            float _1912 = _1758 - _1911;
+            float _1913 = _1734.y;
+            float _1914 = _1763 + _1913;
+            float2 _1916 = _1754 - float2(_1912, _1914);
+            bool _1923;
+            if ((_1911 * _1913) > 0.0)
             {
-                _3208 = _3039.x >= _3197;
+                _1923 = _1754.x >= _1912;
             }
             else
             {
-                _3208 = false;
+                _1923 = false;
             }
-            bool _3213;
-            if (_3208)
+            bool _1928;
+            if (_1923)
             {
-                _3213 = _3039.y <= _3199;
+                _1928 = _1754.y <= _1914;
             }
             else
             {
-                _3213 = false;
+                _1928 = false;
             }
-            if (_3213)
+            if (_1928)
             {
-                float2 _3216 = float2(_3196, _3198);
-                float _3344;
+                float2 _1931 = float2(_1911, _1913);
+                float _2059;
                 do
                 {
-                    if (abs(_3196 - _3198) < 0.100000001490116119384765625)
+                    if (abs(_1911 - _1913) < 0.100000001490116119384765625)
                     {
-                        _3344 = length(_3201) - _3196;
+                        _2059 = length(_1916) - _1911;
                         break;
                     }
-                    float2 _3226 = abs(_3201);
-                    float2 _3234;
-                    float2 _3235;
-                    if (_3226.x > _3226.y)
+                    float2 _1941 = abs(_1916);
+                    float2 _1949;
+                    float2 _1950;
+                    if (_1941.x > _1941.y)
                     {
-                        _3234 = _3226.yx;
-                        _3235 = _3216.yx;
+                        _1949 = _1941.yx;
+                        _1950 = _1931.yx;
                     }
                     else
                     {
-                        _3234 = _3226;
-                        _3235 = _3216;
+                        _1949 = _1941;
+                        _1950 = _1931;
                     }
-                    float _3240 = (_3235.y * _3235.y) - (_3235.x * _3235.x);
-                    float _3243 = (_3235.x * _3234.x) / _3240;
-                    float _3246 = (_3235.y * _3234.y) / _3240;
-                    float _3247 = _3243 * _3243;
-                    float _3248 = _3246 * _3246;
-                    float _3250 = (_3247 + _3248) - 1.0;
-                    float _3251 = _3250 * 0.3333333432674407958984375;
-                    float _3253 = (_3251 * _3251) * _3251;
-                    float _3254 = _3247 * _3248;
-                    float _3256 = _3253 + (_3254 * 2.0);
-                    float _3257 = _3253 + _3254;
-                    float _3259 = _3243 + (_3243 * _3248);
-                    float _3330;
-                    if (_3257 < 0.0)
+                    float _1955 = (_1950.y * _1950.y) - (_1950.x * _1950.x);
+                    float _1958 = (_1950.x * _1949.x) / _1955;
+                    float _1961 = (_1950.y * _1949.y) / _1955;
+                    float _1962 = _1958 * _1958;
+                    float _1963 = _1961 * _1961;
+                    float _1965 = (_1962 + _1963) - 1.0;
+                    float _1966 = _1965 * 0.3333333432674407958984375;
+                    float _1968 = (_1966 * _1966) * _1966;
+                    float _1969 = _1962 * _1963;
+                    float _1971 = _1968 + (_1969 * 2.0);
+                    float _1972 = _1968 + _1969;
+                    float _1974 = _1958 + (_1958 * _1963);
+                    float _2045;
+                    if (_1972 < 0.0)
                     {
-                        float _3304 = acos(_3256 / _3253) * 0.3333333432674407958984375;
-                        float _3305 = cos(_3304);
-                        float _3307 = sin(_3304) * 1.73205077648162841796875;
-                        float _3308 = _3250 * (-0.3333333432674407958984375);
-                        float _3313 = sqrt((_3308 * ((_3305 + _3307) + 2.0)) + _3247);
-                        float _3318 = sqrt((_3308 * ((_3305 - _3307) + 2.0)) + _3247);
-                        _3330 = (((_3318 + (float(int(sign(_3240))) * _3313)) + (abs(_3259) / (_3313 * _3318))) - _3243) * 0.5;
+                        float _2019 = acos(_1971 / _1968) * 0.3333333432674407958984375;
+                        float _2020 = cos(_2019);
+                        float _2022 = sin(_2019) * 1.73205077648162841796875;
+                        float _2023 = _1965 * (-0.3333333432674407958984375);
+                        float _2028 = sqrt((_2023 * ((_2020 + _2022) + 2.0)) + _1962);
+                        float _2033 = sqrt((_2023 * ((_2020 - _2022) + 2.0)) + _1962);
+                        _2045 = (((_2033 + (float(int(sign(_1955))) * _2028)) + (abs(_1974) / (_2028 * _2033))) - _1958) * 0.5;
                     }
                     else
                     {
-                        float _3267 = ((2.0 * _3243) * _3246) * sqrt(_3257);
-                        float _3268 = _3256 + _3267;
-                        float _3274 = float(int(sign(_3268))) * powr(abs(_3268), 0.3333333432674407958984375);
-                        float _3275 = _3256 - _3267;
-                        float _3281 = float(int(sign(_3275))) * powr(abs(_3275), 0.3333333432674407958984375);
-                        float _3287 = (((-_3274) - _3281) - (_3250 * 1.33333337306976318359375)) + (2.0 * _3247);
-                        float _3289 = (_3274 - _3281) * 1.73205077648162841796875;
-                        float _3293 = sqrt((_3287 * _3287) + (_3289 * _3289));
-                        _3330 = (((_3289 / sqrt(_3293 - _3287)) + ((2.0 * _3259) / _3293)) - _3243) * 0.5;
+                        float _1982 = ((2.0 * _1958) * _1961) * sqrt(_1972);
+                        float _1983 = _1971 + _1982;
+                        float _1989 = float(int(sign(_1983))) * powr(abs(_1983), 0.3333333432674407958984375);
+                        float _1990 = _1971 - _1982;
+                        float _1996 = float(int(sign(_1990))) * powr(abs(_1990), 0.3333333432674407958984375);
+                        float _2002 = (((-_1989) - _1996) - (_1965 * 1.33333337306976318359375)) + (2.0 * _1962);
+                        float _2004 = (_1989 - _1996) * 1.73205077648162841796875;
+                        float _2008 = sqrt((_2002 * _2002) + (_2004 * _2004));
+                        _2045 = (((_2004 / sqrt(_2008 - _2002)) + ((2.0 * _1974) / _2008)) - _1958) * 0.5;
                     }
-                    float _3335 = _3235.y * sqrt(1.0 - (_3330 * _3330));
-                    _3344 = length(float2(_3235.x * _3330, _3335) - _3234) * float(int(sign(_3234.y - _3335)));
+                    float _2050 = _1950.y * sqrt(1.0 - (_2045 * _2045));
+                    _2059 = length(float2(_1950.x * _2045, _2050) - _1949) * float(int(sign(_1949.y - _2050)));
                     break;
                 } while(false);
-                _3652 = _3344;
+                _2367 = _2059;
                 break;
             }
-            float _3345 = _3016.z;
-            float _3346 = _3043 - _3345;
-            float _3347 = _3019.z;
-            float _3348 = _3047 - _3347;
-            float2 _3350 = _3039 - float2(_3346, _3348);
-            bool _3357;
-            if ((_3345 * _3347) > 0.0)
+            float _2060 = _1731.z;
+            float _2061 = _1758 - _2060;
+            float _2062 = _1734.z;
+            float _2063 = _1762 - _2062;
+            float2 _2065 = _1754 - float2(_2061, _2063);
+            bool _2072;
+            if ((_2060 * _2062) > 0.0)
             {
-                _3357 = _3039.x >= _3346;
+                _2072 = _1754.x >= _2061;
             }
             else
             {
-                _3357 = false;
+                _2072 = false;
             }
-            bool _3362;
-            if (_3357)
+            bool _2077;
+            if (_2072)
             {
-                _3362 = _3039.y >= _3348;
+                _2077 = _1754.y >= _2063;
             }
             else
             {
-                _3362 = false;
+                _2077 = false;
             }
-            if (_3362)
+            if (_2077)
             {
-                float2 _3365 = float2(_3345, _3347);
-                float _3493;
+                float2 _2080 = float2(_2060, _2062);
+                float _2208;
                 do
                 {
-                    if (abs(_3345 - _3347) < 0.100000001490116119384765625)
+                    if (abs(_2060 - _2062) < 0.100000001490116119384765625)
                     {
-                        _3493 = length(_3350) - _3345;
+                        _2208 = length(_2065) - _2060;
                         break;
                     }
-                    float2 _3375 = abs(_3350);
-                    float2 _3383;
-                    float2 _3384;
-                    if (_3375.x > _3375.y)
+                    float2 _2090 = abs(_2065);
+                    float2 _2098;
+                    float2 _2099;
+                    if (_2090.x > _2090.y)
                     {
-                        _3383 = _3375.yx;
-                        _3384 = _3365.yx;
+                        _2098 = _2090.yx;
+                        _2099 = _2080.yx;
                     }
                     else
                     {
-                        _3383 = _3375;
-                        _3384 = _3365;
+                        _2098 = _2090;
+                        _2099 = _2080;
                     }
-                    float _3389 = (_3384.y * _3384.y) - (_3384.x * _3384.x);
-                    float _3392 = (_3384.x * _3383.x) / _3389;
-                    float _3395 = (_3384.y * _3383.y) / _3389;
-                    float _3396 = _3392 * _3392;
-                    float _3397 = _3395 * _3395;
-                    float _3399 = (_3396 + _3397) - 1.0;
-                    float _3400 = _3399 * 0.3333333432674407958984375;
-                    float _3402 = (_3400 * _3400) * _3400;
-                    float _3403 = _3396 * _3397;
-                    float _3405 = _3402 + (_3403 * 2.0);
-                    float _3406 = _3402 + _3403;
-                    float _3408 = _3392 + (_3392 * _3397);
-                    float _3479;
-                    if (_3406 < 0.0)
+                    float _2104 = (_2099.y * _2099.y) - (_2099.x * _2099.x);
+                    float _2107 = (_2099.x * _2098.x) / _2104;
+                    float _2110 = (_2099.y * _2098.y) / _2104;
+                    float _2111 = _2107 * _2107;
+                    float _2112 = _2110 * _2110;
+                    float _2114 = (_2111 + _2112) - 1.0;
+                    float _2115 = _2114 * 0.3333333432674407958984375;
+                    float _2117 = (_2115 * _2115) * _2115;
+                    float _2118 = _2111 * _2112;
+                    float _2120 = _2117 + (_2118 * 2.0);
+                    float _2121 = _2117 + _2118;
+                    float _2123 = _2107 + (_2107 * _2112);
+                    float _2194;
+                    if (_2121 < 0.0)
                     {
-                        float _3453 = acos(_3405 / _3402) * 0.3333333432674407958984375;
-                        float _3454 = cos(_3453);
-                        float _3456 = sin(_3453) * 1.73205077648162841796875;
-                        float _3457 = _3399 * (-0.3333333432674407958984375);
-                        float _3462 = sqrt((_3457 * ((_3454 + _3456) + 2.0)) + _3396);
-                        float _3467 = sqrt((_3457 * ((_3454 - _3456) + 2.0)) + _3396);
-                        _3479 = (((_3467 + (float(int(sign(_3389))) * _3462)) + (abs(_3408) / (_3462 * _3467))) - _3392) * 0.5;
+                        float _2168 = acos(_2120 / _2117) * 0.3333333432674407958984375;
+                        float _2169 = cos(_2168);
+                        float _2171 = sin(_2168) * 1.73205077648162841796875;
+                        float _2172 = _2114 * (-0.3333333432674407958984375);
+                        float _2177 = sqrt((_2172 * ((_2169 + _2171) + 2.0)) + _2111);
+                        float _2182 = sqrt((_2172 * ((_2169 - _2171) + 2.0)) + _2111);
+                        _2194 = (((_2182 + (float(int(sign(_2104))) * _2177)) + (abs(_2123) / (_2177 * _2182))) - _2107) * 0.5;
                     }
                     else
                     {
-                        float _3416 = ((2.0 * _3392) * _3395) * sqrt(_3406);
-                        float _3417 = _3405 + _3416;
-                        float _3423 = float(int(sign(_3417))) * powr(abs(_3417), 0.3333333432674407958984375);
-                        float _3424 = _3405 - _3416;
-                        float _3430 = float(int(sign(_3424))) * powr(abs(_3424), 0.3333333432674407958984375);
-                        float _3436 = (((-_3423) - _3430) - (_3399 * 1.33333337306976318359375)) + (2.0 * _3396);
-                        float _3438 = (_3423 - _3430) * 1.73205077648162841796875;
-                        float _3442 = sqrt((_3436 * _3436) + (_3438 * _3438));
-                        _3479 = (((_3438 / sqrt(_3442 - _3436)) + ((2.0 * _3408) / _3442)) - _3392) * 0.5;
+                        float _2131 = ((2.0 * _2107) * _2110) * sqrt(_2121);
+                        float _2132 = _2120 + _2131;
+                        float _2138 = float(int(sign(_2132))) * powr(abs(_2132), 0.3333333432674407958984375);
+                        float _2139 = _2120 - _2131;
+                        float _2145 = float(int(sign(_2139))) * powr(abs(_2139), 0.3333333432674407958984375);
+                        float _2151 = (((-_2138) - _2145) - (_2114 * 1.33333337306976318359375)) + (2.0 * _2111);
+                        float _2153 = (_2138 - _2145) * 1.73205077648162841796875;
+                        float _2157 = sqrt((_2151 * _2151) + (_2153 * _2153));
+                        _2194 = (((_2153 / sqrt(_2157 - _2151)) + ((2.0 * _2123) / _2157)) - _2107) * 0.5;
                     }
-                    float _3484 = _3384.y * sqrt(1.0 - (_3479 * _3479));
-                    _3493 = length(float2(_3384.x * _3479, _3484) - _3383) * float(int(sign(_3383.y - _3484)));
+                    float _2199 = _2099.y * sqrt(1.0 - (_2194 * _2194));
+                    _2208 = length(float2(_2099.x * _2194, _2199) - _2098) * float(int(sign(_2098.y - _2199)));
                     break;
                 } while(false);
-                _3652 = _3493;
+                _2367 = _2208;
                 break;
             }
-            float _3494 = _3016.w;
-            float _3495 = _3044 + _3494;
-            float _3496 = _3019.w;
-            float _3497 = _3047 - _3496;
-            float2 _3499 = _3039 - float2(_3495, _3497);
-            bool _3506;
-            if ((_3494 * _3496) > 0.0)
+            float _2209 = _1731.w;
+            float _2210 = _1759 + _2209;
+            float _2211 = _1734.w;
+            float _2212 = _1762 - _2211;
+            float2 _2214 = _1754 - float2(_2210, _2212);
+            bool _2221;
+            if ((_2209 * _2211) > 0.0)
             {
-                _3506 = _3039.x < _3495;
+                _2221 = _1754.x < _2210;
             }
             else
             {
-                _3506 = false;
+                _2221 = false;
             }
-            bool _3511;
-            if (_3506)
+            bool _2226;
+            if (_2221)
             {
-                _3511 = _3039.y > _3497;
+                _2226 = _1754.y > _2212;
             }
             else
             {
-                _3511 = false;
+                _2226 = false;
             }
-            if (_3511)
+            if (_2226)
             {
-                float2 _3514 = float2(_3494, _3496);
-                float _3642;
+                float2 _2229 = float2(_2209, _2211);
+                float _2357;
                 do
                 {
-                    if (abs(_3494 - _3496) < 0.100000001490116119384765625)
+                    if (abs(_2209 - _2211) < 0.100000001490116119384765625)
                     {
-                        _3642 = length(_3499) - _3494;
+                        _2357 = length(_2214) - _2209;
                         break;
                     }
-                    float2 _3524 = abs(_3499);
-                    float2 _3532;
-                    float2 _3533;
-                    if (_3524.x > _3524.y)
+                    float2 _2239 = abs(_2214);
+                    float2 _2247;
+                    float2 _2248;
+                    if (_2239.x > _2239.y)
                     {
-                        _3532 = _3524.yx;
-                        _3533 = _3514.yx;
+                        _2247 = _2239.yx;
+                        _2248 = _2229.yx;
                     }
                     else
                     {
-                        _3532 = _3524;
-                        _3533 = _3514;
+                        _2247 = _2239;
+                        _2248 = _2229;
                     }
-                    float _3538 = (_3533.y * _3533.y) - (_3533.x * _3533.x);
-                    float _3541 = (_3533.x * _3532.x) / _3538;
-                    float _3544 = (_3533.y * _3532.y) / _3538;
-                    float _3545 = _3541 * _3541;
-                    float _3546 = _3544 * _3544;
-                    float _3548 = (_3545 + _3546) - 1.0;
-                    float _3549 = _3548 * 0.3333333432674407958984375;
-                    float _3551 = (_3549 * _3549) * _3549;
-                    float _3552 = _3545 * _3546;
-                    float _3554 = _3551 + (_3552 * 2.0);
-                    float _3555 = _3551 + _3552;
-                    float _3557 = _3541 + (_3541 * _3546);
-                    float _3628;
-                    if (_3555 < 0.0)
+                    float _2253 = (_2248.y * _2248.y) - (_2248.x * _2248.x);
+                    float _2256 = (_2248.x * _2247.x) / _2253;
+                    float _2259 = (_2248.y * _2247.y) / _2253;
+                    float _2260 = _2256 * _2256;
+                    float _2261 = _2259 * _2259;
+                    float _2263 = (_2260 + _2261) - 1.0;
+                    float _2264 = _2263 * 0.3333333432674407958984375;
+                    float _2266 = (_2264 * _2264) * _2264;
+                    float _2267 = _2260 * _2261;
+                    float _2269 = _2266 + (_2267 * 2.0);
+                    float _2270 = _2266 + _2267;
+                    float _2272 = _2256 + (_2256 * _2261);
+                    float _2343;
+                    if (_2270 < 0.0)
                     {
-                        float _3602 = acos(_3554 / _3551) * 0.3333333432674407958984375;
-                        float _3603 = cos(_3602);
-                        float _3605 = sin(_3602) * 1.73205077648162841796875;
-                        float _3606 = _3548 * (-0.3333333432674407958984375);
-                        float _3611 = sqrt((_3606 * ((_3603 + _3605) + 2.0)) + _3545);
-                        float _3616 = sqrt((_3606 * ((_3603 - _3605) + 2.0)) + _3545);
-                        _3628 = (((_3616 + (float(int(sign(_3538))) * _3611)) + (abs(_3557) / (_3611 * _3616))) - _3541) * 0.5;
+                        float _2317 = acos(_2269 / _2266) * 0.3333333432674407958984375;
+                        float _2318 = cos(_2317);
+                        float _2320 = sin(_2317) * 1.73205077648162841796875;
+                        float _2321 = _2263 * (-0.3333333432674407958984375);
+                        float _2326 = sqrt((_2321 * ((_2318 + _2320) + 2.0)) + _2260);
+                        float _2331 = sqrt((_2321 * ((_2318 - _2320) + 2.0)) + _2260);
+                        _2343 = (((_2331 + (float(int(sign(_2253))) * _2326)) + (abs(_2272) / (_2326 * _2331))) - _2256) * 0.5;
                     }
                     else
                     {
-                        float _3565 = ((2.0 * _3541) * _3544) * sqrt(_3555);
-                        float _3566 = _3554 + _3565;
-                        float _3572 = float(int(sign(_3566))) * powr(abs(_3566), 0.3333333432674407958984375);
-                        float _3573 = _3554 - _3565;
-                        float _3579 = float(int(sign(_3573))) * powr(abs(_3573), 0.3333333432674407958984375);
-                        float _3585 = (((-_3572) - _3579) - (_3548 * 1.33333337306976318359375)) + (2.0 * _3545);
-                        float _3587 = (_3572 - _3579) * 1.73205077648162841796875;
-                        float _3591 = sqrt((_3585 * _3585) + (_3587 * _3587));
-                        _3628 = (((_3587 / sqrt(_3591 - _3585)) + ((2.0 * _3557) / _3591)) - _3541) * 0.5;
+                        float _2280 = ((2.0 * _2256) * _2259) * sqrt(_2270);
+                        float _2281 = _2269 + _2280;
+                        float _2287 = float(int(sign(_2281))) * powr(abs(_2281), 0.3333333432674407958984375);
+                        float _2288 = _2269 - _2280;
+                        float _2294 = float(int(sign(_2288))) * powr(abs(_2288), 0.3333333432674407958984375);
+                        float _2300 = (((-_2287) - _2294) - (_2263 * 1.33333337306976318359375)) + (2.0 * _2260);
+                        float _2302 = (_2287 - _2294) * 1.73205077648162841796875;
+                        float _2306 = sqrt((_2300 * _2300) + (_2302 * _2302));
+                        _2343 = (((_2302 / sqrt(_2306 - _2300)) + ((2.0 * _2272) / _2306)) - _2256) * 0.5;
                     }
-                    float _3633 = _3533.y * sqrt(1.0 - (_3628 * _3628));
-                    _3642 = length(float2(_3533.x * _3628, _3633) - _3532) * float(int(sign(_3532.y - _3633)));
+                    float _2348 = _2248.y * sqrt(1.0 - (_2343 * _2343));
+                    _2357 = length(float2(_2248.x * _2343, _2348) - _2247) * float(int(sign(_2247.y - _2348)));
                     break;
                 } while(false);
-                _3652 = _3642;
+                _2367 = _2357;
                 break;
             }
-            float2 _3644 = abs(_3039) - _3042;
-            _3652 = precise::min(precise::max(_3644.x, _3644.y), 0.0) + length(precise::max(_3644, float2(0.0)));
+            float2 _2359 = abs(_1754) - _1757;
+            _2367 = precise::min(precise::max(_2359.x, _2359.y), 0.0) + length(precise::max(_2359, float2(0.0)));
             break;
         } while(false);
-        float _3655 = -(_3652 * ((Uniforms.Clip[_2993][3][2] != 0.0) ? (-1.0) : 1.0));
-        float _3658 = smoothstep(-0.61804687976837158203125, 0.61804687976837158203125, _3655 / fwidth(_3655));
-        _2991 = float4(_2990.xyz * _3658, _2990.w * _3658);
+        float _2370 = -(_2367 * ((Uniforms.Clip[_1708][3][2] != 0.0) ? (-1.0) : 1.0));
+        float _2373 = smoothstep(-0.61804687976837158203125, 0.61804687976837158203125, _2370 / fwidth(_2370));
+        _1706 = float4(_1705.xyz * _2373, _1705.w * _2373);
     }
-    out.out_var_SV_Target = _2990;
+    out.out_var_SV_Target = _1705;
     return out;
 }
+

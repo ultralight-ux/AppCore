@@ -200,30 +200,8 @@ float4 fillRoundedRect(VS_OUTPUT input) {
 }
 
 float4 fillBoxShadow(VS_OUTPUT input) {
-    float2 p = input.obj;
-    bool inset = bool(uint(input.data0.y + 0.5));
-    float radius = input.data0.z;
-    float2 origin = input.data1.xy;
-    float2 size = input.data1.zw;
-    float2 clip_origin = input.data4.xy;
-    float2 clip_size = input.data4.zw;
-    
-    float sdClip = sdRoundRect(p - clip_origin, clip_size, input.data5, input.data6);
-    float sdRect = sdRoundRect(p - origin, size, input.data2, input.data3);
-    
-    float clip = inset ? -sdRect : sdClip;
-    float d = inset ? -sdClip : sdRect;
-
-    if (clip < 0.0) {
-        discard;
-        return float4(0.0, 0.0, 0.0, 0.0);
-    }
-
-    float alpha = radius >= 1.0? pow(antialias(-d, radius * 2 + 0.2, 0.0), 1.9) * 3.3 / pow(radius * 1.2, 0.15) :
-                                 antialias(-d, AA_WIDTH, inset ? -1.0 : 1.0);
-
-    alpha = clamp(alpha, 0.0, 1.0) * input.color.a;
-    return float4(input.color.rgb * alpha, alpha);
+    // NO-OP: deprecated function
+    return input.color;
 }
 
 // Blend mode helper functions
