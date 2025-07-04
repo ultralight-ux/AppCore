@@ -66,6 +66,9 @@ class GPUContextMetal {
   virtual id<MTLCommandBuffer> command_buffer();
   virtual void CommitCommandBuffer();
   
+  // Clear pipeline support
+  virtual id<MTLRenderPipelineState> GetClearPipelineState(MTLPixelFormat format);
+  
   static const NSUInteger FrameCount = 3;
 
 protected:
@@ -85,6 +88,12 @@ protected:
   
   // Individual shader libraries for new system
   std::map<ShaderType, std::pair<id<MTLLibrary>, id<MTLLibrary>>> shader_libraries_;
+  
+  // Clear pipeline state support
+  id<MTLLibrary> clear_vertex_library_;
+  id<MTLLibrary> clear_fragment_library_;
+  std::map<MTLPixelFormat, id<MTLRenderPipelineState>> clear_pipeline_states_;
+  
   id<MTLCommandQueue> command_queue_;
   id<MTLCommandBuffer> command_buffer_;
   id<MTLSamplerState> sampler_state_;

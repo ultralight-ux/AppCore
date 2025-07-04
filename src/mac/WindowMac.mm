@@ -67,7 +67,6 @@ WindowMac::WindowMac(Monitor* monitor, uint32_t width, uint32_t height,
   
   auto driver = ultralight::Platform::instance().gpu_driver();
   render_buffer_id_ = driver? driver->NextRenderBufferId() : 0;
-  current_drawable_ = [layer() nextDrawable];
   set_drawable_needs_clear(true);
   
   if (gpu_context)
@@ -264,14 +263,14 @@ void WindowMac::OnPaint(CAMetalLayer* layer) {
 
   if (gpu_context->driver()->HasCommandsPending() || OverlayManager::NeedsRepaint()) {
     MarkBeginDraw();
+    current_drawable_ = [layer nextDrawable];
+    set_drawable_needs_clear(true);
     gpu_context->BeginDrawing();
     gpu_context->driver()->DrawCommandList();
     OverlayManager::Paint();
     gpu_context->EndDrawing();
     [current_drawable_ present];
     MarkEndDraw();
-    current_drawable_ = [layer nextDrawable];
-    set_drawable_needs_clear(true);
   }
 
   MarkEndFrame();

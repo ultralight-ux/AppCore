@@ -73,6 +73,17 @@ function(compile_metal_shaders_if_needed TARGET)
     
     # Find all .metal files in generated directory
     file(GLOB METAL_SOURCE_FILES "${METAL_SOURCE_DIR}/*.metal")
+    
+    # Also find .metal files in the native metal shaders directory
+    set(METAL_NATIVE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders/metal)
+    if(EXISTS ${METAL_NATIVE_DIR})
+        file(GLOB METAL_NATIVE_FILES "${METAL_NATIVE_DIR}/*.metal")
+        if(METAL_NATIVE_FILES)
+            list(APPEND METAL_SOURCE_FILES ${METAL_NATIVE_FILES})
+            message(STATUS "Found native Metal shaders in: ${METAL_NATIVE_DIR}")
+        endif()
+    endif()
+    
     if(NOT METAL_SOURCE_FILES)
         message(WARNING "No Metal source files found in: ${METAL_SOURCE_DIR}")
         message(WARNING "Run shaders/build-shaders/build-shaders.ps1 on Windows to generate Metal source files")
@@ -86,7 +97,7 @@ function(compile_metal_shaders_if_needed TARGET)
         get_filename_component(SHADER_NAME ${METAL_FILE} NAME_WE)
         
         # Determine suffix and variable name
-        if(${SHADER_NAME} MATCHES "vertex_")
+        if(${SHADER_NAME} MATCHES "vertex")
             set(SUFFIX "_vs")
         else()
             set(SUFFIX "_ps")

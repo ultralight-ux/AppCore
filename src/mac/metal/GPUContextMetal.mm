@@ -30,10 +30,10 @@ RenderState::RenderState() : shader_type(ShaderType::Fill),
                              sample_count(1) {}
 
 size_t RenderState::Hash() {
-  size_t result = std::hash<uint32_t>{}((uint32_t)shader_type);
-  result = hash_combine(result, std::hash<bool>{}(blend_enabled));
-  result = hash_combine(result, std::hash<uint32_t>{}((uint32_t)pixel_format));
-  result = hash_combine(result, std::hash<uint32_t>{}((uint32_t)sample_count));
+  size_t result = std::hash<size_t>{}((size_t)shader_type);
+  result = hash_combine(result, std::hash<size_t>{}((size_t)blend_enabled));
+  result = hash_combine(result, std::hash<size_t>{}((size_t)pixel_format));
+  result = hash_combine(result, std::hash<size_t>{}((size_t)sample_count));
   return result;
 }
 
@@ -139,8 +139,8 @@ void GPUContextMetal::LoadShaders() {
   NSError* error = nil;
 
   // Load FillPath shader (uses vertex_path and fill_path)
-  dispatch_data_t vertex_path_data = dispatch_data_create(vertex_path_vs_data, vertex_path_vs_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-  dispatch_data_t fill_path_data = dispatch_data_create(fill_path_ps_data, fill_path_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  dispatch_data_t vertex_path_data = dispatch_data_create(vertex_path_vs_data, vertex_path_vs_size, NULL, nil);
+  dispatch_data_t fill_path_data = dispatch_data_create(fill_path_ps_data, fill_path_ps_size, NULL, nil);
   id<MTLLibrary> vertex_path_lib = [device_ newLibraryWithData:vertex_path_data error:&error];
   if (!vertex_path_lib) {
     NSLog(@"Failed to load vertex_path shader: %@", error);
@@ -152,8 +152,8 @@ void GPUContextMetal::LoadShaders() {
   shader_libraries_[ShaderType::FillPath] = std::make_pair(vertex_path_lib, fill_path_lib);
 
   // Load Fill shader (uses vertex_quad and fill)
-  dispatch_data_t vertex_quad_data = dispatch_data_create(vertex_quad_vs_data, vertex_quad_vs_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-  dispatch_data_t fill_data = dispatch_data_create(fill_ps_data, fill_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  dispatch_data_t vertex_quad_data = dispatch_data_create(vertex_quad_vs_data, vertex_quad_vs_size, NULL, nil);
+  dispatch_data_t fill_data = dispatch_data_create(fill_ps_data, fill_ps_size, NULL, nil);
   id<MTLLibrary> vertex_quad_lib = [device_ newLibraryWithData:vertex_quad_data error:&error];
   if (!vertex_quad_lib) {
     NSLog(@"Failed to load vertex_quad shader: %@", error);
@@ -165,7 +165,7 @@ void GPUContextMetal::LoadShaders() {
   shader_libraries_[ShaderType::Fill] = std::make_pair(vertex_quad_lib, fill_lib);
 
   // Load FilterBasic shader (uses vertex_quad and filter_basic)
-  dispatch_data_t filter_basic_data = dispatch_data_create(filter_basic_ps_data, filter_basic_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  dispatch_data_t filter_basic_data = dispatch_data_create(filter_basic_ps_data, filter_basic_ps_size, NULL, nil);
   id<MTLLibrary> filter_basic_lib = [device_ newLibraryWithData:filter_basic_data error:&error];
   if (!filter_basic_lib) {
     NSLog(@"Failed to load filter_basic shader: %@", error);
@@ -173,7 +173,7 @@ void GPUContextMetal::LoadShaders() {
   shader_libraries_[ShaderType::FilterBasic] = std::make_pair(vertex_quad_lib, filter_basic_lib);
 
   // Load FilterBlur shader (uses vertex_quad and filter_blur)
-  dispatch_data_t filter_blur_data = dispatch_data_create(filter_blur_ps_data, filter_blur_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  dispatch_data_t filter_blur_data = dispatch_data_create(filter_blur_ps_data, filter_blur_ps_size, NULL, nil);
   id<MTLLibrary> filter_blur_lib = [device_ newLibraryWithData:filter_blur_data error:&error];
   if (!filter_blur_lib) {
     NSLog(@"Failed to load filter_blur shader: %@", error);
@@ -181,18 +181,31 @@ void GPUContextMetal::LoadShaders() {
   shader_libraries_[ShaderType::FilterBlur] = std::make_pair(vertex_quad_lib, filter_blur_lib);
 
   // Load FilterDropShadow shader (uses vertex_quad and filter_dropshadow)
-  dispatch_data_t filter_dropshadow_data = dispatch_data_create(filter_dropshadow_ps_data, filter_dropshadow_ps_size, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+  dispatch_data_t filter_dropshadow_data = dispatch_data_create(filter_dropshadow_ps_data, filter_dropshadow_ps_size, NULL, nil);
   id<MTLLibrary> filter_dropshadow_lib = [device_ newLibraryWithData:filter_dropshadow_data error:&error];
   if (!filter_dropshadow_lib) {
     NSLog(@"Failed to load filter_dropshadow shader: %@", error);
   }
   shader_libraries_[ShaderType::FilterDropShadow] = std::make_pair(vertex_quad_lib, filter_dropshadow_lib);
+  
+  // Load Clear shaders
+  dispatch_data_t clear_vertex_data = dispatch_data_create(clear_vertex_vs_data, clear_vertex_vs_size, NULL, nil);
+  clear_vertex_library_ = [device_ newLibraryWithData:clear_vertex_data error:&error];
+  if (!clear_vertex_library_) {
+    NSLog(@"Failed to load clear vertex shader: %@", error);
+  }
+  
+  dispatch_data_t clear_fragment_data = dispatch_data_create(clear_fragment_ps_data, clear_fragment_ps_size, NULL, nil);
+  clear_fragment_library_ = [device_ newLibraryWithData:clear_fragment_data error:&error];
+  if (!clear_fragment_library_) {
+    NSLog(@"Failed to load clear fragment shader: %@", error);
+  }
 }
     
 id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
   LoadShaders();
   
-  uint32_t hash = render_state_.Hash();
+  size_t hash = render_state_.Hash();
   
   auto i = render_pipeline_states_.find(hash);
   if (i != render_pipeline_states_.end())
@@ -273,31 +286,24 @@ id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
   pipelineStateDescriptor.sampleCount = render_state_.sample_count;
   pipelineStateDescriptor.colorAttachments[0].pixelFormat = render_state_.pixel_format;
   
-  auto colorAttachmentDesc = pipelineStateDescriptor.colorAttachments[0];
   if (render_state_.blend_enabled) {
-    colorAttachmentDesc.blendingEnabled = YES;
-    colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
-    colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
-    colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorOne;
-    colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-    colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
-    colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorOne;
-    colorAttachmentDesc.writeMask = MTLColorWriteMaskAll;
+    pipelineStateDescriptor.colorAttachments[0].blendingEnabled = YES;
+    pipelineStateDescriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+    pipelineStateDescriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+    pipelineStateDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+    pipelineStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+    pipelineStateDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
+    pipelineStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+    pipelineStateDescriptor.colorAttachments[0].writeMask = MTLColorWriteMaskAll;
   } else {
-    colorAttachmentDesc.blendingEnabled = NO;
-    colorAttachmentDesc.rgbBlendOperation = MTLBlendOperationAdd;
-    colorAttachmentDesc.alphaBlendOperation = MTLBlendOperationAdd;
-    colorAttachmentDesc.sourceRGBBlendFactor = MTLBlendFactorOne;
-    colorAttachmentDesc.destinationRGBBlendFactor = MTLBlendFactorZero;
-    colorAttachmentDesc.sourceAlphaBlendFactor = MTLBlendFactorOne;
-    colorAttachmentDesc.destinationAlphaBlendFactor = MTLBlendFactorZero;
-    colorAttachmentDesc.writeMask = MTLColorWriteMaskAll;
+    pipelineStateDescriptor.colorAttachments[0].blendingEnabled = NO;
+    pipelineStateDescriptor.colorAttachments[0].writeMask = MTLColorWriteMaskAll;
   }
   
   NSError *error = NULL;
   id<MTLRenderPipelineState> result = [device_ newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
                                                                               error:&error];
-  if (!result)
+  if (!result || error)
   {
     // Pipeline State creation could fail if we haven't properly set up our pipeline descriptor.
     //  If the Metal API validation is enabled, we can find out more information about what
@@ -312,6 +318,52 @@ id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
   
   render_pipeline_states_[hash] = result;
   return result;
+}
+
+id<MTLRenderPipelineState> GPUContextMetal::GetClearPipelineState(MTLPixelFormat format) {
+  LoadShaders();
+  
+  // Check if we have already created a pipeline state for this format
+  auto it = clear_pipeline_states_.find(format);
+  if (it != clear_pipeline_states_.end()) {
+    return it->second;
+  }
+  
+  // Make sure clear shaders are loaded
+  if (!clear_vertex_library_ || !clear_fragment_library_) {
+    NSLog(@"Clear shaders not loaded!");
+    return nil;
+  }
+  
+  // Create pipeline state descriptor for clear operation
+  MTLRenderPipelineDescriptor *pipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+  pipelineDescriptor.label = @"Clear Pipeline";
+  pipelineDescriptor.vertexFunction = [clear_vertex_library_ newFunctionWithName:@"main0"];
+  pipelineDescriptor.fragmentFunction = [clear_fragment_library_ newFunctionWithName:@"main0"];
+  
+  // No vertex descriptor needed - we generate vertices in shader
+  pipelineDescriptor.vertexDescriptor = nil;
+  
+  // Configure for the target pixel format
+  pipelineDescriptor.colorAttachments[0].pixelFormat = format;
+  
+  // Disable blending - we want to replace pixels, not blend
+  auto colorAttachment = pipelineDescriptor.colorAttachments[0];
+  colorAttachment.blendingEnabled = NO;
+  colorAttachment.writeMask = MTLColorWriteMaskAll;
+  
+  // Create the pipeline state
+  NSError *error = nil;
+  id<MTLRenderPipelineState> pipelineState = [device_ newRenderPipelineStateWithDescriptor:pipelineDescriptor error:&error];
+  
+  if (!pipelineState) {
+    NSLog(@"Failed to create clear pipeline state: %@", error);
+    return nil;
+  }
+  
+  // Cache the pipeline state
+  clear_pipeline_states_[format] = pipelineState;
+  return pipelineState;
 }
     
 id<MTLCommandBuffer> GPUContextMetal::command_buffer() {

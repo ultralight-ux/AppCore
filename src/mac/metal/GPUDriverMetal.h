@@ -69,6 +69,8 @@ protected:
     void ApplyScissor(const GPUState& state);
 
     void UpdateTextureResource(id<MTLTexture> texture, RefPtr<Bitmap> bitmap);
+    
+    void ClearTexture(id<MTLTexture> texture, const MTLClearColor& color, id<MTLTexture> resolveTexture = nil);
 
     GPUContextMetal* context_;
 

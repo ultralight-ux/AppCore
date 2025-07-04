@@ -285,7 +285,7 @@ void GPUDriverMetal::BindRenderBuffer(uint32_t render_buffer_id)
 
 void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id)
 {
-    id<MTLTexture> texture, resolveTexture;
+    id<MTLTexture> texture, resolveTexture = nil;
     MTLClearColor clearColor;
 
     if (!render_buffer_id)
@@ -298,10 +298,11 @@ void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id)
         if (j == textures_.end())
             return;
 
+        texture = j->second.texture_;
+        
+        // Only use resolve texture for non-window render buffers with MSAA
         if (context_->msaa_enabled())
             resolveTexture = j->second.resolve_texture_;
-
-        texture = j->second.texture_;
 
         clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
         is_drawing_to_window_ = false;
@@ -315,35 +316,11 @@ void GPUDriverMetal::ClearRenderBuffer(uint32_t render_buffer_id)
         texture = drawable.texture;
         clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0);
         is_drawing_to_window_ = true;
+        // Windows don't use resolve textures
+        resolveTexture = nil;
     }
 
-    if (render_encoder_) {
-        [render_encoder_ endEncoding];
-        render_encoder_ = nullptr;
-    }
-
-    auto renderPassDescriptor = [MTLRenderPassDescriptor new];
-    renderPassDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
-    renderPassDescriptor.colorAttachments[0].clearColor = clearColor;
-    renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
-    renderPassDescriptor.colorAttachments[0].texture = texture;
-
-    if (render_buffer_id && context_->msaa_enabled()) {
-        renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionMultisampleResolve;
-        renderPassDescriptor.colorAttachments[0].resolveTexture = resolveTexture;
-    }
-
-    render_encoder_ =
-        [context_->command_buffer() renderCommandEncoderWithDescriptor:renderPassDescriptor];
-    render_encoder_render_buffer_id_ = render_buffer_id;
-    render_encoder_render_buffer_width_ = texture.width;
-    render_encoder_render_buffer_height_ = texture.height;
-    render_encoder_.label = @"ClearRenderBuffer";
-
-    if (render_encoder_) {
-        [render_encoder_ endEncoding];
-        render_encoder_ = nullptr;
-    }
+    ClearTexture(texture, clearColor, resolveTexture);
 }
 
 void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
@@ -365,6 +342,7 @@ void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
     context_->set_pixel_format(MTLPixelFormatBGRA8Unorm);
     context_->set_shader_type((ShaderType)state.shader_type);
     context_->set_blend_enabled(state.enable_blend);
+
     if (!is_drawing_to_window_ && context_->msaa_enabled())
         context_->set_sample_count(4);
     else
@@ -410,8 +388,8 @@ void GPUDriverMetal::SetGPUState(const GPUState& state)
     uniforms.Transform = ToFloat4x4(model_view_projection.GetMatrix4x4());
     
     // Initialize integer values (for discrete parameters like fill types, blend modes)
-    uniforms.Integer4[0] = { 0, 0, 0, 0 };
-    uniforms.Integer4[1] = { 0, 0, 0, 0 };
+    uniforms.Integer4[0] = { state.uniform_integer[0], state.uniform_integer[1], state.uniform_integer[2], state.uniform_integer[3] };
+    uniforms.Integer4[1] = { state.uniform_integer[4], state.uniform_integer[5], state.uniform_integer[6], state.uniform_integer[7] };
     
     uniforms.Scalar4[0] = { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2], state.uniform_scalar[3] };
     uniforms.Scalar4[1] = { state.uniform_scalar[4], state.uniform_scalar[5], state.uniform_scalar[6], state.uniform_scalar[7] };
@@ -539,6 +517,57 @@ void GPUDriverMetal::UpdateGeometryResource(GeometryEntry& geometry, const Verte
                              size:indices.size];
     [blit_encoder_ endEncoding];
     blit_encoder_ = nullptr;
+}
+
+void GPUDriverMetal::ClearTexture(id<MTLTexture> texture, const MTLClearColor& color, id<MTLTexture> resolveTexture) {
+    // End any existing render encoder
+    if (render_encoder_) {
+        [render_encoder_ endEncoding];
+        render_encoder_ = nullptr;
+    }
+    
+    // Get the clear pipeline state for this texture's pixel format
+    id<MTLRenderPipelineState> clearPipeline = context_->GetClearPipelineState(texture.pixelFormat);
+    if (!clearPipeline) {
+        NSLog(@"Failed to get clear pipeline state for pixel format %lu", (unsigned long)texture.pixelFormat);
+        return;
+    }
+    
+    // Create a render pass descriptor for this texture
+    MTLRenderPassDescriptor *renderPassDescriptor = [MTLRenderPassDescriptor new];
+    renderPassDescriptor.colorAttachments[0].texture = texture;
+    renderPassDescriptor.colorAttachments[0].loadAction = MTLLoadActionLoad;
+    renderPassDescriptor.colorAttachments[0].level = 0;
+    
+    // Handle MSAA resolve if provided
+    if (resolveTexture) {
+        renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionMultisampleResolve;
+        renderPassDescriptor.colorAttachments[0].resolveTexture = resolveTexture;
+    } else {
+        renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
+    }
+    
+    // Create a render encoder
+    id<MTLRenderCommandEncoder> clearEncoder = [context_->command_buffer() renderCommandEncoderWithDescriptor:renderPassDescriptor];
+    clearEncoder.label = @"ClearTexture";
+    
+    // Set the clear pipeline state
+    [clearEncoder setRenderPipelineState:clearPipeline];
+    
+    // Pass the clear color as a constant to the fragment shader
+    float clearColorArray[4] = {
+        static_cast<float>(color.red),
+        static_cast<float>(color.green),
+        static_cast<float>(color.blue),
+        static_cast<float>(color.alpha)
+    };
+    [clearEncoder setFragmentBytes:clearColorArray length:sizeof(clearColorArray) atIndex:0];
+    
+    // Draw the full-screen triangle (3 vertices)
+    [clearEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+    
+    // End encoding
+    [clearEncoder endEncoding];
 }
 
 } // namespace ultralight

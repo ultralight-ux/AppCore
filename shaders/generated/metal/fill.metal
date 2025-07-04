@@ -1340,7 +1340,7 @@ fragment main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Unifo
             }
             if (_2062 < 0.0)
             {
-                discard_fragment();
+                
             }
             float _2090;
             if (in.in_var_COLOR1.z >= 1.0)
@@ -2103,4 +2103,3 @@ fragment main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Unifo
     out.out_var_SV_Target = _2990;
     return out;
 }
-
