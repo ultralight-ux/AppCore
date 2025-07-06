@@ -82,7 +82,8 @@ void OverlayManager::FireMouseEvent(const ultralight::MouseEvent& evt) {
     rel_evt.x -= (int)std::round(hovered_overlay_->x() / window_scale_);
     rel_evt.y -= (int)std::round(hovered_overlay_->y() / window_scale_);
 
-    focused_overlay_->view()->FireMouseEvent(rel_evt);
+    if (focused_overlay_)
+      focused_overlay_->view()->FireMouseEvent(rel_evt);
 
     if (evt.type == ultralight::MouseEvent::kType_MouseUp && evt.button == MouseEvent::kButton_Left)
       is_dragging_ = false;
