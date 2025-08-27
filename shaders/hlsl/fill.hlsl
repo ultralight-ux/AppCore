@@ -6,6 +6,7 @@ uint FillType(VS_OUTPUT input) { return uint(input.data0.x + 0.5); }
 
 // Accessor functions for shader parameters
 float4 TileRectUV() { return Vector[0]; }
+float2 PatternSpacing() { return Vector[1].xy; }
 float2 TileSize() { return Vector[1].zw; }
 float2 PatternTransformA() { return Vector[2].xy; }
 float2 PatternTransformB() { return Vector[2].zw; }
@@ -51,7 +52,11 @@ float4 fillImage(VS_OUTPUT input) {
 
 float4 fillPatternImage(VS_OUTPUT input) {
     float4 tile_rect_uv = TileRectUV();
+    float2 spacing = PatternSpacing();
     float2 tile_size = TileSize();
+    
+    // Calculate logical tile size (including spacing)
+    float2 logical_tile_size = tile_size + spacing;
 
     float2 p = input.obj;
 
@@ -59,13 +64,25 @@ float4 fillPatternImage(VS_OUTPUT input) {
     float2 transformed_coords = transformAffine(p,
         PatternTransformA(), PatternTransformB(), PatternTransformC());
 
-    // Convert back to uv coordinate space
-    transformed_coords /= tile_size;
+    // Convert to logical tile space (including spacing)
+    transformed_coords /= logical_tile_size;
 
-    // Wrap UVs to [0.0, 1.0] so texture repeats properly
-    float2 uv = frac(transformed_coords);
-
-    // Clip to tile-rect UV
+    // Wrap to [0.0, 1.0] for tiling
+    float2 wrapped = frac(transformed_coords);
+    
+    // Convert wrapped coordinates to actual pixel position within logical tile
+    float2 pixel_in_tile = wrapped * logical_tile_size;
+    
+    // Check if we're within the actual image bounds or in the spacing area
+    if (pixel_in_tile.x >= tile_size.x || pixel_in_tile.y >= tile_size.y) {
+        // We're in the spacing area, return transparent
+        return float4(0.0, 0.0, 0.0, 0.0);
+    }
+    
+    // Convert pixel position to UV within the actual image
+    float2 uv = pixel_in_tile / tile_size;
+    
+    // Map to tile-rect UV in texture atlas
     uv *= tile_rect_uv.zw - tile_rect_uv.xy;
     uv += tile_rect_uv.xy;
 
