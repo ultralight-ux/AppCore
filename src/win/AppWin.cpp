@@ -239,9 +239,15 @@ void AppWin::Update()
 
     const char* frame_mark_update = "Update";
 
+#ifdef TRACY_PROFILE_PERFORMANCE
     FrameMarkStart(frame_mark_update);
+#endif
+
     renderer()->Update();
+
+#ifdef TRACY_PROFILE_PERFORMANCE
     FrameMarkEnd(frame_mark_update);
+#endif
 
     // if (main_monitor_->needs_refresh()) {
     // main_monitor_->set_needs_refresh(false);
