@@ -280,13 +280,17 @@ static const char* frameMarker = "WindowMac::OnPaint";
 
 void WindowMac::MarkBeginFrame()
 {
+#ifdef TRACY_PROFILE_PERFORMANCE
     FrameMarkStart(frameMarker);
+#endif
     frame_start_time_ = std::chrono::steady_clock::now();
 }
 
 void WindowMac::MarkEndFrame()
 {
+#ifdef TRACY_PROFILE_PERFORMANCE
     FrameMarkEnd(frameMarker);
+#endif
     using namespace std::chrono;
 
     auto now = std::chrono::steady_clock::now();

@@ -213,9 +213,15 @@ void AppMac::Update() {
 
   const char* frame_mark_update = "Update";
 
+#ifdef TRACY_PROFILE_PERFORMANCE
   FrameMarkStart(frame_mark_update);
+#endif
+
   renderer()->Update();
+
+#ifdef TRACY_PROFILE_PERFORMANCE
   FrameMarkEnd(frame_mark_update);
+#endif
 
   bool needs_stat_update = false;
   auto now = std::chrono::steady_clock::now();
