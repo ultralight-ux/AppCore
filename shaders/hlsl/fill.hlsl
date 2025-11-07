@@ -368,13 +368,10 @@ float4 fillMask(VS_OUTPUT input) {
 }
 
 float4 fillGlyph(VS_OUTPUT input) {
-    float alpha = Texture0.Sample(Sampler0, input.tex).a * input.color.a;
+    float alpha = Texture0.Sample(Sampler0, input.tex).a;
     float fill_color_luma = input.data0.y;
-    float corrected_alpha = Texture1.Sample(Sampler0, float2(alpha, fill_color_luma)).a;
-
-    // input.color.rgb is already premultiplied, scale by the ratio to avoid double premultiplication
-    float alpha_ratio = input.color.a > 0.0001 ? (corrected_alpha / input.color.a) : 0.0;
-    return float4(input.color.rgb * alpha_ratio, corrected_alpha);
+    float corrected_alpha = Texture1.Sample(Sampler0, float2(alpha, fill_color_luma)).a * input.color.a;
+    return float4(input.color.rgb * corrected_alpha, corrected_alpha);
 }
 
 // Main pixel shader entry point

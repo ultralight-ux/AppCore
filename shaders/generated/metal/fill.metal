@@ -971,8 +971,7 @@ fragment main0_out main0(main0_in in [[stage_in]], constant type_Uniforms& Unifo
         }
         case 11u:
         {
-            float4 _162 = Texture1.sample(Sampler0, float2(Texture0.sample(Sampler0, in.in_var_TEXCOORD0).w * in.in_var_COLOR0.w, in.in_var_COLOR1.y));
-            float _163 = _162.w;
+            float _163 = Texture1.sample(Sampler0, float2(Texture0.sample(Sampler0, in.in_var_TEXCOORD0).w, in.in_var_COLOR1.y)).w * in.in_var_COLOR0.w;
             _1722 = float4(in.in_var_COLOR0.xyz * _163, _163);
             break;
         }

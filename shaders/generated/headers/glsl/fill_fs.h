@@ -1011,8 +1011,7 @@ void main()
         }
         case 11u:
         {
-            vec4 _162 = texture(SPIRV_Cross_CombinedTexture1Sampler0, vec2(texture(SPIRV_Cross_CombinedTexture0Sampler0, in_var_TEXCOORD0).w * in_var_COLOR0.w, in_var_COLOR1.y));
-            float _163 = _162.w;
+            float _163 = texture(SPIRV_Cross_CombinedTexture1Sampler0, vec2(texture(SPIRV_Cross_CombinedTexture0Sampler0, in_var_TEXCOORD0).w, in_var_COLOR1.y)).w * in_var_COLOR0.w;
             _1722 = vec4(in_var_COLOR0.xyz * _163, _163);
             break;
         }
