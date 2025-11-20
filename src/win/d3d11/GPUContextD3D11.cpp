@@ -117,9 +117,23 @@ GPUContextD3D11::GPUContextD3D11() {
                                   scissored_rasterizer_state_.GetAddressOf());
 
   DisableScissor();
+
+#ifdef TRACY_PROFILE_PERFORMANCE
+  if (device_.Get() && immediate_context_.Get()) {
+    tracy_ctx_ = TracyD3D11Context(device_.Get(), immediate_context_.Get());
+    TracyD3D11ContextName(tracy_ctx_, "D3D11 Main", 11);
+  }
+#endif
 }
 
 GPUContextD3D11::~GPUContextD3D11() {
+#ifdef TRACY_PROFILE_PERFORMANCE
+  if (tracy_ctx_) {
+    TracyD3D11Destroy(tracy_ctx_);
+    tracy_ctx_ = nullptr;
+  }
+#endif
+
   if (device_) {
     immediate_context_->ClearState();
 
@@ -138,7 +152,13 @@ GPUContextD3D11::~GPUContextD3D11() {
 
 void GPUContextD3D11::BeginDrawing() { }
 
-void GPUContextD3D11::EndDrawing() { }
+void GPUContextD3D11::EndDrawing() {
+#ifdef TRACY_PROFILE_PERFORMANCE
+  if (tracy_ctx_) {
+    TracyD3D11Collect(tracy_ctx_);
+  }
+#endif
+}
 
 ID3D11Device* GPUContextD3D11::device() { return device_.Get(); }
 

@@ -2,6 +2,7 @@
 #include "SwapChainD3D11.h"
 #include "GPUDriverD3D11.h"
 #include <cassert>
+#include <Ultralight/private/tracy/Tracy.hpp>
 
 namespace ultralight {
 
@@ -105,10 +106,14 @@ IDXGISwapChain* SwapChainD3D11::swap_chain() { return swap_chain_.Get(); }
 
 ID3D11RenderTargetView* SwapChainD3D11::render_target_view() { return back_buffer_view_.Get(); }
 
-void SwapChainD3D11::PresentFrame() { swap_chain()->Present(enable_vsync_ ? 1 : 0, 0); }
+void SwapChainD3D11::PresentFrame() {
+  ProfiledZone;
+  swap_chain()->Present(enable_vsync_ ? 1 : 0, 0);
+}
 
 void SwapChainD3D11::Resize(int width, int height) {
-  
+  ProfiledZone;
+
   set_screen_size(width, height);
 
   context_->immediate_context()->OMSetRenderTargets(0, 0, 0);

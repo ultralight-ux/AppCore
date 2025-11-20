@@ -1,4 +1,5 @@
 #include "GPUDriverImpl.h"
+#include <Ultralight/private/tracy/Tracy.hpp>
 
 namespace ultralight {
 
@@ -11,16 +12,21 @@ bool GPUDriverImpl::HasCommandsPending() {
 }
 
 void GPUDriverImpl::DrawCommandList() {
+  ProfiledZone;
+
   if (command_list_.empty())
     return;
 
   batch_count_ = 0;
 
   for (auto& cmd : command_list_) {
-    if (cmd.command_type == CommandType::DrawGeometry)
+    if (cmd.command_type == CommandType::DrawGeometry) {
+      ZoneScopedN("ProcessDrawGeometryCmd");
       DrawGeometry(cmd.geometry_id, cmd.indices_count, cmd.indices_offset, cmd.gpu_state);
-    else if (cmd.command_type == CommandType::ClearRenderBuffer)
+    } else if (cmd.command_type == CommandType::ClearRenderBuffer) {
+      ZoneScopedN("ProcessClearCmd");
       ClearRenderBuffer(cmd.gpu_state.render_buffer_id);
+    }
     batch_count_++;
   }
 

@@ -11,6 +11,10 @@
 #include <Ultralight/platform/Platform.h>
 #include <Ultralight/platform/FileSystem.h>
 #include <AppCore/App.h>
+#include <Ultralight/private/tracy/Tracy.hpp>
+#ifdef TRACY_PROFILE_PERFORMANCE
+#include <Ultralight/private/tracy/TracyD3D11.hpp>
+#endif
 
 namespace {
 
@@ -55,6 +59,8 @@ GPUDriverD3D11::GPUDriverD3D11(GPUContextD3D11* context) : context_(context) { }
 GPUDriverD3D11::~GPUDriverD3D11() { }
 
 void GPUDriverD3D11::CreateTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap) {
+  ProfiledZone;
+
   auto i = textures_.find(texture_id);
   if (i != textures_.end()) {
     MessageBoxW(nullptr, L"GPUDriverD3D11::CreateTexture, texture id already exists.", L"Error",
@@ -161,6 +167,8 @@ void GPUDriverD3D11::CreateTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap) {
 }
 
 void GPUDriverD3D11::UpdateTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap) {
+  ProfiledZone;
+
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
     MessageBoxW(nullptr, L"GPUDriverD3D11::UpdateTexture, texture id doesn't exist.", L"Error",
@@ -187,6 +195,8 @@ void GPUDriverD3D11::UpdateTexture(uint32_t texture_id, RefPtr<Bitmap> bitmap) {
 }
 
 void GPUDriverD3D11::DestroyTexture(uint32_t texture_id) {
+  ProfiledZone;
+
   auto i = textures_.find(texture_id);
   if (i != textures_.end()) {
     textures_.erase(i);
@@ -194,6 +204,8 @@ void GPUDriverD3D11::DestroyTexture(uint32_t texture_id) {
 }
 
 void GPUDriverD3D11::CreateRenderBuffer(uint32_t render_buffer_id, const RenderBuffer& buffer) {
+  ProfiledZone;
+
   if (render_buffer_id == 0) {
     MessageBoxW(nullptr,
                 L"GPUDriverD3D11::CreateRenderBuffer, render buffer ID 0 is reserved for default "
@@ -238,6 +250,8 @@ void GPUDriverD3D11::CreateRenderBuffer(uint32_t render_buffer_id, const RenderB
 }
 
 void GPUDriverD3D11::DestroyRenderBuffer(uint32_t render_buffer_id) {
+  ProfiledZone;
+
   auto i = render_targets_.find(render_buffer_id);
   if (i != render_targets_.end()) {
     i->second.render_target_view.Reset();
@@ -248,6 +262,8 @@ void GPUDriverD3D11::DestroyRenderBuffer(uint32_t render_buffer_id) {
 void GPUDriverD3D11::CreateGeometry(uint32_t geometry_id,
                                     const VertexBuffer& vertices,
                                     const IndexBuffer& indices) {
+  ProfiledZone;
+
   BindVertexLayout(vertices.format);
 
   if (geometry_.find(geometry_id) != geometry_.end())
@@ -296,6 +312,8 @@ void GPUDriverD3D11::CreateGeometry(uint32_t geometry_id,
 void GPUDriverD3D11::UpdateGeometry(uint32_t geometry_id,
                                     const VertexBuffer& vertices,
                                     const IndexBuffer& indices) {
+  ProfiledZone;
+
   auto i = geometry_.find(geometry_id);
   if (i == geometry_.end()) {
     MessageBoxW(nullptr, L"GPUDriverD3D11::UpdateGeometry, geometry id doesn't exist.", L"Error",
@@ -316,6 +334,8 @@ void GPUDriverD3D11::UpdateGeometry(uint32_t geometry_id,
 }
 
 void GPUDriverD3D11::DestroyGeometry(uint32_t geometry_id) {
+  ProfiledZone;
+
   auto i = geometry_.find(geometry_id);
   if (i != geometry_.end()) {
     i->second.vertexBuffer.Reset();
@@ -327,6 +347,8 @@ void GPUDriverD3D11::DestroyGeometry(uint32_t geometry_id) {
 // Inherited from GPUDriverImpl
 
 void GPUDriverD3D11::BindTexture(uint8_t texture_unit, uint32_t texture_id) {
+  ProfiledZone;
+
   auto i = textures_.find(texture_id);
   if (i == textures_.end()) {
     MessageBoxW(nullptr, L"GPUDriverD3D11::BindTexture, texture id doesn't exist.", L"Error",
@@ -338,6 +360,7 @@ void GPUDriverD3D11::BindTexture(uint8_t texture_unit, uint32_t texture_id) {
 
   if (entry.is_msaa_render_target) {
     if (entry.needs_resolve) {
+      ProfileGPUZone("GPU_MSAA_Resolve");
       context_->immediate_context()->ResolveSubresource(
           entry.resolve_texture.Get(), 0, entry.texture.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
       entry.needs_resolve = false;
@@ -352,6 +375,8 @@ void GPUDriverD3D11::BindTexture(uint8_t texture_unit, uint32_t texture_id) {
 }
 
 void GPUDriverD3D11::BindRenderBuffer(uint32_t render_buffer_id) {
+  ProfiledZone;
+
   // Unbind any textures/shader resources to avoid warnings in case a render
   // buffer that we would like to bind is already bound as an input texture.
   ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
@@ -370,6 +395,9 @@ void GPUDriverD3D11::BindRenderBuffer(uint32_t render_buffer_id) {
 }
 
 void GPUDriverD3D11::ClearRenderBuffer(uint32_t render_buffer_id) {
+  ProfiledZone;
+  ProfileGPUZone("GPU_ClearRenderBuffer");
+
   float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
   ID3D11RenderTargetView* target = GetRenderTargetView(render_buffer_id);
@@ -386,6 +414,9 @@ void GPUDriverD3D11::DrawGeometry(uint32_t geometry_id,
                                   uint32_t indices_count,
                                   uint32_t indices_offset,
                                   const GPUState& state) {
+  ProfiledZone;
+  ProfileGPUZone("GPU_DrawGeometry");
+
   BindRenderBuffer(state.render_buffer_id);
 
   SetViewport(state.viewport_width, state.viewport_height);
@@ -478,6 +509,8 @@ void GPUDriverD3D11::LoadCompiledPixelShader(const unsigned char* data,
 }
 
 void GPUDriverD3D11::LoadShaders() {
+  ProfiledZone;
+
   if (!shaders_.empty())
     return;
 
@@ -560,6 +593,8 @@ void GPUDriverD3D11::LoadShaders() {
 }
 
 void GPUDriverD3D11::BindShader(ShaderType shader) {
+  ProfiledZone;
+
   LoadShaders();
 
   ShaderType shader_type = (ShaderType)shader;
@@ -611,6 +646,8 @@ void GPUDriverD3D11::BindVertexLayout(VertexBufferFormat format) {
 }
 
 void GPUDriverD3D11::BindGeometry(uint32_t id) {
+  ProfiledZone;
+
   auto i = geometry_.find(id);
   if (i == geometry_.end())
     return;
@@ -708,6 +745,8 @@ ComPtr<ID3D11Buffer> GPUDriverD3D11::GetConstantBuffer() {
 }
 
 void GPUDriverD3D11::SetViewport(uint32_t width, uint32_t height) {
+  ProfiledZone;
+
   D3D11_VIEWPORT vp;
   ZeroMemory(&vp, sizeof(vp));
   vp.Width = (float)width;
@@ -720,6 +759,8 @@ void GPUDriverD3D11::SetViewport(uint32_t width, uint32_t height) {
 }
 
 void GPUDriverD3D11::UpdateConstantBuffer(const GPUState& state) {
+  ProfiledZone;
+
   auto buffer = GetConstantBuffer();
 
   Matrix model_view_projection
