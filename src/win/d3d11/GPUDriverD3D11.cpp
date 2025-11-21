@@ -438,10 +438,16 @@ void GPUDriverD3D11::DrawGeometry(uint32_t geometry_id,
 
   BindShader(state.shader_type);
 
-  if (state.enable_blend)
-    context_->EnableBlend();
-  else
+  if (state.enable_blend) {
+    // Use the specific blend state from GPUState
+    context_->SetBlendState(
+      static_cast<uint8_t>(state.blend_src_factor),
+      static_cast<uint8_t>(state.blend_dst_factor),
+      static_cast<uint8_t>(state.blend_equation)
+    );
+  } else {
     context_->DisableBlend();
+  }
 
   if (state.enable_scissor) {
     context_->EnableScissor();

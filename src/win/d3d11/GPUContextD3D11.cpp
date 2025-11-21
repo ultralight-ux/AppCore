@@ -2,8 +2,39 @@
 #include "GPUContextD3D11.h"
 #include "SwapChainD3D11.h"
 #include <cassert>
+#include <Ultralight/platform/GPUDriver.h>
 
 namespace ultralight {
+
+// Map platform-agnostic BlendFactor enum to D3D11 blend constants
+static D3D11_BLEND MapBlendFactor(uint8_t factor) {
+  switch (static_cast<BlendFactor>(factor)) {
+  case BlendFactor::Zero:             return D3D11_BLEND_ZERO;
+  case BlendFactor::One:              return D3D11_BLEND_ONE;
+  case BlendFactor::SrcColor:         return D3D11_BLEND_SRC_COLOR;
+  case BlendFactor::InvSrcColor:      return D3D11_BLEND_INV_SRC_COLOR;
+  case BlendFactor::SrcAlpha:         return D3D11_BLEND_SRC_ALPHA;
+  case BlendFactor::InvSrcAlpha:      return D3D11_BLEND_INV_SRC_ALPHA;
+  case BlendFactor::DestColor:        return D3D11_BLEND_DEST_COLOR;
+  case BlendFactor::InvDestColor:     return D3D11_BLEND_INV_DEST_COLOR;
+  case BlendFactor::DestAlpha:        return D3D11_BLEND_DEST_ALPHA;
+  case BlendFactor::InvDestAlpha:     return D3D11_BLEND_INV_DEST_ALPHA;
+  case BlendFactor::SrcAlphaSaturate: return D3D11_BLEND_SRC_ALPHA_SAT;
+  default:                            return D3D11_BLEND_ONE;
+  }
+}
+
+// Map platform-agnostic BlendEquation enum to D3D11 blend operation
+static D3D11_BLEND_OP MapBlendEquation(uint8_t equation) {
+  switch (static_cast<BlendEquation>(equation)) {
+  case BlendEquation::Add:         return D3D11_BLEND_OP_ADD;
+  case BlendEquation::Subtract:    return D3D11_BLEND_OP_SUBTRACT;
+  case BlendEquation::RevSubtract: return D3D11_BLEND_OP_REV_SUBTRACT;
+  case BlendEquation::Min:         return D3D11_BLEND_OP_MIN;
+  case BlendEquation::Max:         return D3D11_BLEND_OP_MAX;
+  default:                         return D3D11_BLEND_OP_ADD;
+  }
+}
 
 GPUContextD3D11::GPUContextD3D11() {
   HRESULT hr = S_OK;
@@ -170,6 +201,56 @@ void GPUContextD3D11::EnableBlend() {
 
 void GPUContextD3D11::DisableBlend() {
   immediate_context_->OMSetBlendState(disabled_blend_state_.Get(), NULL, 0xffffffff);
+}
+
+ID3D11BlendState* GPUContextD3D11::GetOrCreateBlendState(uint8_t src_factor, uint8_t dst_factor, uint8_t equation) {
+  // Create a unique key for this blend state configuration
+  uint32_t key = MakeBlendStateKey(src_factor, dst_factor, equation);
+
+  // Check if we already have this blend state cached
+  auto it = blend_state_cache_.find(key);
+  if (it != blend_state_cache_.end()) {
+    return it->second.Get();
+  }
+
+  // Create a new blend state
+  D3D11_RENDER_TARGET_BLEND_DESC rt_blend_desc;
+  ZeroMemory(&rt_blend_desc, sizeof(rt_blend_desc));
+  rt_blend_desc.BlendEnable = true;
+  rt_blend_desc.SrcBlend = MapBlendFactor(src_factor);
+  rt_blend_desc.DestBlend = MapBlendFactor(dst_factor);
+  rt_blend_desc.BlendOp = MapBlendEquation(equation);
+
+  // For alpha channel, use the same blending as color for simplicity
+  // This works well for premultiplied alpha
+  rt_blend_desc.SrcBlendAlpha = rt_blend_desc.SrcBlend;
+  rt_blend_desc.DestBlendAlpha = rt_blend_desc.DestBlend;
+  rt_blend_desc.BlendOpAlpha = rt_blend_desc.BlendOp;
+  rt_blend_desc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+  D3D11_BLEND_DESC blend_desc;
+  ZeroMemory(&blend_desc, sizeof(blend_desc));
+  blend_desc.AlphaToCoverageEnable = false;
+  blend_desc.IndependentBlendEnable = false;
+  blend_desc.RenderTarget[0] = rt_blend_desc;
+
+  Microsoft::WRL::ComPtr<ID3D11BlendState> blend_state;
+  HRESULT hr = device_->CreateBlendState(&blend_desc, blend_state.GetAddressOf());
+
+  if (FAILED(hr)) {
+    // Failed to create blend state, return the default blend state
+    return blend_state_.Get();
+  }
+
+  // Cache the new blend state
+  blend_state_cache_[key] = blend_state;
+  return blend_state.Get();
+}
+
+void GPUContextD3D11::SetBlendState(uint8_t src_factor, uint8_t dst_factor, uint8_t equation) {
+  ID3D11BlendState* blend_state = GetOrCreateBlendState(src_factor, dst_factor, equation);
+  immediate_context_->OMSetBlendState(blend_state, NULL, 0xffffffff);
+  current_blend_state_ = blend_state;
 }
 
 void GPUContextD3D11::EnableScissor() {

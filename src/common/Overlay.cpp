@@ -132,6 +132,9 @@ public:
       gpu_state_.viewport_height = window_->height();
       gpu_state_.transform = identity.GetMatrix4x4();
       gpu_state_.enable_blend = true;
+      gpu_state_.blend_src_factor = BlendFactor::One;
+      gpu_state_.blend_dst_factor = BlendFactor::InvSrcAlpha;
+      gpu_state_.blend_equation = BlendEquation::Add;
       gpu_state_.enable_texturing = true;
       gpu_state_.shader_type = ShaderType::Fill;
       gpu_state_.render_buffer_id = window_->render_buffer_id();
