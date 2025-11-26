@@ -80,6 +80,14 @@ struct AExport Settings {
   /// Set this to true to force the engine to always use the CPU renderer.
   ///
   bool force_cpu_renderer = false;
+
+  ///
+  /// Override the device scale factor for all windows.
+  ///
+  /// If <= 0 (default), device scale is auto-detected from the monitor DPI.
+  /// Set to a positive value (e.g., 1.0, 1.5, 2.0) to override.
+  ///
+  double device_scale_override = 0.0;
 };
 
 ///

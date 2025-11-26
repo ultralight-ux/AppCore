@@ -1,5 +1,6 @@
 #include "WindowWin.h"
 #include "AppCore/Overlay.h"
+#include <AppCore/App.h>
 #include "AppWin.h"
 #include "DIBSurface.h"
 #include "Windowsx.h"
@@ -18,6 +19,12 @@
 #include "d3d12/GPUDriverD3D12.h"
 #endif
 
+#define USE_VIRTUAL_KEY_EVENT_HELPER 0
+
+#if USE_VIRTUAL_KEY_EVENT_HELPER
+#include "VirtualKeyEventHelper.h"
+#endif
+
 namespace ultralight {
 
 #define WINDOWDATA() ((WindowData*)GetWindowLongPtr(hWnd, GWLP_USERDATA))
@@ -28,6 +35,10 @@ static HDC g_dc = 0;
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+#if USE_VIRTUAL_KEY_EVENT_HELPER
+    static VirtualKeyEventHelper virtual_key_event_helper = VirtualKeyEventHelper();
+#endif
+
     PAINTSTRUCT ps;
     HDC hdc;
     switch (message) {
@@ -67,6 +78,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         WINDOW()->OnResize(WINDOW()->width(), WINDOW()->height());
         InvalidateRect(hWnd, nullptr, false);
         break;
+#if !USE_VIRTUAL_KEY_EVENT_HELPER
     case WM_KEYDOWN:
         WINDOW()->FireKeyEvent(
             KeyEvent(KeyEvent::kType_RawKeyDown, (uintptr_t)wParam, (intptr_t)lParam, false));
@@ -79,6 +91,17 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         WINDOW()->FireKeyEvent(
             KeyEvent(KeyEvent::kType_Char, (uintptr_t)wParam, (intptr_t)lParam, false));
         break;
+#else
+    case WM_KEYDOWN:
+    case WM_KEYUP: {
+        bool is_key_down = (message == WM_KEYDOWN);
+        for (auto& evt : virtual_key_event_helper.TranslateKeyEvent(
+                static_cast<int>(wParam), is_key_down)) {
+            WINDOW()->FireKeyEvent(evt);
+        }
+        break;
+    }
+#endif
     case WM_MOUSELEAVE:
         WINDOWDATA()->is_mouse_in_client = false;
         WINDOWDATA()->is_tracking_mouse = false;
@@ -226,6 +249,11 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool ful
         style_ |= WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 
     scale_ = monitor_->scale();
+
+    // Check for device scale override from App settings
+    if (App::instance() && App::instance()->settings().device_scale_override > 0.0) {
+        scale_ = App::instance()->settings().device_scale_override;
+    }
 
     int windowWidthPx = ScreenToPixels(width);
     int windowHeightPx = ScreenToPixels(height);
