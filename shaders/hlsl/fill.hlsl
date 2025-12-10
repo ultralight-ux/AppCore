@@ -1,6 +1,9 @@
 #include "common.hlsli"
 #include "clip.hlsli"
 
+// Set to 0 to use polynomial approximation instead of LUT texture for alpha correction.
+#define USE_ALPHA_LUT 0
+
 // Fill type extraction from vertex data
 uint FillType(VS_OUTPUT input) { return uint(input.data0.x + 0.5); }
 
@@ -367,10 +370,80 @@ float4 fillMask(VS_OUTPUT input) {
     return float4(col.rgb * alpha, col.a * alpha);
 }
 
+#if !USE_ALPHA_LUT
+// Piecewise polynomial approximation of our alpha-correction LUT
+// Maps (linear alpha, fill color luma) -> gamma-corrected alpha
+float AlphaCorrection(float a, float l) {
+    if (a < 0.866667) {
+        // Low alpha region (most common case)
+        float a2 = a * a;
+        float a3 = a2 * a;
+        float a4 = a3 * a;
+        float l2 = l * l;
+        float l3 = l2 * l;
+        float l4 = l3 * l;
+        float p = (
+            -0.5295142877
+          + 0.6729336378 * l
+          -0.9970081304 * a
+          -6.9761895120 * l2
+          -1.2416343696 * a * l
+          + 8.0153698029 * a2
+          + 52.6805538770 * l3
+          -23.9237999543 * a * l2
+          + 26.8822958232 * a2 * l
+          -31.4318707953 * a3
+          -72.3097846202 * l4
+          + 7.1798346847 * a * l3
+          + 22.1490959100 * a2 * l2
+          -44.2197918196 * a3 * l
+          + 45.1474487610 * a4
+          + 29.2352950634 * pow(l, 5.0)
+          + 3.7994888864 * a * l4
+          -5.7742577614 * a2 * l3
+          -12.0929004495 * a3 * l2
+          + 27.8164399735 * a4 * l
+          -23.5607835614 * pow(a, 5.0)
+        );
+        return saturate(a + a * (1.0 - a) * p);
+    } else {
+        // High alpha region (nearly-opaque opacity)
+        float a2 = a * a;
+        float a3 = a2 * a;
+        float a4 = a3 * a;
+        float l2 = l * l;
+        float l3 = l2 * l;
+        float l4 = l3 * l;
+        float p = (
+            359.7440629041
+          -192.8896711219 * l
+          -856.5769056815 * a
+          -309.4254650715 * l2
+          + 1099.4938500108 * a * l
+          + 75.8802629888 * a2
+          -82.2700940268 * l3
+          + 837.4432826429 * a * l2
+          -1796.8031907127 * a2 * l
+          + 1033.9126625702 * a3
+          -2.5168630999 * l4
+          + 98.2029223745 * a * l3
+          -559.1591121667 * a2 * l2
+          + 914.3739143865 * a3 * l
+          -619.1996126173 * a4
+        );
+        return saturate(a + a * (1.0 - a) * p);
+    }
+}
+#endif
+
 float4 fillGlyph(VS_OUTPUT input) {
     float alpha = Texture0.Sample(Sampler0, input.tex).a;
     float fill_color_luma = input.data0.y;
+#if USE_ALPHA_LUT
     float corrected_alpha = Texture1.Sample(Sampler0, float2(alpha, fill_color_luma)).a * input.color.a;
+#else
+    float corrected_alpha = AlphaCorrection(alpha, fill_color_luma) * input.color.a;
+#endif
     return float4(input.color.rgb * corrected_alpha, corrected_alpha);
 }
 
