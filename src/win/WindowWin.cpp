@@ -511,6 +511,67 @@ void WindowWin::DrawSurface(int x, int y, Surface* surface)
     BitBlt(hdc, x, y, (int)surface->width(), (int)surface->height(), dibSurface->dc(), 0, 0, SRCCOPY);
 }
 
+RefPtr<Bitmap> WindowWin::TakeScreenshot()
+{
+    // Get window client dimensions (in pixels)
+    uint32_t w = width();
+    uint32_t h = height();
+
+    if (w == 0 || h == 0)
+        return RefPtr<Bitmap>();
+
+    // Get the window DC
+    HDC windowDC = GetDC(hwnd_);
+    if (!windowDC)
+        return RefPtr<Bitmap>();
+
+    // Create a compatible DC for our DIB
+    HDC memDC = CreateCompatibleDC(windowDC);
+    if (!memDC) {
+        ReleaseDC(hwnd_, windowDC);
+        return RefPtr<Bitmap>();
+    }
+
+    // Set up DIB header for BGRA format (top-down)
+    BITMAPINFO bmi = {};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = static_cast<LONG>(w);
+    bmi.bmiHeader.biHeight = -static_cast<LONG>(h);  // Negative for top-down
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    // Create DIB section
+    void* dibBits = nullptr;
+    HBITMAP hDib = CreateDIBSection(memDC, &bmi, DIB_RGB_COLORS, &dibBits, nullptr, 0);
+    if (!hDib || !dibBits) {
+        DeleteDC(memDC);
+        ReleaseDC(hwnd_, windowDC);
+        return RefPtr<Bitmap>();
+    }
+
+    HGDIOBJ oldBitmap = SelectObject(memDC, hDib);
+
+    // Copy from window DC to our DIB
+    BitBlt(memDC, 0, 0, w, h, windowDC, 0, 0, SRCCOPY);
+
+    // Calculate sizes
+    uint32_t rowBytes = w * 4;
+    size_t size = static_cast<size_t>(rowBytes) * h;
+
+    // Create Ultralight Bitmap from DIB pixels (copy the data)
+    RefPtr<Bitmap> bitmap = Bitmap::Create(w, h, BitmapFormat::BGRA8_UNORM_SRGB,
+                                            rowBytes, dibBits, size, true);
+
+    // Cleanup GDI resources
+    SelectObject(memDC, oldBitmap);
+    DeleteObject(hDib);
+    DeleteDC(memDC);
+    ReleaseDC(hwnd_, windowDC);
+
+    return bitmap;
+}
+
 void* WindowWin::native_handle() const { return hwnd_; }
 
 void WindowWin::Paint()

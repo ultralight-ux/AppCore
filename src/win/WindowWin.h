@@ -77,6 +77,8 @@ public:
 
     virtual void EnableFrameStatistics() override { frame_stats_enabled_ = true; }
 
+    virtual RefPtr<Bitmap> TakeScreenshot() override;
+
     virtual OverlayManager* overlay_manager() const { return const_cast<WindowWin*>(this); }
 
     // Inherited from OverlayManager

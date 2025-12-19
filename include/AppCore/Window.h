@@ -280,6 +280,17 @@ public:
     virtual void DrawSurface(int x, int y, Surface* surface) {}
 
     ///
+    /// Capture a screenshot of the current window contents.
+    ///
+    /// @note  This captures the OS window backbuffer, which contains whatever was last
+    ///        presented to the screen.
+    ///
+    /// @return  A RefPtr<Bitmap> containing the window pixels in BGRA8_UNORM_SRGB format,
+    ///          or an empty RefPtr if the capture fails.
+    ///
+    virtual RefPtr<Bitmap> TakeScreenshot() { return RefPtr<Bitmap>(); }
+
+    ///
     /// Get the underlying native window handle.
     ///
     /// @note
