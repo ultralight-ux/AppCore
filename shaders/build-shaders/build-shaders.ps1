@@ -67,6 +67,7 @@ function Initialize-OutputDirectories {
         "$OutputDir/metal",          # Metal source files (for macOS)
         "$OutputDir/headers",
         "$OutputDir/headers/d3d11",  # D3D11 binary headers (Windows)
+        "$OutputDir/headers/d3d12",  # D3D12 binary headers (Windows)
         "$OutputDir/headers/glsl"    # GLSL text headers (Linux)
     )
     
@@ -294,6 +295,9 @@ function Compile-Shader {
     Generate-BinaryHeader -InputFile $d3d11Output `
                          -OutputFile "$OutputDir/headers/d3d11/$($Shader.Name)$Suffix.h" `
                          -VariableName "$($Shader.Name)$Suffix"
+    # D3D12 uses the same FXC-compiled SM 4.0 DXBC bytecode as D3D11
+    Copy-Item "$OutputDir/headers/d3d11/$($Shader.Name)$Suffix.h" `
+              "$OutputDir/headers/d3d12/$($Shader.Name)$Suffix.h"
     Write-Host " Done" -ForegroundColor Green
     
     # SPIR-V compilation (temporary file)
@@ -360,7 +364,27 @@ function Generate-MasterHeaders {
     }
     [System.IO.File]::WriteAllText("$OutputDir/headers/d3d11/shaders.h", $d3d11Content)
     
-    # GLSL Master Header  
+    # D3D12 Master Header (same bytecode as D3D11)
+    Write-Host "Generating D3D12 master header..." -ForegroundColor Yellow
+    $d3d12Content = @"
+// Generated D3D12 shader header - Windows platform
+// Include this file to access all D3D12 compiled shaders
+// D3D12 uses the same FXC-compiled SM 4.0 DXBC bytecode as D3D11
+
+#pragma once
+
+// Vertex Shaders
+"@
+    foreach ($shader in $VertexShaders) {
+        $d3d12Content += "`n#include `"$($shader.Name)_vs.h`""
+    }
+    $d3d12Content += "`n`n// Pixel Shaders"
+    foreach ($shader in $PixelShaders) {
+        $d3d12Content += "`n#include `"$($shader.Name)_ps.h`""
+    }
+    [System.IO.File]::WriteAllText("$OutputDir/headers/d3d12/shaders.h", $d3d12Content)
+
+    # GLSL Master Header
     Write-Host "Generating GLSL master header..." -ForegroundColor Yellow
     $glslContent = @"
 // Generated GLSL shader header - Linux/OpenGL platform
@@ -387,7 +411,10 @@ function Generate-HeaderInfo {
     Write-Host "`n=== Generated Files ===" -ForegroundColor Cyan
     Write-Host "D3D11 Headers (Windows):" -ForegroundColor Yellow
     Get-ChildItem "$OutputDir/headers/d3d11/*.h" | ForEach-Object { Write-Host "  $($_.Name)" }
-    
+
+    Write-Host "`nD3D12 Headers (Windows):" -ForegroundColor Yellow
+    Get-ChildItem "$OutputDir/headers/d3d12/*.h" | ForEach-Object { Write-Host "  $($_.Name)" }
+
     Write-Host "`nGLSL Headers (Linux):" -ForegroundColor Yellow  
     Get-ChildItem "$OutputDir/headers/glsl/*.h" | ForEach-Object { Write-Host "  $($_.Name)" }
     
@@ -417,10 +444,11 @@ try {
     Write-Host "Output directory: $((Resolve-Path $OutputDir).Path)" -ForegroundColor Green
     Write-Host "`nCommit the following to the repository:" -ForegroundColor Cyan
     Write-Host "  headers/d3d11/  - D3D11 binary headers + shaders.h master header" -ForegroundColor Gray
-    Write-Host "  headers/glsl/   - GLSL text headers + shaders.h master header" -ForegroundColor Gray  
+    Write-Host "  headers/d3d12/  - D3D12 binary headers + shaders.h master header" -ForegroundColor Gray
+    Write-Host "  headers/glsl/   - GLSL text headers + shaders.h master header" -ForegroundColor Gray
     Write-Host "  metal/          - Metal source files" -ForegroundColor Gray
     Write-Host "`nGPU drivers can include platform-specific master headers:" -ForegroundColor Cyan
-    Write-Host "  Windows: #include `"d3d11/shaders.h`"" -ForegroundColor Gray
+    Write-Host "  Windows: #include `"d3d11/shaders.h`" or #include `"d3d12/shaders.h`"" -ForegroundColor Gray
     Write-Host "  Linux:   #include `"glsl/shaders.h`"" -ForegroundColor Gray
     Write-Host "  macOS:   #include `"shaders.h`" (generated at build time)" -ForegroundColor Gray
 }
