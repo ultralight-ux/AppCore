@@ -14,6 +14,7 @@ using Microsoft::WRL::ComPtr;
 namespace ultralight {
 
 class GPUContextD3D12;
+class SwapChainD3D12;
 
 /**
  * GPUDriver implementation for Direct3D 12.
@@ -52,9 +53,9 @@ public:
 
   virtual const char* name() override { return "Direct3D 12"; }
 
-  virtual void BeginDrawing() override {}
+  virtual void BeginDrawing() override;
 
-  virtual void EndDrawing() override {}
+  virtual void EndDrawing() override;
 
   virtual void BindTexture(uint8_t texture_unit,
     uint32_t texture_id) override;
@@ -81,12 +82,12 @@ protected:
   DescriptorHandle* srv0_ = nullptr;
   DescriptorHandle* srv1_ = nullptr;
 
-  struct GeometryEntry { 
-	  VertexBufferFormat format;
+  struct GeometryEntry {
+    VertexBufferFormat format;
     static const UINT num_frames = GPUContextD3D12::FrameCount;
     struct Frame {
-      D3D12MA::ResourcePtr vertex_buffer;
-      D3D12MA::ResourcePtr index_buffer;
+      ComPtr<D3D12MA::Allocation> vertex_buffer;
+      ComPtr<D3D12MA::Allocation> index_buffer;
       D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view;
       D3D12_INDEX_BUFFER_VIEW index_buffer_view;
     } frames[num_frames];
@@ -95,8 +96,8 @@ protected:
   typedef std::map<uint32_t, GeometryEntry> GeometryMap;
   GeometryMap geometry_;
 
-  struct TextureEntry { 
-    D3D12MA::ResourcePtr texture;
+  struct TextureEntry {
+    ComPtr<D3D12MA::Allocation> texture;
     DescriptorHandle texture_srv_handle;
 
     // Whether or not the texture is currently D3D12_RESOURCE_STATE_RENDER_TARGET,
@@ -106,7 +107,7 @@ protected:
     // These members are only used when MSAA is enabled
     bool is_msaa_render_target = false;
     bool needs_resolve = false;
-    D3D12MA::ResourcePtr resolve_texture;
+    ComPtr<D3D12MA::Allocation> resolve_texture;
     DescriptorHandle resolve_texture_srv_handle;
   };
 
@@ -120,6 +121,10 @@ protected:
 
   typedef std::map<uint32_t, RenderTargetEntry> RenderTargetMap;
   RenderTargetMap render_targets_;
+
+  // Tracks which swap chain back buffer is currently bound as a render target.
+  // Needed so we can transition it back to PRESENT state in EndDrawing().
+  SwapChainD3D12* current_swap_chain_ = nullptr;
 };
 
 }  // namespace ultralight

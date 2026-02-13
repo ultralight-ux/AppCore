@@ -1,14 +1,12 @@
 #if defined(DRIVER_D3D12)
 #include "GPUDriverD3D12.h"
 #include "GPUContextD3D12.h"
+#include "SwapChainD3D12.h"
 #include "d3dx12.h"
-#include <directxcolors.h>
-#include <d3dcompiler.h>
+#include <DirectXMath.h>
 #include <string>
-#include <sstream>
-#include <Ultralight/platform/Platform.h>
-#include <Ultralight/platform/FileSystem.h>
-#include <AppCore/App.h>
+#include <Ultralight/Bitmap.h>
+#include <Ultralight/platform/GPUDriver.h>
 
 namespace {
 
@@ -35,68 +33,17 @@ struct Vertex_2f_4ub_2f_2f_28f {
 struct Uniforms {
   DirectX::XMFLOAT4 State;
   DirectX::XMMATRIX Transform;
+  DirectX::XMINT4 Integer4[2];
   DirectX::XMFLOAT4 Scalar4[2];
   DirectX::XMFLOAT4 Vector[8];
-  uint32_t ClipSize;
+  DirectX::XMINT4 ClipData;
   DirectX::XMMATRIX Clip[8];
 };
 
-HRESULT CompileShaderFromSource(const char* source, size_t source_size,
-  const char* source_name, LPCSTR szEntryPoint,
-  LPCSTR szShaderModel, ID3DBlob** ppBlobOut) {
-  DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG
-  dwShaderFlags |= D3DCOMPILE_DEBUG;
-  dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-  dwShaderFlags |= D3DCOMPILE_PARTIAL_PRECISION;
+// D3D12 constant buffers must be 256-byte aligned
+static constexpr UINT kUniformsAlignedSize = (sizeof(Uniforms) + 255) & ~255;
 
-  // Note that this may cause slow Application startup because the Shader Compiler
-  // must perform heavy optimizations. In a production build you should use D3D's
-  // HLSL Effect Compiler (fxc.exe) to compile the HLSL files offline which grants
-  // near-instantaneous load times.
-  dwShaderFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL2;
-#endif
-
-  ComPtr<ID3DBlob> pErrorBlob;
-
-  HRESULT hr = D3DCompile2(source, source_size, source_name, nullptr, nullptr,
-    szEntryPoint, szShaderModel, dwShaderFlags, 0, 0, 0, 0, ppBlobOut,
-    pErrorBlob.GetAddressOf());
-
-  if (FAILED(hr) && pErrorBlob)
-    OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
-
-  return hr;
-}
-
-HRESULT CompileShaderFromFile(const char* path, LPCSTR szEntryPoint,
-  LPCSTR szShaderModel, ID3DBlob** ppBlobOut) {
-  auto fs = ultralight::Platform::instance().file_system();
-
-  if (!fs) {
-    OutputDebugStringA("Could not load shaders, null FileSystem instance.");
-    return -1;
-  }
-
-  ultralight::FileHandle handle = fs->OpenFile(path, false);
-
-  if (handle == ultralight::invalidFileHandle) {
-    OutputDebugStringA("Could not load shaders, file not found.");
-    return -1;
-  }
-
-  int64_t file_size = 0;
-  fs->GetFileSize(handle, file_size);
-
-  std::unique_ptr<char[]> buffer(new char[file_size]);
-  fs->ReadFromFile(handle, buffer.get(), file_size);
-
-  return CompileShaderFromSource(buffer.get(), file_size, path, szEntryPoint,
-    szShaderModel, ppBlobOut);
-}
-
-} // namespace (unnamed)
+} // namespace
 
 namespace ultralight {
 
@@ -121,14 +68,14 @@ void GPUDriverD3D12::CreateTexture(uint32_t texture_id,
     return;
   }
 
-  if (!(bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB || bitmap->format() == kBitmapFormat_A8_UNORM)) {
+  if (!(bitmap->format() == BitmapFormat::BGRA8_UNORM_SRGB || bitmap->format() == BitmapFormat::A8_UNORM)) {
     MessageBoxW(nullptr,
       L"GPUDriverD3D12::CreateTexture, unsupported format.", L"Error", MB_OK);
   }
 
   D3D12_RESOURCE_DESC resourceDesc = {};
   resourceDesc.MipLevels = 1;
-  resourceDesc.Format = bitmap->format() == kBitmapFormat_BGRA8_UNORM_SRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_A8_UNORM;
+  resourceDesc.Format = bitmap->format() == BitmapFormat::BGRA8_UNORM_SRGB ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_A8_UNORM;
   resourceDesc.Width = bitmap->width();
   resourceDesc.Height = bitmap->height();
   resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
@@ -149,7 +96,7 @@ void GPUDriverD3D12::CreateTexture(uint32_t texture_id,
   if (bitmap->IsEmpty()) {
     resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 #if ENABLE_MSAA
-    resourceDesc.SampleDesc.Count = 4;
+    resourceDesc.SampleDesc.Count = 8;
     resourceDesc.SampleDesc.Quality = DXGI_STANDARD_MULTISAMPLE_QUALITY_PATTERN;
     entry.is_msaa_render_target = true;
 #endif
@@ -158,15 +105,17 @@ void GPUDriverD3D12::CreateTexture(uint32_t texture_id,
   D3D12MA::ALLOCATION_DESC allocationDesc = {};
   allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
   D3D12MA::Allocation* alloc = nullptr;
-  ThrowIfFailed(context_->allocator()->CreateResource(
+  HRESULT hr = context_->allocator()->CreateResource(
     &allocationDesc,
     &resourceDesc,
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
     bitmap->IsEmpty() ? &clearValue : nullptr,
     &alloc,
     __uuidof(ID3D12Resource),
-    nullptr));
-  entry.texture.reset(alloc);
+    nullptr);
+  if (FAILED(hr))
+    return;
+  entry.texture.Attach(alloc);
 
   if (!bitmap->IsEmpty()) {
     UpdateTextureResource(entry.texture->GetResource(), bitmap, false);
@@ -194,15 +143,17 @@ void GPUDriverD3D12::CreateTexture(uint32_t texture_id,
     resourceDesc.SampleDesc.Quality = 0;
 
     alloc = nullptr;
-    ThrowIfFailed(context_->allocator()->CreateResource(
+    hr = context_->allocator()->CreateResource(
       &allocationDesc,
       &resourceDesc,
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
       bitmap->IsEmpty() ? &clearValue : nullptr,
       &alloc,
       __uuidof(ID3D12Resource),
-      nullptr));
-    entry.resolve_texture.reset(alloc);
+      nullptr);
+    if (FAILED(hr))
+      return;
+    entry.resolve_texture.Attach(alloc);
 
     RefPtr<Bitmap> zeroBitmap = Bitmap::Create(bitmap->width(), bitmap->height(), bitmap->format());
     zeroBitmap->Erase();
@@ -242,12 +193,6 @@ void GPUDriverD3D12::DestroyTexture(uint32_t texture_id) {
 
 void GPUDriverD3D12::CreateRenderBuffer(uint32_t render_buffer_id,
   const RenderBuffer& buffer) {
-  if (render_buffer_id == 0) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D12::CreateRenderBuffer, render buffer ID 0 is reserved for default render target view.", L"Error", MB_OK);
-    return;
-  }
-
   auto i = render_targets_.find(render_buffer_id);
   if (i != render_targets_.end()) {
     MessageBoxW(nullptr,
@@ -284,26 +229,31 @@ void GPUDriverD3D12::CreateGeometry(uint32_t geometry_id,
     GeometryEntry::Frame& frame = geometry.frames[i];
 
     D3D12MA::Allocation* alloc = nullptr;
-    ThrowIfFailed(context_->allocator()->CreateResource(
+    auto vb_desc = CD3DX12_RESOURCE_DESC::Buffer(vertices.size);
+    HRESULT hr = context_->allocator()->CreateResource(
       &allocationDesc,
-      &CD3DX12_RESOURCE_DESC::Buffer(vertices.size),
+      &vb_desc,
       D3D12_RESOURCE_STATE_GENERIC_READ,
       NULL,
       &alloc,
       __uuidof(ID3D12Resource),
-      nullptr));
+      nullptr);
+    if (FAILED(hr))
+      return;
 
     // Copy vertex data for current frame
     if (i == geometry.cur_frame) {
       UINT8* pData;
       CD3DX12_RANGE readRange(0, 0);
-      ThrowIfFailed(alloc->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&pData)));
+      hr = alloc->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&pData));
+      if (FAILED(hr))
+        return;
       memcpy(pData, vertices.data, vertices.size);
       alloc->GetResource()->Unmap(0, nullptr);
     }
 
     UINT stride = 0;
-    if (vertices.format == kVertexBufferFormat_2f_4ub_2f)
+    if (vertices.format == VertexBufferFormat::_2f_4ub_2f)
       stride = sizeof(Vertex_2f_4ub_2f);
     else
       stride = sizeof(Vertex_2f_4ub_2f_2f_28f);
@@ -314,24 +264,29 @@ void GPUDriverD3D12::CreateGeometry(uint32_t geometry_id,
     frame.vertex_buffer_view.SizeInBytes = vertices.size;
 
     // Take ownership of alloc (vertex buffer resource)
-    frame.vertex_buffer.reset(alloc);
+    frame.vertex_buffer.Attach(alloc);
 
     // Create index buffer allocation
     alloc = nullptr;
-    ThrowIfFailed(context_->allocator()->CreateResource(
+    auto ib_desc = CD3DX12_RESOURCE_DESC::Buffer(indices.size);
+    hr = context_->allocator()->CreateResource(
       &allocationDesc,
-      &CD3DX12_RESOURCE_DESC::Buffer(indices.size),
+      &ib_desc,
       D3D12_RESOURCE_STATE_GENERIC_READ,
       NULL,
       &alloc,
       __uuidof(ID3D12Resource),
-      nullptr));
+      nullptr);
+    if (FAILED(hr))
+      return;
 
     // Copy index data for current frame
     if (i == geometry.cur_frame) {
       UINT8* pData;
       CD3DX12_RANGE readRange(0, 0);
-      ThrowIfFailed(alloc->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&pData)));
+      hr = alloc->GetResource()->Map(0, &readRange, reinterpret_cast<void**>(&pData));
+      if (FAILED(hr))
+        return;
       memcpy(pData, indices.data, indices.size);
       alloc->GetResource()->Unmap(0, nullptr);
     }
@@ -342,7 +297,7 @@ void GPUDriverD3D12::CreateGeometry(uint32_t geometry_id,
     frame.index_buffer_view.SizeInBytes = indices.size;
 
     // Take ownership of alloc (index buffer resource)
-    frame.index_buffer.reset(alloc);
+    frame.index_buffer.Attach(alloc);
   }
 }
 
@@ -360,7 +315,7 @@ void GPUDriverD3D12::UpdateGeometry(uint32_t geometry_id,
 
   // Iterate current geometry frame, we buffer geometry uploads per-frame
   geometry.cur_frame = (geometry.cur_frame + 1) % GeometryEntry::num_frames;
-  
+
   GeometryEntry::Frame& frame = geometry.frames[geometry.cur_frame];
 
   // Copy vertex data
@@ -368,7 +323,7 @@ void GPUDriverD3D12::UpdateGeometry(uint32_t geometry_id,
     ID3D12Resource* resource = frame.vertex_buffer->GetResource();
     UINT8* pData;
     CD3DX12_RANGE readRange(0, 0);
-    ThrowIfFailed(resource->Map(0, &readRange, reinterpret_cast<void**>(&pData)));
+    resource->Map(0, &readRange, reinterpret_cast<void**>(&pData));
     memcpy(pData, vertices.data, vertices.size);
     resource->Unmap(0, nullptr);
   }
@@ -378,7 +333,7 @@ void GPUDriverD3D12::UpdateGeometry(uint32_t geometry_id,
     ID3D12Resource* resource = frame.index_buffer->GetResource();
     UINT8* pData;
     CD3DX12_RANGE readRange(0, 0);
-    ThrowIfFailed(resource->Map(0, &readRange, reinterpret_cast<void**>(&pData)));
+    resource->Map(0, &readRange, reinterpret_cast<void**>(&pData));
     memcpy(pData, indices.data, indices.size);
     resource->Unmap(0, nullptr);
   }
@@ -402,6 +357,21 @@ void GPUDriverD3D12::DestroyGeometry(uint32_t geometry_id) {
 
 // Inherited from GPUDriverImpl:
 
+void GPUDriverD3D12::BeginDrawing() {
+  current_swap_chain_ = nullptr;
+}
+
+void GPUDriverD3D12::EndDrawing() {
+  // Transition any bound swap chain back buffer to PRESENT state
+  if (current_swap_chain_) {
+    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+      current_swap_chain_->render_target(),
+      D3D12_RESOURCE_STATE_RENDER_TARGET,
+      D3D12_RESOURCE_STATE_PRESENT);
+    context_->command_list()->ResourceBarrier(1, &barrier);
+    current_swap_chain_ = nullptr;
+  }
+}
 
 void GPUDriverD3D12::BindTexture(uint8_t texture_unit,
   uint32_t texture_id) {
@@ -421,7 +391,7 @@ void GPUDriverD3D12::BindTexture(uint8_t texture_unit,
     i->second.is_bound_render_target = false;
   }
 
-  if (i->second.is_msaa_render_target) {
+  if (i->second.is_msaa_render_target && i->second.needs_resolve) {
     // Signal both resources that we are transitioning into MSAA resolve operation
     {
       D3D12_RESOURCE_BARRIER barriers[2] = {
@@ -433,7 +403,7 @@ void GPUDriverD3D12::BindTexture(uint8_t texture_unit,
       context_->command_list()->ResourceBarrier(2, barriers);
     }
 
-    context_->command_list()->ResolveSubresource(i->second.resolve_texture->GetResource(), 0, i->second.texture->GetResource(), 0, DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
+    context_->command_list()->ResolveSubresource(i->second.resolve_texture->GetResource(), 0, i->second.texture->GetResource(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
     i->second.needs_resolve = false;
 
     // Signal both resources that we are transitioning for use in shader
@@ -463,22 +433,12 @@ void GPUDriverD3D12::BindTexture(uint8_t texture_unit,
 
 
 void GPUDriverD3D12::BindRenderBuffer(uint32_t render_buffer_id) {
-  D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = { 0 };
-  UINT sample_count = 1;
-  if (render_buffer_id == 0) {
-    rtv_handle = context_->current_rtv();
-    context_->set_render_target_format(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
-  }
-  else {
-    auto i = render_targets_.find(render_buffer_id);
-    if (i == render_targets_.end()) {
-      MessageBoxW(nullptr,
-        L"GPUDriverD3D12::BindRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
-      return;
-    }
-
-    rtv_handle = i->second.rtv_handle.cpu_handle();
-    context_->set_render_target_format(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
+  // First check our local render target map (offscreen render targets)
+  auto i = render_targets_.find(render_buffer_id);
+  if (i != render_targets_.end()) {
+    D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = i->second.rtv_handle.cpu_handle();
+    context_->set_render_target_format(DXGI_FORMAT_B8G8R8A8_UNORM);
+    UINT sample_count = 1;
 
     // We need to transition the resource state to a render target
     auto tex_entry = textures_.find(i->second.render_target_texture_id);
@@ -499,52 +459,105 @@ void GPUDriverD3D12::BindRenderBuffer(uint32_t render_buffer_id) {
 #if ENABLE_MSAA
     if (tex_entry->second.is_msaa_render_target) {
       tex_entry->second.needs_resolve = true;
-      sample_count = 4;
+      sample_count = 8;
     }
 #endif
+
+    context_->set_sample_count(sample_count);
+    context_->command_list()->OMSetRenderTargets(1, &rtv_handle, false, nullptr);
+    return;
   }
 
-  context_->set_sample_count(sample_count);
-  context_->command_list()->OMSetRenderTargets(1, &rtv_handle, false, nullptr);
+  // Check swap chains for this render buffer id
+  auto swap_chain = context_->GetSwapChainByRenderBufferId(render_buffer_id);
+  if (swap_chain) {
+    // If we're switching from a different swap chain, transition the old one back to PRESENT
+    if (current_swap_chain_ && current_swap_chain_ != swap_chain) {
+      auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+        current_swap_chain_->render_target(),
+        D3D12_RESOURCE_STATE_RENDER_TARGET,
+        D3D12_RESOURCE_STATE_PRESENT);
+      context_->command_list()->ResourceBarrier(1, &barrier);
+    }
+
+    // Transition back buffer from PRESENT to RENDER_TARGET
+    if (current_swap_chain_ != swap_chain) {
+      auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+        swap_chain->render_target(),
+        D3D12_RESOURCE_STATE_PRESENT,
+        D3D12_RESOURCE_STATE_RENDER_TARGET);
+      context_->command_list()->ResourceBarrier(1, &barrier);
+      current_swap_chain_ = swap_chain;
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = swap_chain->render_target_view();
+    context_->set_render_target_format(DXGI_FORMAT_R8G8B8A8_UNORM);
+    context_->set_sample_count(1);
+    context_->command_list()->OMSetRenderTargets(1, &rtv_handle, false, nullptr);
+    return;
+  }
+
+  MessageBoxW(nullptr,
+    L"GPUDriverD3D12::BindRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
 }
 
 void GPUDriverD3D12::ClearRenderBuffer(uint32_t render_buffer_id) {
   float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-  if (render_buffer_id == 0) {
-    context_->command_list()->ClearRenderTargetView(context_->current_rtv(), color, 0, nullptr);
-    return;
-  }
-
+  // Check local render target map first
   auto i = render_targets_.find(render_buffer_id);
-  if (i == render_targets_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D12::ClearRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
-    return;
-  }
+  if (i != render_targets_.end()) {
+    auto tex_entry = textures_.find(i->second.render_target_texture_id);
+    if (tex_entry == textures_.end()) {
+      MessageBoxW(nullptr,
+        L"GPUDriverD3D12::ClearRenderBuffer, texture id doesn't exist.", L"Error", MB_OK);
+      return;
+    }
 
-  // We need to transition the resource state to a render target
-  auto tex_entry = textures_.find(i->second.render_target_texture_id);
-  if (tex_entry == textures_.end()) {
-    MessageBoxW(nullptr,
-      L"GPUDriverD3D12::BindRenderBuffer, texture id doesn't exist.", L"Error", MB_OK);
-    return;
-  }
-
-  // Signal the resource that we are transitioning it for use as a render target
-  if (!tex_entry->second.is_bound_render_target) {
-    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(tex_entry->second.texture->GetResource(),
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, 0);
-    context_->command_list()->ResourceBarrier(1, &barrier);
-    tex_entry->second.is_bound_render_target = true;
-  }
+    // Signal the resource that we are transitioning it for use as a render target
+    if (!tex_entry->second.is_bound_render_target) {
+      auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(tex_entry->second.texture->GetResource(),
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, 0);
+      context_->command_list()->ResourceBarrier(1, &barrier);
+      tex_entry->second.is_bound_render_target = true;
+    }
 
 #if ENABLE_MSAA
-  if (tex_entry->second.is_msaa_render_target)
-    tex_entry->second.needs_resolve = true;
+    if (tex_entry->second.is_msaa_render_target)
+      tex_entry->second.needs_resolve = true;
 #endif
 
-  context_->command_list()->ClearRenderTargetView(i->second.rtv_handle.cpu_handle(), color, 0, nullptr);
+    context_->command_list()->ClearRenderTargetView(i->second.rtv_handle.cpu_handle(), color, 0, nullptr);
+    return;
+  }
+
+  // Check swap chains
+  auto swap_chain = context_->GetSwapChainByRenderBufferId(render_buffer_id);
+  if (swap_chain) {
+    // Ensure back buffer is in RENDER_TARGET state
+    if (current_swap_chain_ != swap_chain) {
+      if (current_swap_chain_) {
+        auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+          current_swap_chain_->render_target(),
+          D3D12_RESOURCE_STATE_RENDER_TARGET,
+          D3D12_RESOURCE_STATE_PRESENT);
+        context_->command_list()->ResourceBarrier(1, &barrier);
+      }
+
+      auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+        swap_chain->render_target(),
+        D3D12_RESOURCE_STATE_PRESENT,
+        D3D12_RESOURCE_STATE_RENDER_TARGET);
+      context_->command_list()->ResourceBarrier(1, &barrier);
+      current_swap_chain_ = swap_chain;
+    }
+
+    context_->command_list()->ClearRenderTargetView(swap_chain->render_target_view(), color, 0, nullptr);
+    return;
+  }
+
+  MessageBoxW(nullptr,
+    L"GPUDriverD3D12::ClearRenderBuffer, render buffer id doesn't exist.", L"Error", MB_OK);
 }
 
 void GPUDriverD3D12::DestroyRenderBuffer(uint32_t render_buffer_id) {
@@ -581,7 +594,15 @@ void GPUDriverD3D12::DrawGeometry(uint32_t geometry_id,
 
   context_->set_shader_type((ShaderType)state.shader_type);
 
-  context_->set_blend_enabled(state.enable_blend);
+  if (state.enable_blend) {
+    context_->SetBlendState(
+      static_cast<uint8_t>(state.blend_src_factor),
+      static_cast<uint8_t>(state.blend_dst_factor),
+      static_cast<uint8_t>(state.blend_equation)
+    );
+  } else {
+    context_->DisableBlend();
+  }
 
   if (state.enable_scissor) {
     CD3DX12_RECT scissor_rect(
@@ -630,28 +651,40 @@ void GPUDriverD3D12::SetViewport(float width, float height) {
 void GPUDriverD3D12::UpdateConstantBuffer(const GPUState& state) {
   Matrix model_view_projection = ApplyProjection(state.transform, (float)state.viewport_width, (float)state.viewport_height);
 
+  float screen_width = (float)state.viewport_width;
+  float screen_height = (float)state.viewport_height;
+
   Uniforms uniforms;
-  uniforms.State = { state.enable_snap ? 1.0f : 0.0f, (float)state.viewport_width, (float)state.viewport_height, (float)context_->scale() };
+  uniforms.State = { 0.0f, screen_width, screen_height, 1.0f };
   uniforms.Transform = DirectX::XMMATRIX(model_view_projection.GetMatrix4x4().data);
+  uniforms.Integer4[0] = { state.uniform_integer[0], state.uniform_integer[1],
+                           state.uniform_integer[2], state.uniform_integer[3] };
+  uniforms.Integer4[1] = { state.uniform_integer[4], state.uniform_integer[5],
+                           state.uniform_integer[6], state.uniform_integer[7] };
   uniforms.Scalar4[0] =
   { state.uniform_scalar[0], state.uniform_scalar[1], state.uniform_scalar[2], state.uniform_scalar[3] };
   uniforms.Scalar4[1] =
   { state.uniform_scalar[4], state.uniform_scalar[5], state.uniform_scalar[6], state.uniform_scalar[7] };
   for (size_t i = 0; i < 8; ++i)
-    uniforms.Vector[i] = DirectX::XMFLOAT4(state.uniform_vector[i].value);
-  uniforms.ClipSize = state.clip_size;
+    uniforms.Vector[i] = DirectX::XMFLOAT4(state.uniform_vector[i].x, state.uniform_vector[i].y,
+                                           state.uniform_vector[i].z, state.uniform_vector[i].w);
+  uniforms.ClipData = { (int)state.clip_size, 0, 0, 0 };
   for (size_t i = 0; i < state.clip_size; ++i)
     uniforms.Clip[i] = DirectX::XMMATRIX(state.clip[i].data);
 
   // Get a constant buffer for writing
   GPUContextD3D12::ConstantBuffer* cb = context_->GetConstantBufferForWriting();
+  if (!cb)
+    return;
 
   // Update data
   {
     ID3D12Resource* resource = cb->buffer_->GetResource();
     UINT8* pData;
     CD3DX12_RANGE readRange(0, 0);
-    ThrowIfFailed(resource->Map(0, &readRange, reinterpret_cast<void**>(&pData)));
+    HRESULT hr = resource->Map(0, &readRange, reinterpret_cast<void**>(&pData));
+    if (FAILED(hr))
+      return;
     memcpy(pData, &uniforms, sizeof(Uniforms));
     resource->Unmap(0, nullptr);
   }
@@ -671,36 +704,40 @@ void GPUDriverD3D12::UpdateTextureResource(ID3D12Resource* resource, RefPtr<Bitm
     return;
   }
 
-  context_->command_list()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
+  auto barrier_to_copy = CD3DX12_RESOURCE_BARRIER::Transition(resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+  context_->command_list()->ResourceBarrier(1, &barrier_to_copy);
 
   const UINT64 uploadBufferSize = GetRequiredIntermediateSize(resource, 0, 1);
 
   D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
 
-  D3D12MA::Allocation* upload_texture;
+  D3D12MA::Allocation* upload_alloc = nullptr;
   D3D12MA::ALLOCATION_DESC allocationDesc = {};
   allocationDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
-  ThrowIfFailed(context_->allocator()->CreateResource(
+  HRESULT hr = context_->allocator()->CreateResource(
     &allocationDesc,
     &desc,
     D3D12_RESOURCE_STATE_GENERIC_READ,
     NULL,
-    &upload_texture,
+    &upload_alloc,
     __uuidof(ID3D12Resource),
-    nullptr));
+    nullptr);
+  if (FAILED(hr))
+    return;
 
   D3D12_SUBRESOURCE_DATA textureData = {};
   textureData.pData = bitmap->LockPixels();
   textureData.RowPitch = bitmap->row_bytes();
   textureData.SlicePitch = textureData.RowPitch * bitmap->height();
-  UpdateSubresources(context_->command_list(), resource, upload_texture->GetResource(), 0, 0, 1, &textureData);
+  UpdateSubresources(context_->command_list(), resource, upload_alloc->GetResource(), 0, 0, 1, &textureData);
   bitmap->UnlockPixels();
 
-  context_->command_list()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+  auto barrier_to_shader = CD3DX12_RESOURCE_BARRIER::Transition(resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+  context_->command_list()->ResourceBarrier(1, &barrier_to_shader);
 
-  D3D12MA::ResourcePtr upload_texture_ptr;
-  upload_texture_ptr.reset(upload_texture);
-  context_->ReleaseWhenFrameComplete(std::move(upload_texture_ptr));
+  ComPtr<D3D12MA::Allocation> upload_ptr;
+  upload_ptr.Attach(upload_alloc);
+  context_->ReleaseWhenFrameComplete(std::move(upload_ptr));
 }
 
 Matrix GPUDriverD3D12::ApplyProjection(const Matrix4x4& transform, float screen_width, float screen_height) {
