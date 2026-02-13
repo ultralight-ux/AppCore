@@ -9,6 +9,8 @@
 #include <vector>
 #if defined(DRIVER_D3D11)
 #include "d3d11/SwapChainD3D11.h"
+#elif defined(DRIVER_D3D12)
+#include "d3d12/SwapChainD3D12.h"
 #endif
 
 namespace ultralight {
@@ -163,6 +165,8 @@ protected:
 
 #if defined(DRIVER_D3D11)
     std::unique_ptr<SwapChainD3D11> swap_chain_;
+#elif defined(DRIVER_D3D12)
+    std::unique_ptr<SwapChainD3D12> swap_chain_;
 #endif
 };
 

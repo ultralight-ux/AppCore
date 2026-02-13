@@ -320,6 +320,19 @@ WindowWin::WindowWin(Monitor* monitor, uint32_t width, uint32_t height, bool ful
             swap_chain_.reset();
         }
     }
+#elif defined(DRIVER_D3D12)
+    auto gpu_context = static_cast<AppWin*>(App::instance())->gpu_context();
+    auto gpu_driver = static_cast<AppWin*>(App::instance())->gpu_driver();
+    if (gpu_context && gpu_driver) {
+        swap_chain_.reset(new SwapChainD3D12(gpu_context, gpu_driver, hwnd_, this->width(),
+            this->height(), scale(), is_fullscreen(), false, true, 1));
+        if (swap_chain_->swap_chain()) {
+            is_accelerated_ = true;
+            gpu_context->AddSwapChain(swap_chain_.get());
+        } else {
+            swap_chain_.reset();
+        }
+    }
 #endif
 
     static_cast<AppWin*>(App::instance())->AddWindow(this);
@@ -340,6 +353,11 @@ WindowWin::~WindowWin()
         static_cast<AppWin*>(App::instance())->RemoveWindow(this);
 
 #if defined(DRIVER_D3D11)
+        auto gpu_context = static_cast<AppWin*>(App::instance())->gpu_context();
+        if (is_accelerated_ && gpu_context && swap_chain_) {
+            gpu_context->RemoveSwapChain(swap_chain_.get());
+        }
+#elif defined(DRIVER_D3D12)
         auto gpu_context = static_cast<AppWin*>(App::instance())->gpu_context();
         if (is_accelerated_ && gpu_context && swap_chain_) {
             gpu_context->RemoveSwapChain(swap_chain_.get());
@@ -605,8 +623,14 @@ void WindowWin::Paint()
         gpu_context->BeginDrawing();
         gpu_driver->DrawCommandList();
         OverlayManager::Paint();
+#if defined(DRIVER_D3D11)
         swap_chain_->PresentFrame();
         gpu_context->EndDrawing();
+#elif defined(DRIVER_D3D12)
+        // D3D12: Must close & execute command list before presenting
+        gpu_context->EndDrawing();
+        swap_chain_->PresentFrame();
+#endif
         if (is_first_paint_)
             is_first_paint_ = false;
         MarkEndDraw();

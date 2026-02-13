@@ -56,6 +56,8 @@ protected:
     GPUContextD3D11* gpu_context();
     GPUDriverD3D11* gpu_driver();
 #elif defined(DRIVER_D3D12)
+    GPUContextD3D12* gpu_context();
+    GPUDriverD3D12* gpu_driver();
 #endif
 
     void AddWindow(WindowWin* window) { windows_.push_back(window); }

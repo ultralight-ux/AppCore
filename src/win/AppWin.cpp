@@ -117,7 +117,13 @@ AppWin::AppWin(Settings settings, Config config)
             gpu_context_.reset();
         }
 #elif defined(DRIVER_D3D12)
-        // TODO
+        gpu_context_.reset(new GPUContextD3D12());
+        if (gpu_context_->Initialize()) {
+            gpu_driver_.reset(new GPUDriverD3D12(gpu_context_.get()));
+            Platform::instance().set_gpu_driver(gpu_driver_.get());
+        } else {
+            gpu_context_.reset();
+        }
 #endif
     }
 
@@ -272,9 +278,13 @@ void AppWin::Update()
     }
 }
 
+#if defined(DRIVER_D3D11)
 GPUContextD3D11* AppWin::gpu_context() { return gpu_context_.get(); }
-
 GPUDriverD3D11* AppWin::gpu_driver() { return gpu_driver_.get(); }
+#elif defined(DRIVER_D3D12)
+GPUContextD3D12* AppWin::gpu_context() { return gpu_context_.get(); }
+GPUDriverD3D12* AppWin::gpu_driver() { return gpu_driver_.get(); }
+#endif
 
 static App* g_app_instance = nullptr;
 
