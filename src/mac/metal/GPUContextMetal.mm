@@ -13,9 +13,9 @@
 #import "../WindowMac.h"
 
 namespace ultralight {
-    
+
 // Public domain from https://stackoverflow.com/a/27952689
-inline size_t hash_combine( size_t lhs, size_t rhs ) {
+inline size_t hash_combine(size_t lhs, size_t rhs) {
 #if defined(__x86_64__)
   lhs ^= rhs + 0x9e3779b97f4a7c15 + (lhs << 6) + (lhs >> 2);
 #else
@@ -23,15 +23,52 @@ inline size_t hash_combine( size_t lhs, size_t rhs ) {
 #endif
   return lhs;
 }
-    
-RenderState::RenderState() : shader_type(ShaderType::Fill),
-                             blend_enabled(true),
-                             pixel_format(MTLPixelFormatBGRA8Unorm),
-                             sample_count(1) {}
+
+// Map platform-agnostic BlendFactor enum to Metal blend constants
+static MTLBlendFactor MapBlendFactor(uint8_t factor) {
+  switch (static_cast<BlendFactor>(factor)) {
+  case BlendFactor::Zero:             return MTLBlendFactorZero;
+  case BlendFactor::One:              return MTLBlendFactorOne;
+  case BlendFactor::SrcColor:         return MTLBlendFactorSourceColor;
+  case BlendFactor::InvSrcColor:      return MTLBlendFactorOneMinusSourceColor;
+  case BlendFactor::SrcAlpha:         return MTLBlendFactorSourceAlpha;
+  case BlendFactor::InvSrcAlpha:      return MTLBlendFactorOneMinusSourceAlpha;
+  case BlendFactor::DestColor:        return MTLBlendFactorDestinationColor;
+  case BlendFactor::InvDestColor:     return MTLBlendFactorOneMinusDestinationColor;
+  case BlendFactor::DestAlpha:        return MTLBlendFactorDestinationAlpha;
+  case BlendFactor::InvDestAlpha:     return MTLBlendFactorOneMinusDestinationAlpha;
+  case BlendFactor::SrcAlphaSaturate: return MTLBlendFactorSourceAlphaSaturated;
+  default:                            return MTLBlendFactorOne;
+  }
+}
+
+// Map platform-agnostic BlendEquation enum to Metal blend operation
+static MTLBlendOperation MapBlendEquation(uint8_t equation) {
+  switch (static_cast<BlendEquation>(equation)) {
+  case BlendEquation::Add:         return MTLBlendOperationAdd;
+  case BlendEquation::Subtract:    return MTLBlendOperationSubtract;
+  case BlendEquation::RevSubtract: return MTLBlendOperationReverseSubtract;
+  case BlendEquation::Min:         return MTLBlendOperationMin;
+  case BlendEquation::Max:         return MTLBlendOperationMax;
+  default:                         return MTLBlendOperationAdd;
+  }
+}
+
+RenderState::RenderState()
+    : shader_type(ShaderType::Fill)
+    , blend_enabled(true)
+    , blend_src_factor((uint8_t)BlendFactor::One)
+    , blend_dst_factor((uint8_t)BlendFactor::InvSrcAlpha)
+    , blend_equation((uint8_t)BlendEquation::Add)
+    , pixel_format(MTLPixelFormatBGRA8Unorm)
+    , sample_count(1) {}
 
 size_t RenderState::Hash() {
   size_t result = std::hash<size_t>{}((size_t)shader_type);
   result = hash_combine(result, std::hash<size_t>{}((size_t)blend_enabled));
+  result = hash_combine(result, std::hash<uint8_t>{}(blend_src_factor));
+  result = hash_combine(result, std::hash<uint8_t>{}(blend_dst_factor));
+  result = hash_combine(result, std::hash<uint8_t>{}(blend_equation));
   result = hash_combine(result, std::hash<size_t>{}((size_t)pixel_format));
   result = hash_combine(result, std::hash<size_t>{}((size_t)sample_count));
   return result;
@@ -82,7 +119,8 @@ void GPUContextMetal::BeginDrawing() {
   dispatch_semaphore_wait(fence_, DISPATCH_TIME_FOREVER);
   
   frame_index_ = (frame_index_ + 1) % FrameCount;
-  
+  frames_[frame_index_].uniform_buffer_pool_.Reset();
+
   MTLCaptureManager *sharedCaptureManager = [MTLCaptureManager sharedCaptureManager];
   
   [sharedCaptureManager.defaultCaptureScope beginScope];
@@ -287,13 +325,16 @@ id<MTLRenderPipelineState> GPUContextMetal::render_pipeline_state() {
   pipelineStateDescriptor.colorAttachments[0].pixelFormat = render_state_.pixel_format;
   
   if (render_state_.blend_enabled) {
+    MTLBlendFactor src = MapBlendFactor(render_state_.blend_src_factor);
+    MTLBlendFactor dst = MapBlendFactor(render_state_.blend_dst_factor);
+    MTLBlendOperation op = MapBlendEquation(render_state_.blend_equation);
     pipelineStateDescriptor.colorAttachments[0].blendingEnabled = YES;
-    pipelineStateDescriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-    pipelineStateDescriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-    pipelineStateDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
-    pipelineStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-    pipelineStateDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOneMinusDestinationAlpha;
-    pipelineStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+    pipelineStateDescriptor.colorAttachments[0].sourceRGBBlendFactor = src;
+    pipelineStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = dst;
+    pipelineStateDescriptor.colorAttachments[0].rgbBlendOperation = op;
+    pipelineStateDescriptor.colorAttachments[0].sourceAlphaBlendFactor = src;
+    pipelineStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = dst;
+    pipelineStateDescriptor.colorAttachments[0].alphaBlendOperation = op;
     pipelineStateDescriptor.colorAttachments[0].writeMask = MTLColorWriteMaskAll;
   } else {
     pipelineStateDescriptor.colorAttachments[0].blendingEnabled = NO;
@@ -378,10 +419,35 @@ id<MTLCommandBuffer> GPUContextMetal::command_buffer() {
 void GPUContextMetal::CommitCommandBuffer() {
   if (!command_buffer_)
     return;
-  
+
   [command_buffer_ commit];
   [command_buffer_ waitUntilCompleted];
   command_buffer_ = nullptr;
+}
+
+void GPUContextMetal::SetBlendState(uint8_t src_factor, uint8_t dst_factor, uint8_t equation) {
+  render_state_.blend_enabled = true;
+  render_state_.blend_src_factor = src_factor;
+  render_state_.blend_dst_factor = dst_factor;
+  render_state_.blend_equation = equation;
+}
+
+void GPUContextMetal::DisableBlend() {
+  render_state_.blend_enabled = false;
+}
+
+id<MTLBuffer> GPUContextMetal::GetUniformBuffer(size_t size) {
+  return frames_[frame_index_].uniform_buffer_pool_.GetBufferForWriting(device_, size);
+}
+
+id<MTLBuffer> GPUContextMetal::UniformBufferPool::GetBufferForWriting(id<MTLDevice> device, size_t size) {
+  if (next_idx_ < pool_.size()) {
+    return pool_[next_idx_++];
+  }
+  id<MTLBuffer> buffer = [device newBufferWithLength:size options:MTLResourceStorageModeShared];
+  pool_.push_back(buffer);
+  next_idx_++;
+  return buffer;
 }
 
 }  // namespace ultralight

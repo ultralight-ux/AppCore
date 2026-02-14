@@ -341,7 +341,15 @@ void GPUDriverMetal::DrawGeometry(uint32_t geometry_id,
 
     context_->set_pixel_format(MTLPixelFormatBGRA8Unorm);
     context_->set_shader_type((ShaderType)state.shader_type);
-    context_->set_blend_enabled(state.enable_blend);
+
+    if (state.enable_blend) {
+        context_->SetBlendState(
+            static_cast<uint8_t>(state.blend_src_factor),
+            static_cast<uint8_t>(state.blend_dst_factor),
+            static_cast<uint8_t>(state.blend_equation));
+    } else {
+        context_->DisableBlend();
+    }
 
     if (!is_drawing_to_window_ && context_->msaa_enabled())
         context_->set_sample_count(4);
@@ -405,11 +413,9 @@ void GPUDriverMetal::SetGPUState(const GPUState& state)
     for (size_t i = 0; i < (size_t)state.clip_size; i++)
         uniforms.Clip[i] = ToFloat4x4(state.clip[i]);
     
-    // Create a buffer for uniforms since SPIRV-Cross expects a pointer to uniforms
-    id<MTLBuffer> uniformBuffer = [context_->device() newBufferWithBytes:&uniforms
-                                                                  length:sizeof(Uniforms)
-                                                                 options:MTLResourceStorageModeShared];
-    
+    id<MTLBuffer> uniformBuffer = context_->GetUniformBuffer(sizeof(Uniforms));
+    memcpy([uniformBuffer contents], &uniforms, sizeof(Uniforms));
+
     [render_encoder_ setVertexBuffer:uniformBuffer
                               offset:0
                              atIndex:0];

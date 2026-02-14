@@ -6,19 +6,23 @@
 #include <memory>
 #include <map>
 #include <unordered_map>
+#include <vector>
 
 namespace ultralight {
-    
+
 class GPUDriverMetal;
 class WindowMac;
-    
+
 struct RenderState {
   RenderState();
-  
+
   size_t Hash();
-  
+
   ShaderType shader_type;
   bool blend_enabled;
+  uint8_t blend_src_factor;
+  uint8_t blend_dst_factor;
+  uint8_t blend_equation;
   MTLPixelFormat pixel_format;
   NSUInteger sample_count;
 };
@@ -48,9 +52,9 @@ class GPUContextMetal {
   
   virtual void set_shader_type(ShaderType type) { render_state_.shader_type = type; }
   virtual ShaderType shader_type() const { return render_state_.shader_type; }
-  
-  virtual void set_blend_enabled(bool val) { render_state_.blend_enabled = val; }
-  virtual bool blend_enabled() const { return render_state_.blend_enabled; }
+
+  void SetBlendState(uint8_t src_factor, uint8_t dst_factor, uint8_t equation);
+  void DisableBlend();
   
   virtual void set_pixel_format(MTLPixelFormat format) { render_state_.pixel_format = format; }
   virtual MTLPixelFormat pixel_format() { return render_state_.pixel_format; }
@@ -68,17 +72,29 @@ class GPUContextMetal {
   
   // Clear pipeline support
   virtual id<MTLRenderPipelineState> GetClearPipelineState(MTLPixelFormat format);
-  
+
+  // Get a uniform buffer from the current frame's pool (reused across frames)
+  id<MTLBuffer> GetUniformBuffer(size_t size);
+
   static const NSUInteger FrameCount = 3;
 
 protected:
   void LoadShaders();
-  
+
 protected:
   dispatch_semaphore_t fence_;
   NSUInteger frame_index_ = 0;
-  
+
+  struct UniformBufferPool {
+    std::vector<id<MTLBuffer>> pool_;
+    size_t next_idx_ = 0;
+
+    void Reset() { next_idx_ = 0; }
+    id<MTLBuffer> GetBufferForWriting(id<MTLDevice> device, size_t size);
+  };
+
   struct Frame {
+    UniformBufferPool uniform_buffer_pool_;
   } frames_[FrameCount];
   
   id<MTLDevice> device_;
