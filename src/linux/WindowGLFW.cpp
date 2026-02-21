@@ -7,7 +7,6 @@
 #include <sstream>
 #include <string>
 #include <iomanip>
-#include <Ultralight/private/tracy/Tracy.hpp>
 
 static int GLFWModsToUltralightMods(int mods);
 static int GLFWKeyCodeToUltralightKeyCode(int key);
@@ -387,6 +386,7 @@ void WindowGLFW::Repaint() {
     gpu_driver->DrawCommandList();
     OverlayManager::Paint();
     MarkEndDraw();
+
     glfwSwapBuffers(window_);
     gpu_context->EndDrawing();
   }
@@ -396,17 +396,13 @@ void WindowGLFW::Repaint() {
   window_needs_repaint_ = false;
 }
 
-static const char* frameMarker = "WindowGLFW::OnPaint";
-
 void WindowGLFW::MarkBeginFrame()
 {
-    FrameMarkStart(frameMarker);
     frame_start_time_ = std::chrono::steady_clock::now();
 }
 
 void WindowGLFW::MarkEndFrame()
 {
-    FrameMarkEnd(frameMarker);
     using namespace std::chrono;
 
     auto now = std::chrono::steady_clock::now();
