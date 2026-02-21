@@ -181,8 +181,8 @@ function Compile-GLSL {
     
     $args = @(
         $InputFile,
-        "--version", "330",
-        "--no-420pack-extension",
+        "--version", "420",
+        "--combined-samplers-inherit-bindings",
         "--remove-unused-variables",
         "--output", $OutputFile
     )
