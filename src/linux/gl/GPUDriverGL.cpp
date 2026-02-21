@@ -6,6 +6,14 @@
 #include "glsl/shaders.h"
 
 
+// GL 3.3+ texture swizzle constants (GLAD was generated for GL 3.2)
+#ifndef GL_TEXTURE_SWIZZLE_R
+#define GL_TEXTURE_SWIZZLE_R 0x8E42
+#define GL_TEXTURE_SWIZZLE_G 0x8E43
+#define GL_TEXTURE_SWIZZLE_B 0x8E44
+#define GL_TEXTURE_SWIZZLE_A 0x8E45
+#endif
+
 #ifdef _DEBUG
 #if _WIN32
 #define INFO(x) { std::cerr << "[INFO] " << __FUNCSIG__ << " @ Line " << __LINE__ << ":\n\t" << x << std::endl; }
@@ -208,6 +216,11 @@ void GPUDriverGL::CreateTexture(uint32_t texture_id,
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, bitmap->width(), bitmap->height(), 0,
       GL_RED, GL_UNSIGNED_BYTE, pixels);
     bitmap->UnlockPixels();
+    // GL_R8 stores data in .r, but HLSL A8_UNORM reads .a — set up swizzle to match
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ZERO);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ZERO);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ZERO);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
   } else if (bitmap->format() == BitmapFormat::BGRA8_UNORM_SRGB) {
     const void* pixels = bitmap->LockPixels();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bitmap->width(), bitmap->height(), 0,
