@@ -3,13 +3,13 @@
 
 #pragma once
 
-static const char* filter_basic_fs_source = R"GLSL(#version 330
+static const char* filter_basic_fs_source = R"GLSL(#version 420
 
-uniform sampler2D SPIRV_Cross_CombinedTexture0Sampler0;
+layout(binding = 0) uniform sampler2D SPIRV_Cross_CombinedTexture0Sampler0;
 
-in vec4 in_var_COLOR0;
-in vec2 in_var_TEXCOORD0;
-in vec4 in_var_COLOR1;
+layout(location = 0) in vec4 in_var_COLOR0;
+layout(location = 1) in vec2 in_var_TEXCOORD0;
+layout(location = 3) in vec4 in_var_COLOR1;
 layout(location = 0) out vec4 out_var_SV_Target;
 
 void main()

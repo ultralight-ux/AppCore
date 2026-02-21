@@ -3,9 +3,9 @@
 
 #pragma once
 
-static const char* filter_blur_fs_source = R"GLSL(#version 330
+static const char* filter_blur_fs_source = R"GLSL(#version 420
 
-layout(std140) uniform type_Uniforms
+layout(binding = 0, std140) uniform type_Uniforms
 {
     vec4 State;
     layout(row_major) mat4 Transform;
@@ -16,10 +16,10 @@ layout(std140) uniform type_Uniforms
     layout(row_major) mat4 Clip[8];
 } Uniforms;
 
-uniform sampler2D SPIRV_Cross_CombinedTexture0Sampler0;
+layout(binding = 0) uniform sampler2D SPIRV_Cross_CombinedTexture0Sampler0;
 
-in vec4 in_var_COLOR0;
-in vec2 in_var_TEXCOORD0;
+layout(location = 0) in vec4 in_var_COLOR0;
+layout(location = 1) in vec2 in_var_TEXCOORD0;
 layout(location = 0) out vec4 out_var_SV_Target;
 
 void main()

@@ -3,9 +3,9 @@
 
 #pragma once
 
-static const char* vertex_quad_vs_source = R"GLSL(#version 330
+static const char* vertex_quad_vs_source = R"GLSL(#version 420
 
-layout(std140) uniform type_Uniforms
+layout(binding = 0, std140) uniform type_Uniforms
 {
     vec4 State;
     layout(row_major) mat4 Transform;
@@ -27,16 +27,16 @@ layout(location = 7) in vec4 in_var_COLOR4;
 layout(location = 8) in vec4 in_var_COLOR5;
 layout(location = 9) in vec4 in_var_COLOR6;
 layout(location = 10) in vec4 in_var_COLOR7;
-out vec4 out_var_COLOR0;
-out vec2 out_var_TEXCOORD0;
-out vec2 out_var_TEXCOORD1;
-out vec4 out_var_COLOR1;
-out vec4 out_var_COLOR2;
-out vec4 out_var_COLOR3;
-out vec4 out_var_COLOR4;
-out vec4 out_var_COLOR5;
-out vec4 out_var_COLOR6;
-out vec4 out_var_COLOR7;
+layout(location = 0) out vec4 out_var_COLOR0;
+layout(location = 1) out vec2 out_var_TEXCOORD0;
+layout(location = 2) out vec2 out_var_TEXCOORD1;
+layout(location = 3) out vec4 out_var_COLOR1;
+layout(location = 4) out vec4 out_var_COLOR2;
+layout(location = 5) out vec4 out_var_COLOR3;
+layout(location = 6) out vec4 out_var_COLOR4;
+layout(location = 7) out vec4 out_var_COLOR5;
+layout(location = 8) out vec4 out_var_COLOR6;
+layout(location = 9) out vec4 out_var_COLOR7;
 
 mat4 spvWorkaroundRowMajor(mat4 wrap) { return wrap; }
 

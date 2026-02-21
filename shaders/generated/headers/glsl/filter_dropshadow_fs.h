@@ -3,9 +3,9 @@
 
 #pragma once
 
-static const char* filter_dropshadow_fs_source = R"GLSL(#version 330
+static const char* filter_dropshadow_fs_source = R"GLSL(#version 420
 
-in vec4 in_var_COLOR0;
+layout(location = 0) in vec4 in_var_COLOR0;
 layout(location = 0) out vec4 out_var_SV_Target;
 
 void main()
