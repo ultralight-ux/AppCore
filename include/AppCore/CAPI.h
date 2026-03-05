@@ -176,6 +176,26 @@ ACExport void ulSettingsSetLoadShadersFromFileSystem(ULSettings settings,
 ///
 ACExport void ulSettingsSetForceCPURenderer(ULSettings settings,
                                             bool force_cpu);
+
+///
+/// Set the minimum duration of user inactivity (in seconds) before idle detection begins.
+/// Default: 0.5 seconds.
+///
+ACExport void ulSettingsSetIdleThreshold(ULSettings settings, double seconds);
+
+///
+/// Set the sustained idle time (in seconds). The app must remain continuously idle for this
+/// duration before OnIdle fires. Also used as the cooldown between repeated OnIdle calls.
+/// Default: 2.0 seconds.
+///
+ACExport void ulSettingsSetSustainedIdleTime(ULSettings settings, double seconds);
+
+///
+/// Set the thread CPU utilization threshold (0.0-1.0) below which the app is considered idle.
+/// Default: 0.5 (50%).
+///
+ACExport void ulSettingsSetIdleUtilizationThreshold(ULSettings settings, double threshold);
+
 ///
 /// Create the App singleton.
 ///
@@ -236,6 +256,31 @@ ACExport void ulAppRun(ULApp app);
 /// Quit the application.
 ///
 ACExport void ulAppQuit(ULApp app);
+
+typedef void
+(*ULIdleCallback) (void* user_data, double utilization);
+
+///
+/// Set a callback for when the app is idle (low CPU utilization, no recent user input).
+///
+/// @param  callback   The callback to invoke when idle. The utilization parameter (0.0-1.0)
+///                    indicates current thread CPU usage.
+///
+/// @param  user_data  User data passed to the callback.
+///
+ACExport void ulAppSetIdleCallback(ULApp app, ULIdleCallback callback,
+                                   void* user_data);
+
+///
+/// Whether the app is currently idle (low CPU utilization and no recent user input,
+/// sustained past the configured threshold).
+///
+ACExport bool ulAppIsIdle(ULApp app);
+
+///
+/// Get the current main-thread CPU utilization (0.0-1.0) averaged over the last ~1 second.
+///
+ACExport double ulAppGetThreadUtilization(ULApp app);
 
 ///
 /// Get the monitor's DPI scale (1.0 = 100%).

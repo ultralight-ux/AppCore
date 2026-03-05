@@ -112,7 +112,8 @@ static String16 GetBundleResourcePath() {
   return ToString16((__bridge CFStringRef)[[NSBundle mainBundle] resourcePath]);
 }
 
-AppMac::AppMac(Settings settings, Config config) : settings_(settings) {  
+AppMac::AppMac(Settings settings, Config config) {
+  settings_ = settings;
   [NSApplication sharedApplication];
   
   AppDelegate *appDelegate = [[AppDelegate alloc] init];
@@ -177,10 +178,6 @@ Monitor* AppMac::main_monitor() {
   return &main_monitor_;
 }
 
-RefPtr<Renderer> AppMac::renderer() {
-  return renderer_;
-}
-
 void AppMac::Run() {
   if (is_running_)
     return;
@@ -208,21 +205,9 @@ void AppMac::Quit() {
 }
 
 void AppMac::Update() {
-  if (listener_)
-    listener_->OnUpdate();
+  UpdateBegin();
 
-  const char* frame_mark_update = "Update";
-
-#ifdef TRACY_PROFILE_PERFORMANCE
-  FrameMarkStart(frame_mark_update);
-#endif
-
-  renderer()->Update();
-
-#ifdef TRACY_PROFILE_PERFORMANCE
-  FrameMarkEnd(frame_mark_update);
-#endif
-
+  // Platform-specific: per-window repaint triggering + statistics
   bool needs_stat_update = false;
   auto now = std::chrono::steady_clock::now();
   auto time_since_last_statistics_update = now - last_statistics_update_;
@@ -239,6 +224,8 @@ void AppMac::Update() {
     if (needs_stat_update)
       i->UpdateTitleWithStatistics();
   }
+
+  UpdateIdleDetection();
 }
 
 void AppMac::Refresh() {

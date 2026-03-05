@@ -1,5 +1,5 @@
 #pragma once
-#include <AppCore/App.h>
+#include "AppImpl.h"
 #include "gl/GPUContextGL.h"
 #include <AppCore/Window.h>
 #include "RefCountedImpl.h"
@@ -8,32 +8,20 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
-#include <chrono>
 
 namespace ultralight {
 
 class GPUContextGL;
 class GPUDriverGL;
-class FileLogger;
 class ClipboardGLFW;
 class WindowGLFW;
 
-class AppGLFW : public App,
+class AppGLFW : public AppImpl,
                 public RefCountedImpl<AppGLFW> {
 public:
-  // Inherited from App
-
-  virtual const Settings& settings() const override { return settings_; }
-
-  virtual void set_listener(AppListener* listener) override { listener_ = listener; }
-
-  virtual AppListener* listener() override { return listener_; }
-
-  virtual bool is_running() const override { return is_running_; }
+  // Inherited from App (platform-specific only)
 
   virtual Monitor* main_monitor() override;
-
-  virtual RefPtr<Renderer> renderer() override;
 
   virtual void Run() override;
 
@@ -62,18 +50,13 @@ protected:
 
   DISALLOW_COPY_AND_ASSIGN(AppGLFW);
 
-  bool is_running_ = false;
-  AppListener* listener_ = nullptr;
+  // Platform-specific members only (shared members are in AppImpl)
   std::vector<WindowGLFW*> windows_;
-  Settings settings_;
-  RefPtr<Renderer> renderer_;
   RefPtr<Window> window_;
   std::unique_ptr<MonitorGLFW> main_monitor_;
   std::unique_ptr<GPUContextGL> gpu_context_;
   std::unique_ptr<ClipboardGLFW> clipboard_;
-  std::unique_ptr<FileLogger> logger_;
   std::unique_ptr<ULTextureSurfaceFactory> surface_factory_;
-  std::chrono::steady_clock::time_point last_statistics_update_;
 };
 
 }  // namespace ultralight

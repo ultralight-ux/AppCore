@@ -59,8 +59,8 @@ static std::filesystem::path GetExecutableDirectory()
 namespace ultralight {
 
 AppGLFW::AppGLFW(Settings settings, Config config)
-    : settings_(settings)
 {
+    settings_ = settings;
     // Generate cache path
     std::filesystem::path cache_path = GetCacheDirectory();
     String cache_dirname = "com." + settings_.developer_name + "." + settings_.app_name;
@@ -131,11 +131,6 @@ AppGLFW::~AppGLFW()
 Monitor* AppGLFW::main_monitor()
 {
     return main_monitor_.get();
-}
-
-RefPtr<Renderer> AppGLFW::renderer()
-{
-    return renderer_;
 }
 
 void AppGLFW::Run()
@@ -211,10 +206,8 @@ void AppGLFW::Quit()
 
 void AppGLFW::Update()
 {
-    if (listener_)
-        listener_->OnUpdate();
-
-    renderer()->Update();
+    UpdateBegin();
+    UpdateIdleDetection();
 }
 
 void AppGLFW::Repaint()

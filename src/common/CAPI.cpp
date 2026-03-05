@@ -31,6 +31,8 @@ struct C_App : public AppListener {
   ULWindow c_window = nullptr; // owned by user, cached in ULAppSetWindow
   ULUpdateCallback update_callback = nullptr;
   void* update_callback_data = nullptr;
+  ULIdleCallback idle_callback = nullptr;
+  void* idle_callback_data = nullptr;
 
   C_App(RefPtr<App> app) : val(app) {
     val->set_listener(this);
@@ -45,6 +47,11 @@ struct C_App : public AppListener {
   virtual void OnUpdate() override {
     if (update_callback)
       update_callback(update_callback_data);
+  }
+
+  virtual void OnIdle(double utilization) override {
+    if (idle_callback)
+      idle_callback(idle_callback_data, utilization);
   }
 };
 
@@ -115,6 +122,18 @@ void ulSettingsSetForceCPURenderer(ULSettings settings, bool force_cpu) {
   settings->val.force_cpu_renderer = force_cpu;
 }
 
+void ulSettingsSetIdleThreshold(ULSettings settings, double seconds) {
+  settings->val.idle_threshold = seconds;
+}
+
+void ulSettingsSetSustainedIdleTime(ULSettings settings, double seconds) {
+  settings->val.sustained_idle_time = seconds;
+}
+
+void ulSettingsSetIdleUtilizationThreshold(ULSettings settings, double threshold) {
+  settings->val.idle_utilization_threshold = threshold;
+}
+
 ULApp ulCreateApp(ULSettings settings, ULConfig config) {
   return new C_App{ App::Create(settings ? settings->val : Settings(),
                                 config ? config->val : Config()) };
@@ -147,6 +166,19 @@ void ulAppRun(ULApp app) {
 
 void ulAppQuit(ULApp app) {
   app->val->Quit();
+}
+
+void ulAppSetIdleCallback(ULApp app, ULIdleCallback callback, void* user_data) {
+  app->idle_callback = callback;
+  app->idle_callback_data = user_data;
+}
+
+bool ulAppIsIdle(ULApp app) {
+  return app->val->is_idle();
+}
+
+double ulAppGetThreadUtilization(ULApp app) {
+  return app->val->thread_utilization();
 }
 
 double ulMonitorGetScale(ULMonitor monitor) {

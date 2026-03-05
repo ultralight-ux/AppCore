@@ -30,6 +30,19 @@ public:
   ///        Renderer::Update and Renderer::Render.
   ///
   virtual void OnUpdate() {}
+
+  ///
+  /// Called when the app has been idle (low CPU utilization, no recent user input)
+  /// for a sustained period.
+  ///
+  /// @param  utilization  Thread CPU utilization (0.0-1.0) over the last ~1 second.
+  ///                      Lower values = more headroom for background work.
+  ///
+  /// @note  Fires once after Settings::sustained_idle_time of continuous idle, then
+  ///        repeats at the same interval while idle conditions hold. Stops immediately
+  ///        when user input occurs or CPU utilization rises above threshold.
+  ///
+  virtual void OnIdle(double utilization) {}
 };
 
 ///
@@ -88,6 +101,28 @@ struct AExport Settings {
   /// Set to a positive value (e.g., 1.0, 1.5, 2.0) to override.
   ///
   double device_scale_override = 0.0;
+
+  ///
+  /// Minimum duration of user inactivity (in seconds) before idle detection begins.
+  ///
+  /// Default: 0.5 seconds.
+  ///
+  double idle_threshold = 0.5;
+
+  ///
+  /// Time (in seconds) the app must remain continuously idle before OnIdle fires.
+  /// Also used as the cooldown between repeated OnIdle calls.
+  ///
+  /// Default: 2.0 seconds.
+  ///
+  double sustained_idle_time = 2.0;
+
+  ///
+  /// Thread CPU utilization threshold (0.0-1.0) below which the app is considered idle.
+  ///
+  /// Default: 0.5 (50%).
+  ///
+  double idle_utilization_threshold = 0.5;
 };
 
 ///
@@ -228,6 +263,21 @@ public:
   /// Quit the application.
   ///
   virtual void Quit() = 0;
+
+  ///
+  /// Whether the app is currently considered idle (low CPU utilization and no recent
+  /// user input, sustained past the configured threshold).
+  ///
+  /// @note  Returns true once idle conditions have been met for at least
+  ///        Settings::idle_threshold, even before the first OnIdle callback fires.
+  ///
+  virtual bool is_idle() const = 0;
+
+  ///
+  /// Get the current main-thread CPU utilization (0.0-1.0) averaged over the last
+  /// ~1 second. Useful for adaptive scheduling decisions.
+  ///
+  virtual double thread_utilization() const = 0;
 
 protected:
   virtual ~App();

@@ -1,6 +1,7 @@
 #include "WindowMac.h"
 #include <AppCore/Monitor.h>
 #include "AppMac.h"
+#include "AppImpl.h"
 #include <sstream>
 #import "Cocoa/Cocoa.h"
 #import "ViewController.h"
@@ -199,6 +200,9 @@ void WindowMac::DrawSurface(int x, int y, Surface* surface) {
 }
 
 void WindowMac::FireKeyEvent(const ultralight::KeyEvent& evt) {
+  if (App::instance())
+    static_cast<AppImpl*>(App::instance())->NotifyUserInteraction();
+
   if (listener())
     if (!listener()->OnKeyEvent(evt))
       return;
@@ -207,6 +211,9 @@ void WindowMac::FireKeyEvent(const ultralight::KeyEvent& evt) {
 }
 
 void WindowMac::FireMouseEvent(const ultralight::MouseEvent& evt) {
+  if (App::instance())
+    static_cast<AppImpl*>(App::instance())->NotifyUserInteraction();
+
   if (listener())
     if (!listener()->OnMouseEvent(evt))
       return;
@@ -215,6 +222,9 @@ void WindowMac::FireMouseEvent(const ultralight::MouseEvent& evt) {
 }
 
 void WindowMac::FireScrollEvent(const ultralight::ScrollEvent& evt) {
+  if (App::instance())
+    static_cast<AppImpl*>(App::instance())->NotifyUserInteraction();
+
   if (listener())
     if (!listener()->OnScrollEvent(evt))
       return;

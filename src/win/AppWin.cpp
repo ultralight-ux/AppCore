@@ -49,8 +49,8 @@ static String GetRoamingAppDataPath()
 inline std::filesystem::path ToFSPath(const String& str) { return str.utf8().data(); }
 
 AppWin::AppWin(Settings settings, Config config)
-    : settings_(settings)
 {
+    settings_ = settings;
     windows_util_.reset(new WindowsUtil());
     windows_util_->EnableDPIAwareness();
 
@@ -145,8 +145,6 @@ AppWin::~AppWin()
 
 Monitor* AppWin::main_monitor() { return main_monitor_.get(); }
 
-RefPtr<Renderer> AppWin::renderer() { return renderer_; }
-
 void AppWin::Run()
 {
     if (is_running_)
@@ -240,26 +238,9 @@ void AppWin::RefreshDisplay()
 
 void AppWin::Update()
 {
-    if (listener_)
-        listener_->OnUpdate();
+    UpdateBegin();
 
-    const char* frame_mark_update = "Update";
-
-#ifdef TRACY_PROFILE_PERFORMANCE
-    FrameMarkStart(frame_mark_update);
-#endif
-
-    renderer()->Update();
-
-#ifdef TRACY_PROFILE_PERFORMANCE
-    FrameMarkEnd(frame_mark_update);
-#endif
-
-    // if (main_monitor_->needs_refresh()) {
-    // main_monitor_->set_needs_refresh(false);
-    // renderer()->RefreshDisplay(main_monitor_->display_id());
-    //}
-
+    // Platform-specific: per-window repaint triggering + statistics
     bool needs_stat_update = false;
     auto now = std::chrono::steady_clock::now();
     auto time_since_last_statistics_update = now - last_statistics_update_;
@@ -276,6 +257,8 @@ void AppWin::Update()
         if (needs_stat_update)
             window->UpdateTitleWithStatistics();
     }
+
+    UpdateIdleDetection();
 }
 
 #if defined(DRIVER_D3D11)

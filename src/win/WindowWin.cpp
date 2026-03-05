@@ -2,6 +2,7 @@
 #include "AppCore/Overlay.h"
 #include <AppCore/App.h>
 #include "AppWin.h"
+#include "AppImpl.h"
 #include "DIBSurface.h"
 #include "Windowsx.h"
 #include <AppCore/Monitor.h>
@@ -643,6 +644,9 @@ void WindowWin::Paint()
 
 void WindowWin::FireKeyEvent(const ultralight::KeyEvent& evt)
 {
+    if (App::instance())
+        static_cast<AppImpl*>(App::instance())->NotifyUserInteraction();
+
     if (listener())
         if (!listener()->OnKeyEvent(evt))
             return;
@@ -652,6 +656,9 @@ void WindowWin::FireKeyEvent(const ultralight::KeyEvent& evt)
 
 void WindowWin::FireMouseEvent(const ultralight::MouseEvent& evt)
 {
+    if (App::instance())
+        static_cast<AppImpl*>(App::instance())->NotifyUserInteraction();
+
     if (listener())
         if (!listener()->OnMouseEvent(evt))
             return;
@@ -661,6 +668,9 @@ void WindowWin::FireMouseEvent(const ultralight::MouseEvent& evt)
 
 void WindowWin::FireScrollEvent(const ultralight::ScrollEvent& evt)
 {
+    if (App::instance())
+        static_cast<AppImpl*>(App::instance())->NotifyUserInteraction();
+
     if (listener())
         if (!listener()->OnScrollEvent(evt))
             return;

@@ -2,6 +2,7 @@
 #include <AppCore/Monitor.h>
 #include <AppCore/App.h>
 #include "AppGLFW.h"
+#include "AppImpl.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <sstream>
@@ -326,6 +327,9 @@ void* WindowGLFW::native_handle() const {
 }
 
 void WindowGLFW::FireKeyEvent(const ultralight::KeyEvent& evt) {
+  if (App::instance())
+    static_cast<AppImpl*>(App::instance())->NotifyUserInteraction();
+
   if (listener())
     if (!listener()->OnKeyEvent(evt))
       return;
@@ -334,6 +338,9 @@ void WindowGLFW::FireKeyEvent(const ultralight::KeyEvent& evt) {
 }
 
 void WindowGLFW::FireMouseEvent(const ultralight::MouseEvent& evt) {
+  if (App::instance())
+    static_cast<AppImpl*>(App::instance())->NotifyUserInteraction();
+
   if (listener())
     if (!listener()->OnMouseEvent(evt))
       return;
@@ -342,6 +349,9 @@ void WindowGLFW::FireMouseEvent(const ultralight::MouseEvent& evt) {
 }
 
 void WindowGLFW::FireScrollEvent(const ultralight::ScrollEvent& evt) {
+  if (App::instance())
+    static_cast<AppImpl*>(App::instance())->NotifyUserInteraction();
+
   if (listener())
     if (!listener()->OnScrollEvent(evt))
       return;
