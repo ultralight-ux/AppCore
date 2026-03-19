@@ -209,8 +209,35 @@
   NSPoint eventLocation = [event locationInWindow];
   NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
   point.y = self.view.bounds.size.height - point.y;
-  
+
   [_delegate rightMouseUp:point.x mouseY:point.y];
+}
+
+- (void)otherMouseDown:(NSEvent *)event
+{
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+
+  [_delegate otherMouseDown:event x:point.x mouseY:point.y];
+}
+
+- (void)otherMouseUp:(NSEvent *)event
+{
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+
+  [_delegate otherMouseUp:event x:point.x mouseY:point.y];
+}
+
+- (void)otherMouseDragged:(NSEvent *)event
+{
+  NSPoint eventLocation = [event locationInWindow];
+  NSPoint point = [self.view convertPoint:eventLocation fromView:nil];
+  point.y = self.view.bounds.size.height - point.y;
+
+  [_delegate mouseMoved:point.x mouseY:point.y];
 }
 
 - (void)keyUp:(NSEvent *)event

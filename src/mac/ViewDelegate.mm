@@ -72,6 +72,25 @@ static inline ultralight::String toString(NSString* str) {
   _cur_button = ultralight::MouseEvent::kButton_None;
 }
 
+- (void)otherMouseDown:(NSEvent*)event x:(CGFloat)x mouseY:(CGFloat)y
+{
+  // buttonNumber 3 = Back (mouse button 4), 4 = Forward (mouse button 5)
+  auto btn = ([event buttonNumber] == 3) ? ultralight::MouseEvent::kButton_Back
+                                         : ultralight::MouseEvent::kButton_Forward;
+  _window->FireMouseEvent({ ultralight::MouseEvent::kType_MouseDown,
+    (int)x, (int)y, btn });
+  _cur_button = btn;
+}
+
+- (void)otherMouseUp:(NSEvent*)event x:(CGFloat)x mouseY:(CGFloat)y
+{
+  auto btn = ([event buttonNumber] == 3) ? ultralight::MouseEvent::kButton_Back
+                                         : ultralight::MouseEvent::kButton_Forward;
+  _window->FireMouseEvent({ ultralight::MouseEvent::kType_MouseUp,
+    (int)x, (int)y, btn });
+  _cur_button = ultralight::MouseEvent::kButton_None;
+}
+
 - (void)scrollWheel:(CGFloat)deltaY mouseX:(CGFloat)x mouseY:(CGFloat)y
 {
   _window->FireScrollEvent({ ultralight::ScrollEvent::kType_ScrollByPixel, 0, (int)deltaY });

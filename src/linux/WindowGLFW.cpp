@@ -69,6 +69,10 @@ static void WindowGLFW_cursor_pos_callback(GLFWwindow* window, double xpos, doub
     evt.button = ultralight::MouseEvent::kButton_Middle;
   else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
     evt.button = ultralight::MouseEvent::kButton_Right;
+  else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_4) == GLFW_PRESS)
+    evt.button = ultralight::MouseEvent::kButton_Back;
+  else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_5) == GLFW_PRESS)
+    evt.button = ultralight::MouseEvent::kButton_Forward;
   win->FireMouseEvent(evt);
 }
 
@@ -91,6 +95,12 @@ static void WindowGLFW_mouse_button_callback(GLFWwindow* window, int button, int
     break;
   case GLFW_MOUSE_BUTTON_RIGHT:
     evt.button = ultralight::MouseEvent::kButton_Right;
+    break;
+  case GLFW_MOUSE_BUTTON_4:
+    evt.button = ultralight::MouseEvent::kButton_Back;
+    break;
+  case GLFW_MOUSE_BUTTON_5:
+    evt.button = ultralight::MouseEvent::kButton_Forward;
     break;
   }
   win->FireMouseEvent(evt);

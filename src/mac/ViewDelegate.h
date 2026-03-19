@@ -17,6 +17,10 @@ namespace ultralight { class WindowMac; }
 
 - (void)rightMouseUp:(CGFloat)x mouseY:(CGFloat)y;
 
+- (void)otherMouseDown:(NSEvent*)event x:(CGFloat)x mouseY:(CGFloat)y;
+
+- (void)otherMouseUp:(NSEvent*)event x:(CGFloat)x mouseY:(CGFloat)y;
+
 - (void)scrollWheel:(CGFloat)deltaY mouseX:(CGFloat)x mouseY:(CGFloat)y;
 
 - (void)keyEvent:(NSEvent*)event;

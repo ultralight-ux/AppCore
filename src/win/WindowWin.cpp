@@ -153,13 +153,43 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             { MouseEvent::kType_MouseDown, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
                 WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
         break;
+    case WM_XBUTTONDOWN:
+    case WM_XBUTTONDBLCLK:
+        SetCapture(WINDOW()->hwnd());
+        WINDOWDATA()->cur_btn = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1)
+            ? MouseEvent::kButton_Back : MouseEvent::kButton_Forward;
+        WINDOW()->FireMouseEvent(
+            { MouseEvent::kType_MouseDown, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
+                WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
+        break;
     case WM_LBUTTONUP:
+        ReleaseCapture();
+        WINDOW()->FireMouseEvent(
+            { MouseEvent::kType_MouseUp, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
+                WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), MouseEvent::kButton_Left });
+        WINDOWDATA()->cur_btn = MouseEvent::kButton_None;
+        break;
     case WM_MBUTTONUP:
+        ReleaseCapture();
+        WINDOW()->FireMouseEvent(
+            { MouseEvent::kType_MouseUp, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
+                WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), MouseEvent::kButton_Middle });
+        WINDOWDATA()->cur_btn = MouseEvent::kButton_None;
+        break;
     case WM_RBUTTONUP:
         ReleaseCapture();
         WINDOW()->FireMouseEvent(
             { MouseEvent::kType_MouseUp, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
-                WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), WINDOWDATA()->cur_btn });
+                WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)), MouseEvent::kButton_Right });
+        WINDOWDATA()->cur_btn = MouseEvent::kButton_None;
+        break;
+    case WM_XBUTTONUP:
+        ReleaseCapture();
+        WINDOW()->FireMouseEvent(
+            { MouseEvent::kType_MouseUp, WINDOW()->PixelsToScreen(GET_X_LPARAM(lParam)),
+                WINDOW()->PixelsToScreen(GET_Y_LPARAM(lParam)),
+                (GET_XBUTTON_WPARAM(wParam) == XBUTTON1)
+                    ? MouseEvent::kButton_Back : MouseEvent::kButton_Forward });
         WINDOWDATA()->cur_btn = MouseEvent::kButton_None;
         break;
     case WM_MOUSEWHEEL:
