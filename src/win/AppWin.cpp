@@ -115,6 +115,9 @@ AppWin::AppWin(Settings settings, Config config)
             Platform::instance().set_gpu_driver(gpu_driver_.get());
         } else {
             gpu_context_.reset();
+            // CPU fallback
+            surface_factory_.reset(new DIBSurfaceFactory(GetDC(0)));
+            Platform::instance().set_surface_factory(surface_factory_.get());
         }
 #elif defined(DRIVER_D3D12)
         gpu_context_.reset(new GPUContextD3D12());
